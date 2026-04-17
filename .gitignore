@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build output
+apps/desktop/dist/
+apps/server/dist/
+
+# Tauri build artifacts (Rust target dir is large — hundreds of MB)
+apps/desktop/src-tauri/target/
+
+# Drizzle migrations are generated — commit them intentionally
+# apps/server/src/db/migrations/   ← kept in git
+
+# TanStack Router generated file
+apps/desktop/src/routeTree.gen.ts
+
+# Migration temp files
+/tmp/smartlaw_data_dump.sql
+/tmp/smartlaw_patched.sql
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.suo
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# TypeScript build info
+*.tsbuildinfo
