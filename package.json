@@ -11,7 +11,9 @@
     "build": "turbo build",
     "migrate": "./scripts/migrate.sh",
     "migrate:dry-run": "./scripts/migrate.sh --dry-run",
-    "migrate:profiles": "npx tsx scripts/migrate-profiles.ts"
+    "migrate:profiles": "npx tsx scripts/migrate-profiles.ts",
+    "dev": "./dev.sh",
+    "dev:server-only": "./dev.sh --no-desktop"
   },
   "devDependencies": {
     "turbo": "latest"
