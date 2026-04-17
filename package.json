@@ -1,0 +1,19 @@
+{
+  "name": "smartlaw-desktop",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:desktop": "npm run dev -w apps/desktop",
+    "dev:server": "npm run dev -w apps/server",
+    "build": "turbo build",
+    "migrate": "./scripts/migrate.sh",
+    "migrate:dry-run": "./scripts/migrate.sh --dry-run",
+    "migrate:profiles": "npx tsx scripts/migrate-profiles.ts"
+  },
+  "devDependencies": {
+    "turbo": "latest"
+  }
+}

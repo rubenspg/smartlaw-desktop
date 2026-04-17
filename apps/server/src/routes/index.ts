@@ -1,0 +1,20 @@
+import { Hono } from 'hono';
+import auth from './auth';
+import clientes from './clientes';
+import clientesNotas from './clientes-notas';
+import lookups from './lookups';
+import processosJudiciais from './processos-judiciais';
+import processosAdministrativos from './processos-administrativos';
+import honorarios from './honorarios';
+
+const routes = new Hono()
+  .route('/auth', auth)
+  .route('/clientes', clientes)
+  .route('/clientes/notas', clientesNotas)
+  .route('/lookups', lookups)
+  .route('/processos/judiciais', processosJudiciais)
+  .route('/processos/administrativos', processosAdministrativos)
+  .route('/honorarios', honorarios);
+
+export type AppType = typeof routes;
+export default routes;
