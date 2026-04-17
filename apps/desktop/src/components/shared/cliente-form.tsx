@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { clienteSchema, ClienteInput, Cliente } from '@smartlaw/shared';
 import { Button } from '@/components/ui/button';
@@ -6,9 +6,52 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
+
+// ── Formatters ────────────────────────────────────────────────────────────────
+
+function formatCPF(v: string) {
+  const d = v.replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0,3)}.${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6)}`;
+  return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
+}
+
+function formatCNPJ(v: string) {
+  const d = v.replace(/\D/g, '').slice(0, 14);
+  if (d.length <= 2) return d;
+  if (d.length <= 5) return `${d.slice(0,2)}.${d.slice(2)}`;
+  if (d.length <= 8) return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5)}`;
+  if (d.length <= 12) return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8)}`;
+  return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12)}`;
+}
+
+function formatCelular(v: string) {
+  const d = v.replace(/\D/g, '').slice(0, 11);
+  if (d.length === 0) return '';
+  if (d.length <= 2) return `(${d}`;
+  if (d.length <= 7) return `(${d.slice(0,2)}) ${d.slice(2)}`;
+  return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+}
+
+function formatTelefone(v: string) {
+  const d = v.replace(/\D/g, '').slice(0, 10);
+  if (d.length === 0) return '';
+  if (d.length <= 2) return `(${d}`;
+  if (d.length <= 6) return `(${d.slice(0,2)}) ${d.slice(2)}`;
+  return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
+}
+
+// ── Validators (for inline feedback) ─────────────────────────────────────────
+
+function cpfComplete(v: string) { return v.replace(/\D/g, '').length === 11; }
+function cnpjComplete(v: string) { return v.replace(/\D/g, '').length === 14; }
+function celularComplete(v: string) { return v.replace(/\D/g, '').length === 11; }
+function telefoneComplete(v: string) { return v.replace(/\D/g, '').length === 10; }
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 interface ClienteFormProps {
   initialData?: Cliente;
@@ -17,7 +60,7 @@ interface ClienteFormProps {
 }
 
 export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteFormProps) {
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<ClienteInput>({
+  const { register, handleSubmit, control, formState: { errors }, setValue, watch } = useForm<ClienteInput>({
     resolver: zodResolver(clienteSchema),
     defaultValues: initialData ? {
       tipo: initialData.tipo as 'F' | 'J',
@@ -33,7 +76,7 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
       bairro: initialData.bairro,
       municipio: initialData.municipio,
       estado: initialData.estado,
-      situacao: initialData.situacao,
+      situacao: initialData.situacao || 'A',
     } : {
       tipo: 'F',
       situacao: 'A',
@@ -41,6 +84,13 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
   });
 
   const tipo = watch('tipo');
+  const cpfCnpjValue = watch('cpfCnpj') ?? '';
+  const celularValue = watch('celular') ?? '';
+  const telefoneValue = watch('telefone1') ?? '';
+
+  const cpfCnpjDone = tipo === 'F' ? cpfComplete(cpfCnpjValue) : cnpjComplete(cpfCnpjValue);
+  const celularDone = celularComplete(celularValue);
+  const telefoneDone = telefoneComplete(telefoneValue);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
@@ -49,8 +99,8 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3">
               <Label>Tipo de Pessoa</Label>
-              <RadioGroup 
-                defaultValue={tipo} 
+              <RadioGroup
+                defaultValue={tipo}
                 onValueChange={(val) => setValue('tipo', val as 'F' | 'J')}
                 className="flex gap-4"
               >
@@ -67,8 +117,8 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
 
             <div className="space-y-2">
               <Label htmlFor="situacao">Situação</Label>
-              <Select 
-                defaultValue={initialData?.situacao || 'A'} 
+              <Select
+                defaultValue={initialData?.situacao || 'A'}
                 onValueChange={(val) => setValue('situacao', val)}
               >
                 <SelectTrigger>
@@ -96,9 +146,38 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* CPF / CNPJ */}
             <div className="space-y-2">
               <Label htmlFor="cpfCnpj">{tipo === 'F' ? 'CPF' : 'CNPJ'}</Label>
-              <Input id="cpfCnpj" {...register('cpfCnpj')} />
+              <div className="relative">
+                <Controller
+                  name="cpfCnpj"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="cpfCnpj"
+                      placeholder={tipo === 'F' ? '000.000.000-00' : '00.000.000/0000-00'}
+                      value={field.value ?? ''}
+                      onChange={(e) => {
+                        const formatted = tipo === 'F'
+                          ? formatCPF(e.target.value)
+                          : formatCNPJ(e.target.value);
+                        field.onChange(formatted);
+                      }}
+                      className={cpfCnpjDone ? 'pr-8' : ''}
+                    />
+                  )}
+                />
+                {cpfCnpjValue.replace(/\D/g, '').length > 0 && (
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                    {cpfCnpjDone
+                      ? <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      : <XCircle className="w-4 h-4 text-amber-400" />
+                    }
+                  </span>
+                )}
+              </div>
+              {errors.cpfCnpj && <p className="text-xs text-destructive">{errors.cpfCnpj.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -106,22 +185,71 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
               <Input id="rg" {...register('rg')} />
             </div>
 
+            {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
-              <Input id="email" type="email" {...register('email')} />
+              <Input id="email" type="email" {...register('email')} placeholder="exemplo@email.com" />
               {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Celular */}
             <div className="space-y-2">
               <Label htmlFor="celular">Celular / WhatsApp</Label>
-              <Input id="celular" {...register('celular')} />
+              <div className="relative">
+                <Controller
+                  name="celular"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="celular"
+                      placeholder="(51) 99999-9999"
+                      value={field.value ?? ''}
+                      onChange={(e) => field.onChange(formatCelular(e.target.value))}
+                      className={celularDone ? 'pr-8' : ''}
+                    />
+                  )}
+                />
+                {celularValue.replace(/\D/g, '').length > 0 && (
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                    {celularDone
+                      ? <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      : <XCircle className="w-4 h-4 text-amber-400" />
+                    }
+                  </span>
+                )}
+              </div>
+              {errors.celular && <p className="text-xs text-destructive">{errors.celular.message}</p>}
             </div>
 
+            {/* Telefone fixo */}
             <div className="space-y-2">
               <Label htmlFor="telefone1">Telefone Fixo</Label>
-              <Input id="telefone1" {...register('telefone1')} />
+              <div className="relative">
+                <Controller
+                  name="telefone1"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="telefone1"
+                      placeholder="(51) 3333-3333"
+                      value={field.value ?? ''}
+                      onChange={(e) => field.onChange(formatTelefone(e.target.value))}
+                      className={telefoneDone ? 'pr-8' : ''}
+                    />
+                  )}
+                />
+                {telefoneValue.replace(/\D/g, '').length > 0 && (
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                    {telefoneDone
+                      ? <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      : <XCircle className="w-4 h-4 text-amber-400" />
+                    }
+                  </span>
+                )}
+              </div>
+              {errors.telefone1 && <p className="text-xs text-destructive">{errors.telefone1.message}</p>}
             </div>
           </div>
         </CardContent>
@@ -173,5 +301,4 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
   );
 }
 
-// Missing import for CardHeader
-import { CardHeader } from '@/components/ui/card';
+export default ClienteForm;

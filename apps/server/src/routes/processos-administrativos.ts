@@ -1,17 +1,18 @@
 import { Hono } from 'hono';
 import { db } from '../db';
 import { processosAdministrativos, clientes, andamentos } from '../db/schema';
-import { eq, and, ilike, or, sql, desc } from 'drizzle-orm';
+import { eq, and, ilike, or, desc } from 'drizzle-orm';
 import { authMiddleware, Variables } from '../middleware/auth';
 import { processoAdministrativoSchema } from '@smartlaw/shared';
+import { zValidator } from '@hono/zod-validator';
 
 const processosAdministrativosRoutes = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
   
   .get('/', async (c) => {
     const user = c.get('user');
-    const { q, page = '1', limit = '10' } = c.req.query();
-    
+    const { q, page = '1', limit = '10', clienteId } = c.req.query();
+
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const offset = (pageNum - 1) * limitNum;
@@ -23,6 +24,10 @@ const processosAdministrativosRoutes = new Hono<{ Variables: Variables }>()
         ilike(processosAdministrativos.numero, `%${q}%`),
         ilike(clientes.nome, `%${q}%`)
       )!);
+    }
+
+    if (clienteId) {
+      where.push(eq(processosAdministrativos.clienteId, parseInt(clienteId)));
     }
 
     const data = await db
@@ -63,41 +68,36 @@ const processosAdministrativosRoutes = new Hono<{ Variables: Variables }>()
     return c.json(data);
   })
 
-  .post('/', async (c) => {
+  .post('/', zValidator('json', processoAdministrativoSchema), async (c) => {
     const user = c.get('user');
-    const body = await c.req.json();
-    
-    const result = processoAdministrativoSchema.safeParse(body);
-    if (!result.success) {
-      return c.json({ error: 'Dados inválidos', details: result.error.format() }, 400);
-    }
+    const data = c.req.valid('json');
 
     const [newProcesso] = await db
       .insert(processosAdministrativos)
       .values({
-        ...result.data,
+        ...data,
         firmId: user.firmId,
-        dataCadastro: new Date(),
+        dataCadastro: data.dataCadastro ? new Date(data.dataCadastro) : new Date(),
+        abertura: data.abertura ? new Date(data.abertura) : null,
+        inicioBeneficio: data.inicioBeneficio ? new Date(data.inicioBeneficio) : null,
       })
       .returning();
 
     return c.json(newProcesso, 201);
   })
 
-  .put('/:id', async (c) => {
+  .put('/:id', zValidator('json', processoAdministrativoSchema), async (c) => {
     const user = c.get('user');
     const id = parseInt(c.req.param('id'));
-    const body = await c.req.json();
-
-    const result = processoAdministrativoSchema.safeParse(body);
-    if (!result.success) {
-      return c.json({ error: 'Dados inválidos', details: result.error.format() }, 400);
-    }
+    const data = c.req.valid('json');
 
     const [updatedProcesso] = await db
       .update(processosAdministrativos)
       .set({
-        ...result.data,
+        ...data,
+        dataCadastro: data.dataCadastro ? new Date(data.dataCadastro) : undefined,
+        abertura: data.abertura ? new Date(data.abertura) : undefined,
+        inicioBeneficio: data.inicioBeneficio ? new Date(data.inicioBeneficio) : undefined,
         updatedAt: new Date(),
       })
       .where(and(eq(processosAdministrativos.id, id), eq(processosAdministrativos.firmId, user.firmId)))

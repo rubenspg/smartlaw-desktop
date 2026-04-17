@@ -6,8 +6,9 @@ import lookups from './lookups';
 import processosJudiciais from './processos-judiciais';
 import processosAdministrativos from './processos-administrativos';
 import honorarios from './honorarios';
+import { Variables } from '../middleware/auth';
 
-const routes = new Hono()
+const routes = new Hono<{ Variables: Variables }>()
   .route('/auth', auth)
   .route('/clientes', clientes)
   .route('/clientes/notas', clientesNotas)

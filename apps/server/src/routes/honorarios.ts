@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { db } from '../db';
 import { honorarios, clientes } from '../db/schema';
-import { eq, and, ilike, or, sql, desc } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { authMiddleware, Variables } from '../middleware/auth';
 import { honorarioSchema } from '@smartlaw/shared';
 

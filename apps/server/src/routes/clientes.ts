@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
 import { db } from '../db';
 import { clientes } from '../db/schema';
-import { eq, ilike, or, and, sql, desc, asc } from 'drizzle-orm';
+import { eq, ilike, or, and, sql, asc } from 'drizzle-orm';
 import { clienteSchema } from '@smartlaw/shared';
 import { authMiddleware, Variables } from '../middleware/auth';
+import { zValidator } from '@hono/zod-validator';
 
 const clientesRoutes = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
@@ -70,19 +71,14 @@ const clientesRoutes = new Hono<{ Variables: Variables }>()
     return c.json(cliente);
   })
 
-  .post('/', async (c) => {
+  .post('/', zValidator('json', clienteSchema), async (c) => {
     const user = c.get('user');
-    const body = await c.req.json();
-    
-    const result = clienteSchema.safeParse(body);
-    if (!result.success) {
-      return c.json({ error: 'Dados inválidos', details: result.error.format() }, 400);
-    }
+    const data = c.req.valid('json');
 
     const [newCliente] = await db
       .insert(clientes)
       .values({
-        ...result.data,
+        ...data,
         firmId: user.firmId,
         dataCadastro: new Date(),
       })
@@ -91,20 +87,15 @@ const clientesRoutes = new Hono<{ Variables: Variables }>()
     return c.json(newCliente, 201);
   })
 
-  .put('/:id', async (c) => {
+  .put('/:id', zValidator('json', clienteSchema), async (c) => {
     const user = c.get('user');
     const id = parseInt(c.req.param('id'));
-    const body = await c.req.json();
-
-    const result = clienteSchema.safeParse(body);
-    if (!result.success) {
-      return c.json({ error: 'Dados inválidos', details: result.error.format() }, 400);
-    }
+    const data = c.req.valid('json');
 
     const [updatedCliente] = await db
       .update(clientes)
       .set({
-        ...result.data,
+        ...data,
         updatedAt: new Date(),
       })
       .where(and(eq(clientes.id, id), eq(clientes.firmId, user.firmId)))

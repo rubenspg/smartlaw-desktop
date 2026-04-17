@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { useDatajudSearch, useCreateProcessoJudicial } from '@/hooks/use-processos';
 import { useClientes } from '@/hooks/use-clientes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DatajudProcessData } from '../../../../server/src/services/ComparisonService';
+import { DatajudProcessData } from '@smartlaw/shared';
 
 export const Route = createFileRoute('/_dashboard/processos/novo')({
   component: NewProcessoPage,

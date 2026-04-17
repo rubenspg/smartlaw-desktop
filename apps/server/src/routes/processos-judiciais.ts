@@ -1,19 +1,20 @@
 import { Hono } from 'hono';
 import { db } from '../db';
 import { processosJudiciais, clientes, andamentos } from '../db/schema';
-import { eq, and, ilike, or, sql, desc } from 'drizzle-orm';
+import { eq, and, ilike, or, desc } from 'drizzle-orm';
 import { authMiddleware, Variables } from '../middleware/auth';
 import { DatajudService } from '../services/DatajudService';
 import { ComparisonService } from '../services/ComparisonService';
 import { processoJudicialSchema } from '@smartlaw/shared';
+import { zValidator } from '@hono/zod-validator';
 
 const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
   
   .get('/', async (c) => {
     const user = c.get('user');
-    const { q, page = '1', limit = '10' } = c.req.query();
-    
+    const { q, page = '1', limit = '10', clienteId } = c.req.query();
+
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const offset = (pageNum - 1) * limitNum;
@@ -25,6 +26,10 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
         ilike(processosJudiciais.numero, `%${q}%`),
         ilike(clientes.nome, `%${q}%`)
       )!);
+    }
+
+    if (clienteId) {
+      where.push(eq(processosJudiciais.clienteId, parseInt(clienteId)));
     }
 
     const data = await db
@@ -67,21 +72,17 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
     return c.json(data);
   })
 
-  .post('/', async (c) => {
+  .post('/', zValidator('json', processoJudicialSchema), async (c) => {
     const user = c.get('user');
-    const body = await c.req.json();
-    
-    const result = processoJudicialSchema.safeParse(body);
-    if (!result.success) {
-      return c.json({ error: 'Dados inválidos', details: result.error.format() }, 400);
-    }
+    const data = c.req.valid('json');
 
     const [newProcesso] = await db
       .insert(processosJudiciais)
       .values({
-        ...result.data,
+        ...data,
         firmId: user.firmId,
         dataCadastro: new Date(),
+        distribuicao: data.distribuicao ? new Date(data.distribuicao) : null,
       })
       .returning();
 

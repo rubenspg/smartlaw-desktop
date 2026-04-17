@@ -5,7 +5,7 @@ import { ProcessoAdminForm } from '@/components/shared/processo-admin-form';
 import { useProcessoAdministrativo, useUpdateProcessoAdministrativo } from '@/hooks/use-processos';
 import { ProcessoAdministrativoInput } from '@smartlaw/shared';
 
-export const Route = createFileRoute('/_dashboard/processos/admin/$id/editar')({
+export const Route = createFileRoute('/_dashboard/processos/admin/$id_/editar')({
   component: EditProcessoAdminPage,
 });
 

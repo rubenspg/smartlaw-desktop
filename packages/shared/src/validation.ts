@@ -1,5 +1,33 @@
 import { z } from 'zod';
 
+function validateCPF(value: string): boolean {
+  const d = value.replace(/\D/g, '');
+  if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(d[i]) * (10 - i);
+  let rem = (sum * 10) % 11;
+  if (rem >= 10) rem = 0;
+  if (rem !== parseInt(d[9])) return false;
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(d[i]) * (11 - i);
+  rem = (sum * 10) % 11;
+  if (rem >= 10) rem = 0;
+  return rem === parseInt(d[10]);
+}
+
+function validateCNPJ(value: string): boolean {
+  const d = value.replace(/\D/g, '');
+  if (d.length !== 14 || /^(\d)\1{13}$/.test(d)) return false;
+  const w1 = [5,4,3,2,9,8,7,6,5,4,3,2];
+  const w2 = [6,5,4,3,2,9,8,7,6,5,4,3,2];
+  let sum = w1.reduce((acc, w, i) => acc + parseInt(d[i]) * w, 0);
+  let rem = sum % 11;
+  if ((rem < 2 ? 0 : 11 - rem) !== parseInt(d[12])) return false;
+  sum = w2.reduce((acc, w, i) => acc + parseInt(d[i]) * w, 0);
+  rem = sum % 11;
+  return (rem < 2 ? 0 : 11 - rem) === parseInt(d[13]);
+}
+
 // Existing schemas...
 export const loginSchema = z.object({
   email: z.string().email(),
@@ -9,7 +37,7 @@ export const loginSchema = z.object({
 export type LoginInput = z.infer<typeof loginSchema>;
 
 export const clienteSchema = z.object({
-  tipo: z.enum(['F', 'J']).default('F'),
+  tipo: z.enum(['F', 'J']),
   nome: z.string().min(1, 'Nome é obrigatório'),
   fantasia: z.string().optional().nullable(),
   cpfCnpj: z.string().optional().nullable(),
@@ -35,8 +63,37 @@ export const clienteSchema = z.object({
   nomeMae: z.string().optional().nullable(),
   nomeConjuge: z.string().optional().nullable(),
   observacoes: z.string().optional().nullable(),
-  situacao: z.string().default('A'),
-  bloqueado: z.boolean().default(false),
+  situacao: z.string().optional(),
+  bloqueado: z.boolean().optional(),
+}).superRefine((data, ctx) => {
+  if (data.cpfCnpj) {
+    const digits = data.cpfCnpj.replace(/\D/g, '');
+    if (data.tipo === 'F') {
+      if (digits.length > 0 && digits.length !== 11) {
+        ctx.addIssue({ code: 'custom', path: ['cpfCnpj'], message: 'CPF deve ter 11 dígitos' });
+      } else if (digits.length === 11 && !validateCPF(data.cpfCnpj)) {
+        ctx.addIssue({ code: 'custom', path: ['cpfCnpj'], message: 'CPF inválido' });
+      }
+    } else {
+      if (digits.length > 0 && digits.length !== 14) {
+        ctx.addIssue({ code: 'custom', path: ['cpfCnpj'], message: 'CNPJ deve ter 14 dígitos' });
+      } else if (digits.length === 14 && !validateCNPJ(data.cpfCnpj)) {
+        ctx.addIssue({ code: 'custom', path: ['cpfCnpj'], message: 'CNPJ inválido' });
+      }
+    }
+  }
+  if (data.celular) {
+    const digits = data.celular.replace(/\D/g, '');
+    if (digits.length > 0 && digits.length !== 11) {
+      ctx.addIssue({ code: 'custom', path: ['celular'], message: 'Celular deve ter DDD + 9 dígitos. Ex: (51) 99999-9999' });
+    }
+  }
+  if (data.telefone1) {
+    const digits = data.telefone1.replace(/\D/g, '');
+    if (digits.length > 0 && digits.length !== 10) {
+      ctx.addIssue({ code: 'custom', path: ['telefone1'], message: 'Telefone deve ter DDD + 8 dígitos. Ex: (51) 3333-3333' });
+    }
+  }
 });
 
 export type ClienteInput = z.infer<typeof clienteSchema>;

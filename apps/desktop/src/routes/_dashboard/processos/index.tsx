@@ -169,7 +169,6 @@ function ProcessosListPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => navigate({ to: '/processos/$id', params: { id: proc.id.toString() } })}>Ver Detalhes</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigate({ to: '/processos/$id/editar', params: { id: proc.id.toString() } })}>Editar</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>

@@ -16,22 +16,23 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 cleanup() {
   echo ""
-  echo "Stopping..."
+  echo "Stopping processes..."
   [[ -n "${SERVER_PID:-}" ]] && kill "$SERVER_PID" 2>/dev/null || true
   [[ -n "${DESKTOP_PID:-}" ]] && kill "$DESKTOP_PID" 2>/dev/null || true
-  docker compose --project-directory "$ROOT_DIR" stop postgres 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
 
-# ── Postgres ──────────────────────────────────────────────────────────────────
-echo "▶ Starting Postgres..."
-docker compose --project-directory "$ROOT_DIR" up -d postgres
+# ── Postgres (Docker) ─────────────────────────────────────────────────────────
+echo "▶ Starting Postgres via Docker Compose..."
+docker compose up -d postgres
+echo "  ✅ Postgres container ready"
 
-# Wait until Postgres accepts connections
-until docker exec smartlaw-db pg_isready -U smartlaw -q 2>/dev/null; do
-  sleep 1
-done
-echo "  ✅ Postgres ready"
+# ── Port Check ────────────────────────────────────────────────────────────────
+echo "▶ Checking for processes on port 3001..."
+if lsof -i :3001 -t >/dev/null; then
+  echo "  Found process on port 3001, killing..."
+  lsof -i :3001 -t | xargs kill -9 2>/dev/null || true
+fi
 
 # ── API server ────────────────────────────────────────────────────────────────
 echo "▶ Starting API server..."

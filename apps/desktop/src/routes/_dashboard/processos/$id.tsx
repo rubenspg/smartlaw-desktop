@@ -56,9 +56,11 @@ function ProcessoDetailPage() {
             <h1 className="text-3xl font-bold tracking-tight font-mono">{processo.numero}</h1>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant="outline">{processo.situacao || 'Status Indisponível'}</Badge>
-              <Link to="/clientes/$id" params={{ id: processo.clienteId.toString() }} className="text-sm text-primary hover:underline flex items-center gap-1">
-                <UserIcon className="w-3 h-3" /> {processo.cliente?.nome}
-              </Link>
+              {processo.clienteId && (
+                <Link to="/clientes/$id" params={{ id: processo.clienteId.toString() }} className="text-sm text-primary hover:underline flex items-center gap-1">
+                  <UserIcon className="w-3 h-3" /> {processo.cliente?.nome}
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -71,9 +73,9 @@ function ProcessoDetailPage() {
             <RefreshCw className={cn("w-4 h-4 mr-2", syncProcesso.isPending && "animate-spin")} />
             Sincronizar Datajud
           </Button>
-          <Button variant="outline" onClick={() => navigate({ to: '/processos/$id/editar', params: { id } })}>
+          {/* <Button variant="outline" onClick={() => navigate({ to: '/processos/$id/editar', params: { id } })}>
             Editar
-          </Button>
+          </Button> */}
         </div>
       </div>
 

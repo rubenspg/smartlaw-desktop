@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",
+    "@hono/zod-validator": "^0.7.6",
     "@smartlaw/shared": "^0.1.0",
     "bcryptjs": "^3.0.0",
     "csv-parse": "^6.2.1",

@@ -41,7 +41,7 @@ export interface Cliente {
   nomeMae: string | null;
   nomeConjuge: string | null;
   observacoes: string | null;
-  situacao: string;
+  situacao: string | null;
   bloqueado: boolean | null;
   dataCadastro: string | null;
   createdAt: string | null;
@@ -63,3 +63,29 @@ export interface ProcessoAdministrativo {
   updatedAt: string | null;
   cliente?: Cliente;
 }
+
+export interface DatajudProcessData {
+  numeroProcesso: string;
+  classe?: { nome: string };
+  sistema?: { nome: string };
+  formato?: { nome: string };
+  tribunal?: string;
+  dataAjuizamento?: string;
+  orgaoJulgador?: { nome: string; codigo?: string };
+  movimentos?: Array<{
+    nome: string;
+    dataHora: string;
+    complementosTabelados?: Array<{ nome: string; valor?: string }>;
+  }>;
+}
+
+export interface DriftResult {
+  hasDrift: boolean;
+  fields: Array<{
+    field: string;
+    local: any;
+    remote: any;
+  }>;
+  newMovements: number;
+}
+

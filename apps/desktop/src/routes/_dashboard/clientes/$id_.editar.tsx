@@ -5,7 +5,7 @@ import { ClienteForm } from '@/components/shared/cliente-form';
 import { useCliente, useUpdateCliente } from '@/hooks/use-clientes';
 import { ClienteInput } from '@smartlaw/shared';
 
-export const Route = createFileRoute('/_dashboard/clientes/$id/editar')({
+export const Route = createFileRoute('/_dashboard/clientes/$id_/editar')({
   component: EditClientePage,
 });
 

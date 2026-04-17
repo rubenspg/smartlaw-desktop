@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import { ProcessoJudicialInput } from '@smartlaw/shared';
+import { ProcessoJudicialInput, ProcessoAdministrativoInput } from '@smartlaw/shared';
 
 export function useProcessosJudiciais(filters: { q?: string; page?: number; limit?: number }) {
   return useQuery({
@@ -61,6 +61,34 @@ export function useProcessoAdministrativo(id: number) {
       return res.json();
     },
     enabled: !!id,
+  });
+}
+
+export function useProcessosJudiciaisByCliente(clienteId: number) {
+  return useQuery({
+    queryKey: ['processos-judiciais', { clienteId }],
+    queryFn: async () => {
+      const res = await api.processos.judiciais.$get({
+        query: { clienteId: clienteId.toString(), limit: '100' },
+      });
+      if (!res.ok) throw new Error('Falha ao buscar processos judiciais');
+      return res.json();
+    },
+    enabled: !!clienteId,
+  });
+}
+
+export function useProcessosAdministrativosByCliente(clienteId: number) {
+  return useQuery({
+    queryKey: ['processos-administrativos', { clienteId }],
+    queryFn: async () => {
+      const res = await api.processos.administrativos.$get({
+        query: { clienteId: clienteId.toString(), limit: '100' },
+      });
+      if (!res.ok) throw new Error('Falha ao buscar processos administrativos');
+      return res.json();
+    },
+    enabled: !!clienteId,
   });
 }
 

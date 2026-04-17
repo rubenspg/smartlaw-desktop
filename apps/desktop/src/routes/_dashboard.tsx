@@ -6,7 +6,6 @@ import {
   Users, 
   FileText, 
   LogOut, 
-  Menu, 
   X,
   Home,
   Settings,
@@ -48,21 +47,23 @@ function DashboardLayout() {
     return null;
   }
 
+  const userInitial = user?.nome?.charAt(0).toUpperCase() || 'U';
+
   return (
-    <div className="min-h-screen bg-muted/30 flex">
+    <div className="min-h-screen bg-[#f8f9fa] flex">
       {/* Sidebar */}
       <aside 
         className={cn(
-          "bg-background border-r transition-all duration-300 flex flex-col fixed inset-y-0 z-50",
+          "bg-white border-r transition-all duration-300 flex flex-col fixed inset-y-0 z-50 shadow-sm",
           isSidebarOpen ? "w-64" : "w-20"
         )}
       >
-        <div className="h-16 flex items-center px-6 border-b shrink-0">
-          <Scale className="w-8 h-8 text-primary shrink-0" />
-          {isSidebarOpen && <span className="ml-3 font-bold text-xl tracking-tight truncate">SmartLaw</span>}
+        <div className="h-16 flex items-center px-6 shrink-0">
+          <Scale className="w-8 h-8 text-[#2563eb] shrink-0" />
+          {isSidebarOpen && <span className="ml-3 font-bold text-xl tracking-tight text-[#1e293b]">SmartLaw</span>}
         </div>
 
-        <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
+        <nav className="flex-1 py-4 px-3 space-y-1">
           {menuItems.map((item) => {
             const isActive = location.pathname === item.to || (item.to !== '/' && location.pathname.startsWith(item.to));
             return (
@@ -70,18 +71,15 @@ function DashboardLayout() {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "flex items-center px-3 py-2 rounded-md transition-colors group relative",
+                  "flex items-center px-4 py-3 rounded-lg transition-all duration-200 group relative",
                   isActive 
-                    ? "bg-primary text-primary-foreground" 
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-[#2563eb] text-white shadow-md shadow-blue-200" 
+                    : "text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#1e293b]"
                 )}
                 title={!isSidebarOpen ? item.name : undefined}
               >
                 <item.icon className={cn("w-5 h-5 shrink-0", !isSidebarOpen && "mx-auto")} />
                 {isSidebarOpen && <span className="ml-3 font-medium">{item.name}</span>}
-                {!isSidebarOpen && isActive && (
-                  <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />
-                )}
               </Link>
             );
           })}
@@ -91,12 +89,14 @@ function DashboardLayout() {
           <button
             onClick={logout}
             className={cn(
-              "flex items-center w-full px-3 py-2 rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors group",
+              "flex items-center w-full px-4 py-3 rounded-lg text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#1e293b] transition-all duration-200 group",
               !isSidebarOpen && "justify-center"
             )}
             title={!isSidebarOpen ? "Sair" : undefined}
           >
-            <LogOut className="w-5 h-5 shrink-0" />
+            <div className="w-8 h-8 rounded-full bg-[#334155] flex items-center justify-center text-white text-sm font-bold shrink-0">
+              {userInitial}
+            </div>
             {isSidebarOpen && <span className="ml-3 font-medium">Sair</span>}
           </button>
         </div>
@@ -110,22 +110,24 @@ function DashboardLayout() {
         )}
       >
         {/* Header */}
-        <header className="h-16 border-b bg-background flex items-center justify-between px-6 sticky top-0 z-40">
-          <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-2 rounded-md hover:bg-muted transition-colors"
-          >
-            {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+        <header className="h-16 border-b bg-white flex items-center justify-between px-6 sticky top-0 z-40">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 rounded-md hover:bg-[#f1f5f9] transition-colors text-[#64748b]"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-semibold leading-none">{user?.nome || 'Usuário'}</p>
-              <p className="text-xs text-muted-foreground mt-1">{user?.email || ''}</p>
+              <p className="text-sm font-bold text-[#1e293b] leading-none">{user?.nome || 'admin'}</p>
+              <p className="text-xs text-[#64748b] mt-1">{user?.email || 'admin@smartlaw.com'}</p>
             </div>
             <button 
               onClick={logout}
-              className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold border border-primary/20 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 transition-colors"
+              className="w-10 h-10 rounded-full bg-[#f1f5f9] flex items-center justify-center text-[#2563eb] hover:bg-[#e2e8f0] transition-colors border border-[#e2e8f0]"
               title="Sair"
             >
               <LogOut className="w-5 h-5" />

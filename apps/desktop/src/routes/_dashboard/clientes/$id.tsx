@@ -1,15 +1,14 @@
 import { createFileRoute, useNavigate, Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { 
-  ArrowLeft, 
-  Edit, 
-  Trash2, 
-  User as UserIcon, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  Calendar as CalendarIcon,
-  MessageSquare,
+import {
+  ArrowLeft,
+  Edit,
+  Trash2,
+  User as UserIcon,
+  Phone,
+  Mail,
+  MapPin,
+  ExternalLink,
   Plus,
   Loader2,
   Trash
@@ -22,6 +21,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useCliente, useDeleteCliente } from '@/hooks/use-clientes';
 import { useClientesNotas, useCreateClienteNota, useDeleteClienteNota } from '@/hooks/use-clientes-notas';
+import { useProcessosJudiciaisByCliente, useProcessosAdministrativosByCliente } from '@/hooks/use-processos';
 
 export const Route = createFileRoute('/_dashboard/clientes/$id')({
   component: ClienteDetailPage,
@@ -34,6 +34,8 @@ function ClienteDetailPage() {
 
   const { data: cliente, isLoading, isError } = useCliente(clienteId);
   const { data: notas, isLoading: isLoadingNotas } = useClientesNotas(clienteId);
+  const { data: processosJudiciais, isLoading: isLoadingJudiciais } = useProcessosJudiciaisByCliente(clienteId);
+  const { data: processosAdministrativos, isLoading: isLoadingAdm } = useProcessosAdministrativosByCliente(clienteId);
   
   const createNota = useCreateClienteNota();
   const deleteNota = useDeleteClienteNota(clienteId);
@@ -72,7 +74,7 @@ function ClienteDetailPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">{cliente.nome}</h1>
             <div className="flex items-center gap-2 mt-1">
-              <Badge variant={cliente.situacao === 'A' ? 'default' : 'destructive'}>
+              <Badge variant={cliente.situacao === 'A' ? 'success' : 'destructive'}>
                 {cliente.situacao === 'A' ? 'Ativo' : 'Inativo'}
               </Badge>
               <span className="text-muted-foreground text-sm">ID: {cliente.id}</span>
@@ -91,9 +93,8 @@ function ClienteDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1 space-y-6">
-          <Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
             <CardHeader>
               <CardTitle className="text-lg">Informações de Contato</CardTitle>
             </CardHeader>
@@ -128,9 +129,9 @@ function ClienteDetailPage() {
                 </div>
               </div>
             </CardContent>
-          </Card>
+        </Card>
 
-          <Card>
+        <Card>
             <CardHeader>
               <CardTitle className="text-lg">Documentos e Pessoais</CardTitle>
             </CardHeader>
@@ -163,11 +164,10 @@ function ClienteDetailPage() {
                 <p className="text-sm">{cliente.estCivil || '-'}</p>
               </div>
             </CardContent>
-          </Card>
-        </div>
+        </Card>
+      </div>
 
-        <div className="lg:col-span-2">
-          <Tabs defaultValue="historico" className="w-full">
+      <Tabs defaultValue="historico" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="historico">Histórico / Notas</TabsTrigger>
               <TabsTrigger value="processos">Processos</TabsTrigger>
@@ -237,14 +237,60 @@ function ClienteDetailPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="processos" className="mt-6">
+            <TabsContent value="processos" className="mt-6 space-y-6">
+              {/* Judiciais */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Processos do Cliente</CardTitle>
-                  <CardDescription>Lista de processos judiciais e administrativos vinculados.</CardDescription>
+                  <CardTitle className="text-base">Processos Judiciais</CardTitle>
                 </CardHeader>
-                <CardContent className="p-12 text-center text-muted-foreground italic">
-                  Integração de processos em breve...
+                <CardContent className="p-0">
+                  {isLoadingJudiciais ? (
+                    <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin" /></div>
+                  ) : !processosJudiciais?.length ? (
+                    <p className="text-center text-muted-foreground py-8 text-sm italic">Nenhum processo judicial vinculado.</p>
+                  ) : (
+                    <div className="divide-y">
+                      {processosJudiciais.map((p: any) => (
+                        <div key={p.id} className="flex items-center justify-between px-6 py-3 hover:bg-muted/40 transition-colors">
+                          <div>
+                            <p className="text-sm font-semibold">{p.numero}</p>
+                            {p.situacao && <p className="text-xs text-muted-foreground">{p.situacao}</p>}
+                          </div>
+                          <Link to="/processos/$id" params={{ id: p.id.toString() }} className="text-muted-foreground hover:text-primary">
+                            <ExternalLink className="w-4 h-4" />
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Administrativos */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Processos Administrativos</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {isLoadingAdm ? (
+                    <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin" /></div>
+                  ) : !processosAdministrativos?.length ? (
+                    <p className="text-center text-muted-foreground py-8 text-sm italic">Nenhum processo administrativo vinculado.</p>
+                  ) : (
+                    <div className="divide-y">
+                      {processosAdministrativos.map((p: any) => (
+                        <div key={p.id} className="flex items-center justify-between px-6 py-3 hover:bg-muted/40 transition-colors">
+                          <div>
+                            <p className="text-sm font-semibold">{p.numero || `#${p.id}`}</p>
+                            {p.dataCadastro && <p className="text-xs text-muted-foreground">{new Date(p.dataCadastro).toLocaleDateString('pt-BR')}</p>}
+                          </div>
+                          <Link to="/processos/$id" params={{ id: p.id.toString() }} className="text-muted-foreground hover:text-primary">
+                            <ExternalLink className="w-4 h-4" />
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -260,9 +306,7 @@ function ClienteDetailPage() {
                 </CardContent>
               </Card>
             </TabsContent>
-          </Tabs>
-        </div>
-      </div>
+      </Tabs>
     </div>
   );
 }

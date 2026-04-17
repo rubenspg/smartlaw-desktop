@@ -152,7 +152,7 @@ function ClientesListPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={cliente.situacao === 'A' ? 'default' : 'destructive'}>
+                    <Badge variant={cliente.situacao === 'A' ? 'success' : 'destructive'}>
                       {cliente.situacao === 'A' ? 'Ativo' : 'Inativo'}
                     </Badge>
                   </TableCell>
