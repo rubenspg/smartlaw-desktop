@@ -6,7 +6,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:desktop": "npm run dev -w apps/desktop",
+    "dev:desktop": "npm run tauri dev -w apps/desktop",
     "dev:server": "npm run dev -w apps/server",
     "build": "turbo build",
     "migrate": "./scripts/migrate.sh",
