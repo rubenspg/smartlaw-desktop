@@ -232,6 +232,18 @@ export const processosJudiciaisRelations = relations(processosJudiciais, ({ one,
     references: [clientes.id],
   }),
   andamentos: many(andamentos),
+  partes: many(partes),
+}));
+
+export const partesRelations = relations(partes, ({ one }) => ({
+  processo: one(processosJudiciais, {
+    fields: [partes.processoJudicialId],
+    references: [processosJudiciais.id],
+  }),
+  posicao: one(posicoesParte, {
+    fields: [partes.posicaoId],
+    references: [posicoesParte.codigo],
+  }),
 }));
 
 export const processosAdministrativosRelations = relations(processosAdministrativos, ({ one, many }) => ({
@@ -257,4 +269,20 @@ export const clientesRelations = relations(clientes, ({ many }) => ({
   processosJudiciais: many(processosJudiciais),
   processosAdministrativos: many(processosAdministrativos),
   notas: many(clientesNotas),
+  tarefas: many(tarefas),
+}));
+
+export const profilesRelations = relations(profiles, ({ many }) => ({
+  tarefas: many(tarefas),
+}));
+
+export const tarefasRelations = relations(tarefas, ({ one }) => ({
+  usuario: one(profiles, {
+    fields: [tarefas.usuarioId],
+    references: [profiles.id],
+  }),
+  cliente: one(clientes, {
+    fields: [tarefas.clienteId],
+    references: [clientes.id],
+  }),
 }));

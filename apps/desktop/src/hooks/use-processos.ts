@@ -173,6 +173,40 @@ export function useCreateProcessoJudicial() {
   });
 }
 
+export function useUpdateProcessoJudicial(id: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: ProcessoJudicialInput) => {
+      const res = await api.processos.judiciais[':id'].$put({
+        param: { id: id.toString() },
+        json: data as any,
+      });
+      if (!res.ok) throw new Error('Falha ao atualizar processo judicial');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['processos-judiciais'] });
+      queryClient.invalidateQueries({ queryKey: ['processo-judicial', id] });
+    },
+  });
+}
+
+export function useDeleteProcessoJudicial() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await api.processos.judiciais[':id'].$delete({
+        param: { id: id.toString() },
+      });
+      if (!res.ok) throw new Error('Falha ao excluir processo judicial');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['processos-judiciais'] });
+    },
+  });
+}
+
 export function useSyncProcesso() {
   const queryClient = useQueryClient();
   return useMutation({

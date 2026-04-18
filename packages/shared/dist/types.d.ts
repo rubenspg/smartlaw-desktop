@@ -10,6 +10,40 @@ export interface AuthState {
     token: string | null;
     isAuthenticated: boolean;
 }
+export interface Profile {
+    id: string;
+    nome: string;
+    email: string;
+    perfil: string;
+    ativo: boolean;
+    firmId: string | null;
+    createdAt: string | null;
+    updatedAt: string | null;
+}
+export interface Tarefa {
+    id: number;
+    firmId: string | null;
+    usuarioId: string;
+    clienteId: number | null;
+    processoJudicialId: number | null;
+    processoAdminId: number | null;
+    titulo: string;
+    descricao: string | null;
+    dataLimite: string | null;
+    prioridade: string | null;
+    status: string | null;
+    createdAt: string | null;
+    updatedAt: string | null;
+    usuario: {
+        id: string;
+        nome: string;
+        email: string;
+    } | null;
+    cliente: {
+        id: number;
+        nome: string;
+    } | null;
+}
 export interface Cliente {
     id: number;
     firmId: string | null;
@@ -44,6 +78,31 @@ export interface Cliente {
     dataCadastro: string | null;
     createdAt: string | null;
     updatedAt: string | null;
+}
+export interface ProcessoJudicial {
+    id: number;
+    firmId: string | null;
+    clienteId: number | null;
+    numero: string;
+    dataCadastro: string | null;
+    distribuicao: string | null;
+    juizo: string | null;
+    justica: string | null;
+    comarca: string | null;
+    orgaoJulgador: string | null;
+    recurso: string | null;
+    situacao: string | null;
+    pasta: string | null;
+    ritoId: string | null;
+    tipoAcaoId: string | null;
+    localizacaoId: string | null;
+    lastSync: string | null;
+    syncStatus: string | null;
+    createdAt: string | null;
+    updatedAt: string | null;
+    cliente: Cliente | null;
+    andamentos?: any[];
+    partes?: any[];
 }
 export interface ProcessoAdministrativo {
     id: number;

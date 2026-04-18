@@ -7,49 +7,77 @@ import { DatajudService } from '../services/DatajudService';
 import { ComparisonService } from '../services/ComparisonService';
 import { processoJudicialSchema } from '@smartlaw/shared';
 import { zValidator } from '@hono/zod-validator';
+import { z } from 'zod';
+
+const querySchema = z.object({
+  q: z.string().optional(),
+  page: z.string().optional(),
+  limit: z.string().optional(),
+  clienteId: z.string().optional(),
+});
 
 const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
   
-  .get('/', async (c) => {
+  .get('/', zValidator('query', querySchema), async (c) => {
     const user = c.get('user');
-    const { q, page = '1', limit = '10', clienteId } = c.req.query();
+    const { q, page = '1', limit = '10', clienteId } = c.req.valid('query');
 
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const offset = (pageNum - 1) * limitNum;
 
-    const where = [eq(processosJudiciais.firmId, user.firmId)];
-
+    // Use .select() when q is provided to support searching by client name
     if (q) {
+      const where = [eq(processosJudiciais.firmId, user.firmId)];
       where.push(or(
         ilike(processosJudiciais.numero, `%${q}%`),
         ilike(clientes.nome, `%${q}%`)
       )!);
+
+      if (clienteId) {
+        where.push(eq(processosJudiciais.clienteId, parseInt(clienteId)));
+      }
+
+      const data = await db
+        .select({
+          id: processosJudiciais.id,
+          numero: processosJudiciais.numero,
+          situacao: processosJudiciais.situacao,
+          lastSync: processosJudiciais.lastSync,
+          syncStatus: processosJudiciais.syncStatus,
+          createdAt: processosJudiciais.createdAt,
+          cliente: {
+            id: clientes.id,
+            nome: clientes.nome,
+          }
+        })
+        .from(processosJudiciais)
+        .leftJoin(clientes, eq(processosJudiciais.clienteId, clientes.id))
+        .where(and(...where))
+        .limit(limitNum)
+        .offset(offset)
+        .orderBy(desc(processosJudiciais.createdAt));
+
+      return c.json(data);
     }
 
-    if (clienteId) {
-      where.push(eq(processosJudiciais.clienteId, parseInt(clienteId)));
-    }
-
-    const data = await db
-      .select({
-        id: processosJudiciais.id,
-        numero: processosJudiciais.numero,
-        situacao: processosJudiciais.situacao,
-        lastSync: processosJudiciais.lastSync,
-        syncStatus: processosJudiciais.syncStatus,
-        cliente: {
-          id: clientes.id,
-          nome: clientes.nome,
+    // Use db.query for cleaner relation handling when no complex search is needed
+    const data = await db.query.processosJudiciais.findMany({
+      where: (processos, { eq, and }) => {
+        const conditions = [eq(processos.firmId, user.firmId)];
+        if (clienteId) {
+          conditions.push(eq(processos.clienteId, parseInt(clienteId)));
         }
-      })
-      .from(processosJudiciais)
-      .leftJoin(clientes, eq(processosJudiciais.clienteId, clientes.id))
-      .where(and(...where))
-      .limit(limitNum)
-      .offset(offset)
-      .orderBy(desc(processosJudiciais.createdAt));
+        return and(...conditions);
+      },
+      with: {
+        cliente: true,
+      },
+      limit: limitNum,
+      offset: offset,
+      orderBy: [desc(processosJudiciais.createdAt)],
+    });
 
     return c.json(data);
   })
@@ -64,12 +92,55 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
         cliente: true,
         andamentos: {
           orderBy: [desc(andamentos.data)]
+        },
+        partes: {
+          with: {
+            posicao: true
+          }
         }
       }
     });
 
     if (!data) return c.json({ error: 'Processo não encontrado' }, 404);
     return c.json(data);
+  })
+
+  .put('/:id', zValidator('json', processoJudicialSchema), async (c) => {
+    const user = c.get('user');
+    const id = parseInt(c.req.param('id'));
+    const data = c.req.valid('json');
+
+    const [updatedProcesso] = await db
+      .update(processosJudiciais)
+      .set({
+        ...data,
+        distribuicao: data.distribuicao ? new Date(data.distribuicao) : null,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(processosJudiciais.id, id), eq(processosJudiciais.firmId, user.firmId)))
+      .returning();
+
+    if (!updatedProcesso) {
+      return c.json({ error: 'Processo não encontrado' }, 404);
+    }
+
+    return c.json(updatedProcesso);
+  })
+
+  .delete('/:id', async (c) => {
+    const user = c.get('user');
+    const id = parseInt(c.req.param('id'));
+
+    const [deletedProcesso] = await db
+      .delete(processosJudiciais)
+      .where(and(eq(processosJudiciais.id, id), eq(processosJudiciais.firmId, user.firmId)))
+      .returning();
+
+    if (!deletedProcesso) {
+      return c.json({ error: 'Processo não encontrado' }, 404);
+    }
+
+    return c.json({ message: 'Processo excluído com sucesso' });
   })
 
   .post('/', zValidator('json', processoJudicialSchema), async (c) => {

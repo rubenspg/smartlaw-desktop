@@ -32,7 +32,7 @@ export class DatajudService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `ApiKey ${process.env.DATAJUD_API_KEY || ''}`
+        'Authorization': `${process.env.DATAJUD_API_KEY || ''}`
       },
       body: JSON.stringify({
         query: { match: { numeroProcesso: numeroLimpo } }

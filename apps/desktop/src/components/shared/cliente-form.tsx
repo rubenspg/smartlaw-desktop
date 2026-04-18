@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
 
 // ── Formatters ────────────────────────────────────────────────────────────────
@@ -44,6 +46,20 @@ function formatTelefone(v: string) {
   return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
 }
 
+function formatDateForInput(v: string | null | undefined) {
+  if (!v) return '';
+  // If it's already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  // If it's ISO string
+  try {
+    const date = new Date(v);
+    if (isNaN(date.getTime())) return '';
+    return date.toISOString().split('T')[0];
+  } catch {
+    return '';
+  }
+}
+
 // ── Validators (for inline feedback) ─────────────────────────────────────────
 
 function cpfComplete(v: string) { return v.replace(/\D/g, '').length === 11; }
@@ -68,14 +84,25 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
       fantasia: initialData.fantasia,
       cpfCnpj: initialData.cpfCnpj,
       rg: initialData.rg,
+      nascimento: formatDateForInput(initialData.nascimento),
+      sexo: initialData.sexo,
+      estCivil: initialData.estCivil,
+      profissao: initialData.profissao,
       email: initialData.email,
       celular: initialData.celular,
       telefone1: initialData.telefone1,
+      telefone2: initialData.telefone2,
       endereco: initialData.endereco,
       endNumero: initialData.endNumero,
+      complemento: initialData.complemento,
       bairro: initialData.bairro,
       municipio: initialData.municipio,
       estado: initialData.estado,
+      cep: initialData.cep,
+      nomePai: initialData.nomePai,
+      nomeMae: initialData.nomeMae,
+      nomeConjuge: initialData.nomeConjuge,
+      observacoes: initialData.observacoes,
       situacao: initialData.situacao || 'A',
     } : {
       tipo: 'F',
@@ -95,12 +122,15 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       <Card>
-        <CardContent className="pt-6 space-y-6">
+        <CardHeader className="pb-3">
+          <h3 className="text-lg font-semibold">Informações Básicas</h3>
+        </CardHeader>
+        <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3">
               <Label>Tipo de Pessoa</Label>
               <RadioGroup
-                defaultValue={tipo}
+                value={tipo}
                 onValueChange={(val) => setValue('tipo', val as 'F' | 'J')}
                 className="flex gap-4"
               >
@@ -118,7 +148,7 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
             <div className="space-y-2">
               <Label htmlFor="situacao">Situação</Label>
               <Select
-                defaultValue={initialData?.situacao || 'A'}
+                value={watch('situacao')}
                 onValueChange={(val) => setValue('situacao', val)}
               >
                 <SelectTrigger>
@@ -140,7 +170,7 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="fantasia">Nome Fantasia / Apelido</Label>
+              <Label htmlFor="fantasia">{tipo === 'F' ? 'Apelido' : 'Nome Fantasia'}</Label>
               <Input id="fantasia" {...register('fantasia')} />
             </div>
           </div>
@@ -185,7 +215,6 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
               <Input id="rg" {...register('rg')} />
             </div>
 
-            {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
               <Input id="email" type="email" {...register('email')} placeholder="exemplo@email.com" />
@@ -193,7 +222,90 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {tipo === 'F' && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="nascimento">Data de Nascimento</Label>
+                <Input id="nascimento" type="date" {...register('nascimento')} />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="sexo">Sexo</Label>
+                <Select
+                  value={watch('sexo') || ''}
+                  onValueChange={(val) => setValue('sexo', val)}
+                >
+                  <SelectTrigger id="sexo">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="M">Masculino</SelectItem>
+                    <SelectItem value="F">Feminino</SelectItem>
+                    <SelectItem value="O">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="estCivil">Estado Civil</Label>
+                <Select
+                  value={watch('estCivil') || ''}
+                  onValueChange={(val) => setValue('estCivil', val)}
+                >
+                  <SelectTrigger id="estCivil">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Solteiro(a)">Solteiro(a)</SelectItem>
+                    <SelectItem value="Casado(a)">Casado(a)</SelectItem>
+                    <SelectItem value="Divorciado(a)">Divorciado(a)</SelectItem>
+                    <SelectItem value="Viúvo(a)">Viúvo(a)</SelectItem>
+                    <SelectItem value="União Estável">União Estável</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="profissao">Profissão</Label>
+                <Input id="profissao" {...register('profissao')} />
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {tipo === 'F' && (
+        <Card>
+          <CardHeader className="pb-3">
+            <h3 className="text-lg font-semibold">Filiação e Cônjuge</h3>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="nomeMae">Nome da Mãe</Label>
+                <Input id="nomeMae" {...register('nomeMae')} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="nomePai">Nome do Pai</Label>
+                <Input id="nomePai" {...register('nomePai')} />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="nomeConjuge">Nome do Cônjuge</Label>
+                <Input id="nomeConjuge" {...register('nomeConjuge')} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader className="pb-3">
+          <h3 className="text-lg font-semibold">Contato e Endereço</h3>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Celular */}
             <div className="space-y-2">
               <Label htmlFor="celular">Celular / WhatsApp</Label>
@@ -223,9 +335,9 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
               {errors.celular && <p className="text-xs text-destructive">{errors.celular.message}</p>}
             </div>
 
-            {/* Telefone fixo */}
+            {/* Telefone fixo 1 */}
             <div className="space-y-2">
-              <Label htmlFor="telefone1">Telefone Fixo</Label>
+              <Label htmlFor="telefone1">Telefone Fixo 1</Label>
               <div className="relative">
                 <Controller
                   name="telefone1"
@@ -251,16 +363,32 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
               </div>
               {errors.telefone1 && <p className="text-xs text-destructive">{errors.telefone1.message}</p>}
             </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <h3 className="text-lg font-semibold">Endereço</h3>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Telefone fixo 2 */}
+            <div className="space-y-2">
+              <Label htmlFor="telefone2">Telefone Fixo 2</Label>
+              <Controller
+                name="telefone2"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    id="telefone2"
+                    placeholder="(51) 3333-3333"
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(formatTelefone(e.target.value))}
+                  />
+                )}
+              />
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="cep">CEP</Label>
+              <Input id="cep" {...register('cep')} placeholder="00000-000" />
+            </div>
             <div className="md:col-span-2 space-y-2">
               <Label htmlFor="endereco">Logradouro</Label>
               <Input id="endereco" {...register('endereco')} placeholder="Rua, Avenida, etc." />
@@ -273,18 +401,40 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
+              <Label htmlFor="complemento">Complemento</Label>
+              <Input id="complemento" {...register('complemento')} placeholder="Apto, Sala, etc." />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="bairro">Bairro</Label>
               <Input id="bairro" {...register('bairro')} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="municipio">Cidade</Label>
-              <Input id="municipio" {...register('municipio')} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="estado">Estado (UF)</Label>
-              <Input id="estado" {...register('estado')} maxLength={2} placeholder="Ex: SP" />
+              <div className="grid grid-cols-3 gap-2">
+                <div className="col-span-2 space-y-2">
+                  <Label htmlFor="municipio">Cidade</Label>
+                  <Input id="municipio" {...register('municipio')} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="estado">UF</Label>
+                  <Input id="estado" {...register('estado')} maxLength={2} placeholder="SP" />
+                </div>
+              </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <h3 className="text-lg font-semibold">Observações</h3>
+        </CardHeader>
+        <CardContent>
+          <Textarea 
+            id="observacoes" 
+            {...register('observacoes')} 
+            placeholder="Informações adicionais sobre o cliente..."
+            className="min-h-[100px]"
+          />
         </CardContent>
       </Card>
 

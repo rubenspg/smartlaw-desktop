@@ -44,7 +44,7 @@ function DashboardLayout() {
   }
 
   if (!isAuthenticated) {
-    return null;
+    return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
   }
 
   const userInitial = user?.nome?.charAt(0).toUpperCase() || 'U';

@@ -21,9 +21,9 @@ function EditClientePage() {
     try {
       await updateCliente.mutateAsync(data);
       navigate({ to: '/clientes/$id', params: { id } });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to update cliente:', err);
-      alert('Erro ao atualizar cliente. Por favor, tente novamente.');
+      alert(err.message || 'Erro ao atualizar cliente. Por favor, tente novamente.');
     }
   };
 

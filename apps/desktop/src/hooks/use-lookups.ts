@@ -1,17 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
-
-export function useMunicipios(q?: string) {
+export function useUsuarios() {
   return useQuery({
-    queryKey: ['lookups', 'municipios', q],
+    queryKey: ['lookups', 'usuarios'],
     queryFn: async () => {
-      const res = await api.lookups.municipios.$get({
-        query: { q },
-      });
-      if (!res.ok) throw new Error('Falha ao buscar municípios');
+      const res = await api.lookups.usuarios.$get();
+      if (!res.ok) throw new Error('Falha ao buscar usuários');
       return res.json();
     },
-    staleTime: 1000 * 60 * 60, // 1 hour
   });
 }
 

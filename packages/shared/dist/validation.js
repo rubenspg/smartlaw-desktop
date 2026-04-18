@@ -142,3 +142,14 @@ export const honorarioSchema = z.object({
     tipo: z.string().default('HONORARIO'),
     observacoes: z.string().optional().nullable(),
 });
+export const tarefaSchema = z.object({
+    usuarioId: z.string().uuid('Usuário inválido'),
+    clienteId: z.number().optional().nullable(),
+    processoJudicialId: z.number().optional().nullable(),
+    processoAdminId: z.number().optional().nullable(),
+    titulo: z.string().min(1, 'Título é obrigatório'),
+    descricao: z.string().optional().nullable(),
+    dataLimite: z.string().optional().nullable(),
+    prioridade: z.enum(['BAIXA', 'MEDIA', 'ALTA']),
+    status: z.enum(['PENDENTE', 'CONCLUIDA', 'CANCELADA']),
+});

@@ -41,7 +41,10 @@ export function useCreateCliente() {
       const res = await api.clientes.$post({
         json: data as any,
       });
-      if (!res.ok) throw new Error('Falha ao criar cliente');
+      if (!res.ok) {
+        const errData = await res.json() as any;
+        throw new Error(errData.error || 'Falha ao criar cliente');
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -58,7 +61,10 @@ export function useUpdateCliente(id: number) {
         param: { id: id.toString() },
         json: data as any,
       });
-      if (!res.ok) throw new Error('Falha ao atualizar cliente');
+      if (!res.ok) {
+        const errData = await res.json() as any;
+        throw new Error(errData.error || 'Falha ao atualizar cliente');
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -75,7 +81,10 @@ export function useDeleteCliente() {
       const res = await api.clientes[':id'].$delete({
         param: { id: id.toString() },
       });
-      if (!res.ok) throw new Error('Falha ao excluir cliente');
+      if (!res.ok) {
+        const errData = await res.json() as any;
+        throw new Error(errData.error || 'Falha ao excluir cliente');
+      }
       return res.json();
     },
     onSuccess: () => {

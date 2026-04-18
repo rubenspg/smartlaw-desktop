@@ -18,7 +18,9 @@ import { Badge } from '@/components/ui/badge';
 import { useDatajudSearch, useCreateProcessoJudicial } from '@/hooks/use-processos';
 import { useClientes } from '@/hooks/use-clientes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DatajudProcessData } from '@smartlaw/shared';
+import { DatajudProcessData, ProcessoJudicialInput } from '@smartlaw/shared';
+import { ProcessoJudicialForm } from '@/components/shared/processo-judicial-form';
+import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/processos/novo')({
   component: NewProcessoPage,
@@ -27,7 +29,7 @@ export const Route = createFileRoute('/_dashboard/processos/novo')({
 function NewProcessoPage() {
   const navigate = useNavigate();
   const [numero, setNumero] = useState('');
-  const [step, setStep] = useState<'search' | 'confirm'>('search');
+  const [step, setStep] = useState<'search' | 'confirm' | 'manual'>('search');
   const [processoData, setProcessoData] = useState<DatajudProcessData | null>(null);
   const [clienteId, setClienteId] = useState<string>('');
   
@@ -53,18 +55,20 @@ function NewProcessoPage() {
     }
   };
 
-  const handleCreate = async () => {
-    if (!clienteId || !processoData) return;
+  const handleCreate = async (data?: ProcessoJudicialInput) => {
+    const input = data || (processoData ? {
+      clienteId: parseInt(clienteId),
+      numero: processoData.numeroProcesso,
+      juizo: processoData.orgaoJulgador?.nome,
+      justica: processoData.tribunal,
+      situacao: 'Ativo', // Default
+      distribuicao: processoData.dataAjuizamento,
+    } : null);
+
+    if (!input) return;
 
     try {
-      const result = await createMutation.mutateAsync({
-        clienteId: parseInt(clienteId),
-        numero: processoData.numeroProcesso,
-        juizo: processoData.orgaoJulgador?.nome,
-        justica: processoData.tribunal,
-        situacao: 'Ativo', // Default
-        distribuicao: processoData.dataAjuizamento,
-      });
+      const result = await createMutation.mutateAsync(input);
       navigate({ to: '/processos/$id', params: { id: result.id.toString() } });
     } catch (err) {
       console.error('Creation error:', err);
@@ -74,17 +78,22 @@ function NewProcessoPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => navigate({ to: '/processos' })}>
+        <Button variant="outline" size="icon" onClick={() => step === 'manual' ? setStep('search') : navigate({ to: '/processos' })}>
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Novo Processo</h1>
-          <p className="text-muted-foreground">Cadastre um processo judicial via Datajud.</p>
+          <h1 className="text-3xl font-bold tracking-tight">{step === 'manual' ? 'Cadastro Manual' : 'Novo Processo'}</h1>
+          <p className="text-muted-foreground">{step === 'manual' ? 'Preencha todos os campos do processo judicial.' : 'Cadastre um processo judicial via Datajud.'}</p>
         </div>
       </div>
 
-      <div className="max-w-3xl">
-        {step === 'search' ? (
+      <div className={cn("max-w-3xl", step === 'manual' && "max-w-4xl")}>
+        {step === 'manual' ? (
+          <ProcessoJudicialForm 
+            onSubmit={handleCreate}
+            isSubmitting={createMutation.isPending}
+          />
+        ) : step === 'search' ? (
           <Card>
             <CardHeader>
               <CardTitle>Busca no Datajud</CardTitle>
@@ -109,6 +118,15 @@ function NewProcessoPage() {
                   </div>
                 </div>
               </form>
+              <div className="mt-6 pt-6 border-t">
+                <p className="text-sm text-muted-foreground mb-4 text-center">Ou, se preferir, cadastre os dados manualmente.</p>
+                <div className="flex justify-center">
+                  <Button variant="outline" onClick={() => setStep('manual')}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Cadastrar Manualmente
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         ) : (
@@ -166,7 +184,7 @@ function NewProcessoPage() {
                 </div>
               </CardContent>
               <CardFooter className="flex justify-end border-t pt-6">
-                <Button onClick={handleCreate} disabled={!clienteId || createMutation.isPending}>
+                <Button onClick={() => handleCreate()} disabled={!clienteId || createMutation.isPending}>
                   {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
                   Cadastrar e Vincular
                 </Button>

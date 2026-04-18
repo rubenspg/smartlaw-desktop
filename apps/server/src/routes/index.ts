@@ -6,6 +6,7 @@ import lookups from './lookups';
 import processosJudiciais from './processos-judiciais';
 import processosAdministrativos from './processos-administrativos';
 import honorarios from './honorarios';
+import tarefas from './tarefas';
 import { Variables } from '../middleware/auth';
 
 const routes = new Hono<{ Variables: Variables }>()
@@ -15,7 +16,8 @@ const routes = new Hono<{ Variables: Variables }>()
   .route('/lookups', lookups)
   .route('/processos/judiciais', processosJudiciais)
   .route('/processos/administrativos', processosAdministrativos)
-  .route('/honorarios', honorarios);
+  .route('/honorarios', honorarios)
+  .route('/tarefas', tarefas);
 
 export type AppType = typeof routes;
 export default routes;

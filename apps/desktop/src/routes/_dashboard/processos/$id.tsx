@@ -12,14 +12,22 @@ import {
   Clock,
   ExternalLink,
   Loader2,
-  Info
+  Info,
+  Phone,
+  MessageSquare,
+  Plus,
+  MoreVertical,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { useProcessoJudicial, useSyncProcesso } from '@/hooks/use-processos';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useProcessoJudicial, useSyncProcesso, useDeleteProcessoJudicial } from '@/hooks/use-processos';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/processos/$id')({
@@ -33,6 +41,7 @@ function ProcessoDetailPage() {
 
   const { data: processo, isLoading, isError } = useProcessoJudicial(procId);
   const syncProcesso = useSyncProcesso();
+  const deleteMutation = useDeleteProcessoJudicial();
 
   const handleSync = async () => {
     try {
@@ -42,157 +51,312 @@ function ProcessoDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (confirm('Tem certeza que deseja excluir este processo?')) {
+      try {
+        await deleteMutation.mutateAsync(procId);
+        navigate({ to: '/processos' });
+      } catch (err) {
+        console.error('Delete failed:', err);
+      }
+    }
+  };
+
   if (isLoading) return <div className="flex items-center justify-center p-12"><Loader2 className="w-8 h-8 animate-spin" /></div>;
   if (isError || !processo) return <div className="p-12 text-center text-destructive">Processo não encontrado.</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => navigate({ to: '/processos' })}>
-            <ArrowLeft className="w-4 h-4" />
+    <div className="max-w-7xl mx-auto space-y-6 pb-10">
+      {/* Header section from image */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start gap-4">
+          <Button variant="ghost" size="icon" className="mt-1" onClick={() => navigate({ to: '/processos' })}>
+            <ArrowLeft className="w-5 h-5 text-slate-400" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight font-mono">{processo.numero}</h1>
+            <h1 className="text-2xl font-bold text-[#1e293b]">
+              Processo Judicial {processo.numero}
+            </h1>
             <div className="flex items-center gap-2 mt-1">
-              <Badge variant="outline">{processo.situacao || 'Status Indisponível'}</Badge>
-              {processo.clienteId && (
-                <Link to="/clientes/$id" params={{ id: processo.clienteId.toString() }} className="text-sm text-primary hover:underline flex items-center gap-1">
-                  <UserIcon className="w-3 h-3" /> {processo.cliente?.nome}
-                </Link>
-              )}
+              <UserIcon className="w-4 h-4 text-slate-400" />
+              <span className="text-slate-500 text-sm font-medium uppercase">Cliente:</span>
+              <Link 
+                to="/clientes/$id" 
+                params={{ id: processo.clienteId?.toString() || '' }}
+                className="text-[#2563eb] text-sm font-bold hover:underline uppercase"
+              >
+                {processo.cliente?.nome}
+              </Link>
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
           <Button 
             variant="outline" 
-            onClick={handleSync} 
+            className="font-bold text-xs uppercase tracking-wider h-10 border-slate-200"
+            onClick={() => navigate({ to: '/processos/$id/editar', params: { id } })}
+          >
+            <Edit2 className="w-4 h-4 mr-2" />
+            Editar Processo
+          </Button>
+          <Button 
+            variant="outline" 
+            className="font-bold text-xs uppercase tracking-wider h-10 border-slate-200 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-100"
+            onClick={handleDelete}
+            disabled={deleteMutation.isPending}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Excluir
+          </Button>
+          <Button 
+            variant="outline" 
+            className="font-bold text-xs uppercase tracking-wider h-10 border-slate-200"
+            onClick={handleSync}
             disabled={syncProcesso.isPending}
           >
             <RefreshCw className={cn("w-4 h-4 mr-2", syncProcesso.isPending && "animate-spin")} />
-            Sincronizar Datajud
+            Buscar no Datajud
           </Button>
-          {/* <Button variant="outline" onClick={() => navigate({ to: '/processos/$id/editar', params: { id } })}>
-            Editar
-          </Button> */}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Informações do Processo</CardTitle>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Content (Left) */}
+        <div className="lg:col-span-2 space-y-8">
+          {/* Dados Gerais Card */}
+          <Card className="border-none shadow-sm shadow-blue-50/50">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <Scale className="w-5 h-5 text-[#2563eb]" />
+                <CardTitle className="text-lg font-bold text-[#1e293b]">Dados Gerais</CardTitle>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="text-xs font-bold uppercase text-muted-foreground">Justiça / Tribunal</p>
-                <p className="text-sm">{processo.justica || '-'}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold uppercase text-muted-foreground">Comarca / Órgão Julgador</p>
-                <p className="text-sm">{processo.orgaoJulgador || processo.comarca || '-'}</p>
-              </div>
-              <Separator />
-              <div>
-                <p className="text-xs font-bold uppercase text-muted-foreground">Distribuição</p>
-                <p className="text-sm flex items-center gap-2">
-                  <CalendarIcon className="w-3 h-3" /> 
-                  {processo.distribuicao ? new Date(processo.distribuicao).toLocaleDateString('pt-BR') : '-'}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs font-bold uppercase text-muted-foreground">Última Sincronização</p>
-                <div className="flex items-center gap-2 text-sm mt-1">
-                  {processo.lastSync ? (
-                    <>
-                      {processo.syncStatus === 'SUCESSO' ? (
-                        <Badge variant="success" className="bg-green-500 hover:bg-green-600 px-1 py-0 h-4 text-[10px]">OK</Badge>
-                      ) : (
-                        <Badge variant="warning" className="bg-amber-500 hover:bg-amber-600 px-1 py-0 h-4 text-[10px]">CONFLITO</Badge>
-                      )}
-                      {new Date(processo.lastSync).toLocaleString('pt-BR')}
-                    </>
-                  ) : (
-                    <span className="text-muted-foreground italic">Nunca sincronizado</span>
-                  )}
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Situação:</p>
+                  <Badge variant="secondary" className="bg-[#f1f5f9] text-[#475569] font-bold border-none px-2 uppercase text-[10px]">
+                    {processo.situacao || 'NÃO INFORMADA'}
+                  </Badge>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Data de Cadastro:</p>
+                  <p className="text-sm font-bold text-[#1e293b]">
+                    {processo.dataCadastro ? new Date(processo.dataCadastro).toLocaleDateString('pt-BR') : '-'}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Justiça / Comarca:</p>
+                  <p className="text-sm font-bold text-[#1e293b] uppercase">
+                    {processo.justica || '-'} / {processo.comarca || '-'}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Juízo / Vara:</p>
+                  <p className="text-sm font-bold text-[#1e293b] uppercase">
+                    {processo.juizo || '-'}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tipo de Ação:</p>
+                  <p className="text-sm font-bold text-[#1e293b] uppercase">
+                    {processo.tipoAcaoId || '-'}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Rito:</p>
+                  <p className="text-sm font-bold text-[#1e293b] uppercase">
+                    {processo.ritoId || '-'}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Distribuição:</p>
+                  <p className="text-sm font-bold text-[#1e293b]">
+                    {processo.distribuicao ? new Date(processo.distribuicao).toLocaleDateString('pt-BR') : '-'}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pasta:</p>
+                  <p className="text-sm font-bold text-[#1e293b]">
+                    {processo.pasta || '-'}
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-muted/30 border-dashed">
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Info className="w-4 h-4 text-primary" />
-                Dados do Tribunal (Raw)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-[10px] text-muted-foreground leading-tight">
-                Estes dados são importados diretamente do Datajud e servem para conferência de divergências.
-              </p>
-              <Button variant="link" size="sm" className="px-0 h-auto mt-2 text-xs" asChild>
-                <a href={`https://pje.tjsp.jus.br/consultapublica/ConsultaPublica/DetalheProcessoConsultaPublica/listView.seam?ca=${processo.numero}`} target="_blank" rel="noreferrer">
-                  Ver no Tribunal <ExternalLink className="w-3 h-3 ml-1" />
-                </a>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="lg:col-span-2">
+          {/* Tabs Section */}
           <Tabs defaultValue="andamentos" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="andamentos">Andamentos ({processo.andamentos?.length || 0})</TabsTrigger>
-              <TabsTrigger value="documentos">Documentos</TabsTrigger>
+            <TabsList className="bg-transparent border-b w-full justify-start rounded-none h-auto p-0 gap-8">
+              <TabsTrigger 
+                value="andamentos" 
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#2563eb] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-0 py-4 text-xs font-black uppercase tracking-widest text-slate-400 data-[state=active]:text-[#2563eb]"
+              >
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Andamentos
+                </div>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="financeiro" 
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#2563eb] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-0 py-4 text-xs font-black uppercase tracking-widest text-slate-400 data-[state=active]:text-[#2563eb]"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="font-bold">$</span>
+                  Financeiro
+                </div>
+              </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="andamentos" className="space-y-4 mt-6">
-              <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-muted">
+            <TabsContent value="andamentos" className="mt-8 space-y-8">
+              {/* Novo Andamento Form */}
+              <Card className="border-none bg-[#f8fafc]">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-6">
+                    <Plus className="w-4 h-4 text-[#2563eb]" />
+                    <h4 className="text-sm font-bold text-[#1e293b]">Novo Andamento</h4>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold text-slate-400 uppercase">Data</Label>
+                      <Input type="date" defaultValue={new Date().toISOString().split('T')[0]} className="bg-white border-slate-200" />
+                    </div>
+                    <div className="md:col-span-3 space-y-2">
+                      <Label className="text-[10px] font-bold text-slate-400 uppercase">Histórico</Label>
+                      <Textarea placeholder="Descreva o que ocorreu..." className="bg-white border-slate-200 min-h-[80px]" />
+                    </div>
+                  </div>
+                  <div className="flex justify-end mt-4">
+                    <Button className="bg-[#2563eb] hover:bg-[#1d4ed8] font-bold text-xs uppercase px-8">Adicionar</Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Timeline */}
+              <div className="relative pl-8 space-y-8 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#f1f5f9]">
                 {processo.andamentos?.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">Nenhuma movimentação registrada.</p>
+                  <div className="text-center py-12 bg-white rounded-xl border-2 border-dashed border-slate-100">
+                    <p className="text-slate-400 font-medium">Nenhuma movimentação registrada.</p>
+                  </div>
                 ) : (
                   processo.andamentos?.map((andamento: any) => (
                     <div key={andamento.id} className="relative">
-                      <div className={cn(
-                        "absolute -left-[1.65rem] top-1.5 w-3 h-3 rounded-full border-2 border-background shadow-sm",
-                        andamento.tipo === 'SISTEMA' ? "bg-primary" : "bg-muted-foreground"
-                      )} />
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-muted-foreground flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {new Date(andamento.data).toLocaleDateString('pt-BR')}
-                          </span>
+                      {/* Timeline Dot */}
+                      <div className="absolute -left-[2.35rem] top-1.5 w-3 h-3 rounded-full border-2 border-white bg-[#2563eb] shadow-sm z-10" />
+                      
+                      <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
+                        <CardContent className="p-6 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-slate-400">
+                              <CalendarIcon className="w-3.5 h-3.5" />
+                              <span className="text-xs font-bold tracking-tight">
+                                {new Date(andamento.data).toLocaleDateString('pt-BR')}
+                              </span>
+                            </div>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-300">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <p className="text-sm font-bold text-[#334155] leading-relaxed">
+                            {andamento.historico}
+                          </p>
                           {andamento.tipo === 'SISTEMA' && (
-                            <Badge variant="secondary" className="text-[9px] px-1 py-0 h-3.5 uppercase tracking-wider">Sistema</Badge>
+                             <Badge variant="secondary" className="bg-slate-100 text-slate-400 font-black px-1.5 py-0 h-4 text-[9px] border-none uppercase tracking-tighter">L</Badge>
                           )}
-                        </div>
-                        <p className="text-sm font-medium leading-relaxed">{andamento.historico}</p>
-                        {andamento.documento && (
-                          <Button variant="link" size="sm" className="px-0 h-auto text-xs h-6">
-                            <FileText className="w-3 h-3 mr-1" /> {andamento.documento}
-                          </Button>
-                        )}
-                      </div>
+                        </CardContent>
+                      </Card>
                     </div>
                   ))
                 )}
               </div>
             </TabsContent>
 
-            <TabsContent value="documentos" className="mt-6">
-              <Card>
-                <CardContent className="p-12 text-center text-muted-foreground italic">
-                  Integração com pastas de documentos em breve...
+            <TabsContent value="financeiro" className="mt-8">
+              <Card className="border-none shadow-sm">
+                <CardContent className="p-12 text-center">
+                  <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-4">
+                    <Info className="w-8 h-8 text-slate-300" />
+                  </div>
+                  <p className="text-slate-500 font-medium italic">Dados financeiros em desenvolvimento...</p>
                 </CardContent>
               </Card>
             </TabsContent>
           </Tabs>
         </div>
+
+        {/* Sidebar (Right) */}
+        <div className="space-y-8">
+          {/* Partes Card */}
+          <Card className="border-none shadow-sm shadow-blue-50/50">
+            <CardHeader className="flex flex-row items-center justify-between pb-4">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-[#2563eb]" />
+                <CardTitle className="text-lg font-bold text-[#1e293b]">Partes</CardTitle>
+              </div>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-[#2563eb]">
+                <Plus className="w-5 h-5" />
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {processo.partes?.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">Nenhuma parte cadastrada.</p>
+              ) : (
+                processo.partes?.map((parte: any) => (
+                  <div key={parte.id} className="p-4 rounded-xl border border-slate-100 bg-white">
+                    <p className="text-sm font-black text-[#1e293b] uppercase truncate">{parte.nome}</p>
+                    <p className="text-[10px] font-bold text-[#2563eb] uppercase mt-1 tracking-wider">
+                      {parte.posicao?.descricao || 'PARTE'}
+                    </p>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Contato com Cliente Card */}
+          <Card className="border-none shadow-sm bg-[#eff6ff]">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-[#2563eb]" />
+                <CardTitle className="text-lg font-bold text-[#1e293b]">Contato com Cliente</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <p className="text-sm font-black text-[#1e293b] uppercase">{processo.cliente?.nome}</p>
+                <p className="text-xs font-medium text-slate-500 mt-1">{processo.cliente?.celular || processo.cliente?.telefone1 || 'Sem telefone cadastrado'}</p>
+              </div>
+              
+              <div className="space-y-3">
+                <Button className="w-full bg-[#16a34a] hover:bg-[#15803d] font-bold text-xs uppercase py-6 shadow-sm shadow-green-100">
+                  <Phone className="w-4 h-4 mr-2" />
+                  WhatsApp
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full bg-white border-none font-bold text-xs uppercase py-6 shadow-sm hover:bg-slate-50"
+                  asChild
+                >
+                  <Link to="/clientes/$id" params={{ id: processo.clienteId?.toString() || '' }}>
+                    Ver Cadastro Completo
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
 }
+
+// ── Supporting Components (Mocked or Missing) ────────────────────────────────
+
+function Label({ children, className }: { children: React.ReactNode, className?: string }) {
+  return <label className={cn("block text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70", className)}>{children}</label>;
+}
+
+function Users({ className }: { className?: string }) {
+  return <UserIcon className={className} />;
+}
+

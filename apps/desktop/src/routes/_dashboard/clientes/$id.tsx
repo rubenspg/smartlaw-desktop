@@ -11,7 +11,8 @@ import {
   ExternalLink,
   Plus,
   Loader2,
-  Trash
+  Trash,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,8 +35,8 @@ function ClienteDetailPage() {
 
   const { data: cliente, isLoading, isError } = useCliente(clienteId);
   const { data: notas, isLoading: isLoadingNotas } = useClientesNotas(clienteId);
-  const { data: processosJudiciais, isLoading: isLoadingJudiciais } = useProcessosJudiciaisByCliente(clienteId);
-  const { data: processosAdministrativos, isLoading: isLoadingAdm } = useProcessosAdministrativosByCliente(clienteId);
+  const { data: processosJudiciais, isLoading: isLoadingJudiciais, isError: isErrorJudiciais } = useProcessosJudiciaisByCliente(clienteId);
+  const { data: processosAdministrativos, isLoading: isLoadingAdm, isError: isErrorAdm } = useProcessosAdministrativosByCliente(clienteId);
   
   const createNota = useCreateClienteNota();
   const deleteNota = useDeleteClienteNota(clienteId);
@@ -56,8 +57,13 @@ function ClienteDetailPage() {
 
   const handleDeleteCliente = async () => {
     if (confirm('Tem certeza que deseja excluir este cliente?')) {
-      await deleteCliente.mutateAsync(clienteId);
-      navigate({ to: '/clientes' });
+      try {
+        await deleteCliente.mutateAsync(clienteId);
+        navigate({ to: '/clientes' });
+      } catch (err: any) {
+        console.error('Failed to delete cliente:', err);
+        alert(err.message || 'Erro ao excluir cliente.');
+      }
     }
   };
 
@@ -103,8 +109,9 @@ function ClienteDetailPage() {
                 <Phone className="w-4 h-4 text-muted-foreground mt-1" />
                 <div>
                   <p className="text-sm font-medium">Telefones</p>
-                  <p className="text-sm text-muted-foreground">{cliente.celular || cliente.telefone1 || 'Não informado'}</p>
-                  {cliente.telefone2 && <p className="text-sm text-muted-foreground">{cliente.telefone2}</p>}
+                  <p className="text-sm text-muted-foreground">Celular: {cliente.celular || 'Não informado'}</p>
+                  {cliente.telefone1 && <p className="text-sm text-muted-foreground">Fixo 1: {cliente.telefone1}</p>}
+                  {cliente.telefone2 && <p className="text-sm text-muted-foreground">Fixo 2: {cliente.telefone2}</p>}
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -119,12 +126,13 @@ function ClienteDetailPage() {
                 <div>
                   <p className="text-sm font-medium">Endereço</p>
                   <p className="text-sm text-muted-foreground">
-                    {cliente.endereco ? `${cliente.endereco}, ${cliente.endNumero}` : 'Não informado'}
+                    {cliente.endereco ? `${cliente.endereco}, ${cliente.endNumero}` : 'Logradouro não informado'}
                     {cliente.complemento && ` - ${cliente.complemento}`}
                     <br />
                     {cliente.bairro && `${cliente.bairro}, `}
                     {cliente.municipio && `${cliente.municipio} - `}
                     {cliente.estado}
+                    {cliente.cep && <><br />CEP: {cliente.cep}</>}
                   </p>
                 </div>
               </div>
@@ -138,39 +146,84 @@ function ClienteDetailPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs font-bold uppercase text-muted-foreground">CPF/CNPJ</p>
+                  <p className="text-xs font-bold uppercase text-muted-foreground">{cliente.tipo === 'F' ? 'CPF' : 'CNPJ'}</p>
                   <p className="text-sm">{cliente.cpfCnpj || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-bold uppercase text-muted-foreground">RG</p>
+                  <p className="text-xs font-bold uppercase text-muted-foreground">{cliente.tipo === 'F' ? 'RG' : 'IE'}</p>
                   <p className="text-sm">{cliente.rg || '-'}</p>
                 </div>
-                <div>
-                  <p className="text-xs font-bold uppercase text-muted-foreground">Nascimento</p>
-                  <p className="text-sm">{cliente.nascimento ? new Date(cliente.nascimento).toLocaleDateString('pt-BR') : '-'}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase text-muted-foreground">Sexo</p>
-                  <p className="text-sm">{cliente.sexo || '-'}</p>
-                </div>
+                {cliente.tipo === 'F' && (
+                  <>
+                    <div>
+                      <p className="text-xs font-bold uppercase text-muted-foreground">Nascimento</p>
+                      <p className="text-sm">{cliente.nascimento ? new Date(cliente.nascimento).toLocaleDateString('pt-BR') : '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase text-muted-foreground">Sexo</p>
+                      <p className="text-sm">{cliente.sexo === 'M' ? 'Masculino' : cliente.sexo === 'F' ? 'Feminino' : cliente.sexo || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase text-muted-foreground">Estado Civil</p>
+                      <p className="text-sm">{cliente.estCivil || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase text-muted-foreground">Profissão</p>
+                      <p className="text-sm">{cliente.profissao || '-'}</p>
+                    </div>
+                  </>
+                )}
+                {cliente.tipo === 'J' && cliente.fantasia && (
+                  <div className="col-span-2">
+                    <p className="text-xs font-bold uppercase text-muted-foreground">Nome Fantasia</p>
+                    <p className="text-sm">{cliente.fantasia}</p>
+                  </div>
+                )}
               </div>
-              <Separator />
-              <div>
-                <p className="text-xs font-bold uppercase text-muted-foreground">Profissão</p>
-                <p className="text-sm">{cliente.profissao || '-'}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold uppercase text-muted-foreground">Estado Civil</p>
-                <p className="text-sm">{cliente.estCivil || '-'}</p>
-              </div>
+              
+              {cliente.tipo === 'F' && (
+                <>
+                  <Separator />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs font-bold uppercase text-muted-foreground">Nome da Mãe</p>
+                      <p className="text-sm">{cliente.nomeMae || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase text-muted-foreground">Nome do Pai</p>
+                      <p className="text-sm">{cliente.nomePai || '-'}</p>
+                    </div>
+                    {cliente.nomeConjuge && (
+                      <div className="col-span-2">
+                        <p className="text-xs font-bold uppercase text-muted-foreground">Cônjuge</p>
+                        <p className="text-sm">{cliente.nomeConjuge}</p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </CardContent>
         </Card>
       </div>
 
+      {cliente.observacoes && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Observações Internas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm whitespace-pre-wrap text-muted-foreground">{cliente.observacoes}</p>
+          </CardContent>
+        </Card>
+      )}
+
       <Tabs defaultValue="historico" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="historico">Histórico / Notas</TabsTrigger>
-              <TabsTrigger value="processos">Processos</TabsTrigger>
+              <TabsTrigger value="historico">Histórico / Notas ({notas?.length || 0})</TabsTrigger>
+              <TabsTrigger value="processos">
+                Processos 
+                {isLoadingJudiciais || isLoadingAdm ? '...' : ` (${(processosJudiciais?.length || 0) + (processosAdministrativos?.length || 0)})`}
+              </TabsTrigger>
               <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
             </TabsList>
             
@@ -238,6 +291,13 @@ function ClienteDetailPage() {
             </TabsContent>
 
             <TabsContent value="processos" className="mt-6 space-y-6">
+              {(isErrorJudiciais || isErrorAdm) && (
+                <div className="bg-destructive/10 text-destructive p-4 rounded-lg flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  <p className="text-sm font-medium">Erro ao carregar processos do cliente.</p>
+                </div>
+              )}
+              
               {/* Judiciais */}
               <Card>
                 <CardHeader>
@@ -246,9 +306,7 @@ function ClienteDetailPage() {
                 <CardContent className="p-0">
                   {isLoadingJudiciais ? (
                     <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin" /></div>
-                  ) : !processosJudiciais?.length ? (
-                    <p className="text-center text-muted-foreground py-8 text-sm italic">Nenhum processo judicial vinculado.</p>
-                  ) : (
+                  ) : processosJudiciais && processosJudiciais.length > 0 ? (
                     <div className="divide-y">
                       {processosJudiciais.map((p: any) => (
                         <div key={p.id} className="flex items-center justify-between px-6 py-3 hover:bg-muted/40 transition-colors">
@@ -262,6 +320,8 @@ function ClienteDetailPage() {
                         </div>
                       ))}
                     </div>
+                  ) : (
+                    <p className="text-center text-muted-foreground py-8 text-sm italic">Nenhum processo judicial vinculado.</p>
                   )}
                 </CardContent>
               </Card>
@@ -274,9 +334,7 @@ function ClienteDetailPage() {
                 <CardContent className="p-0">
                   {isLoadingAdm ? (
                     <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin" /></div>
-                  ) : !processosAdministrativos?.length ? (
-                    <p className="text-center text-muted-foreground py-8 text-sm italic">Nenhum processo administrativo vinculado.</p>
-                  ) : (
+                  ) : processosAdministrativos && processosAdministrativos.length > 0 ? (
                     <div className="divide-y">
                       {processosAdministrativos.map((p: any) => (
                         <div key={p.id} className="flex items-center justify-between px-6 py-3 hover:bg-muted/40 transition-colors">
@@ -284,12 +342,14 @@ function ClienteDetailPage() {
                             <p className="text-sm font-semibold">{p.numero || `#${p.id}`}</p>
                             {p.dataCadastro && <p className="text-xs text-muted-foreground">{new Date(p.dataCadastro).toLocaleDateString('pt-BR')}</p>}
                           </div>
-                          <Link to="/processos/$id" params={{ id: p.id.toString() }} className="text-muted-foreground hover:text-primary">
+                          <Link to="/processos/admin/$id" params={{ id: p.id.toString() }} className="text-muted-foreground hover:text-primary">
                             <ExternalLink className="w-4 h-4" />
                           </Link>
                         </div>
                       ))}
                     </div>
+                  ) : (
+                    <p className="text-center text-muted-foreground py-8 text-sm italic">Nenhum processo administrativo vinculado.</p>
                   )}
                 </CardContent>
               </Card>

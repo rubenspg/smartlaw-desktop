@@ -5,47 +5,75 @@ import { eq, and, ilike, or, desc } from 'drizzle-orm';
 import { authMiddleware, Variables } from '../middleware/auth';
 import { processoAdministrativoSchema } from '@smartlaw/shared';
 import { zValidator } from '@hono/zod-validator';
+import { z } from 'zod';
+
+const querySchema = z.object({
+  q: z.string().optional(),
+  page: z.string().optional(),
+  limit: z.string().optional(),
+  clienteId: z.string().optional(),
+});
 
 const processosAdministrativosRoutes = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
   
-  .get('/', async (c) => {
+  .get('/', zValidator('query', querySchema), async (c) => {
     const user = c.get('user');
-    const { q, page = '1', limit = '10', clienteId } = c.req.query();
+    const { q, page = '1', limit = '10', clienteId } = c.req.valid('query');
 
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const offset = (pageNum - 1) * limitNum;
 
-    const where = [eq(processosAdministrativos.firmId, user.firmId)];
-
+    // Use .select() when q is provided to support searching by client name
     if (q) {
+      const where = [eq(processosAdministrativos.firmId, user.firmId)];
       where.push(or(
         ilike(processosAdministrativos.numero, `%${q}%`),
         ilike(clientes.nome, `%${q}%`)
       )!);
+
+      if (clienteId) {
+        where.push(eq(processosAdministrativos.clienteId, parseInt(clienteId)));
+      }
+
+      const data = await db
+        .select({
+          id: processosAdministrativos.id,
+          numero: processosAdministrativos.numero,
+          dataCadastro: processosAdministrativos.dataCadastro,
+          createdAt: processosAdministrativos.createdAt,
+          cliente: {
+            id: clientes.id,
+            nome: clientes.nome,
+          }
+        })
+        .from(processosAdministrativos)
+        .leftJoin(clientes, eq(processosAdministrativos.clienteId, clientes.id))
+        .where(and(...where))
+        .limit(limitNum)
+        .offset(offset)
+        .orderBy(desc(processosAdministrativos.createdAt));
+
+      return c.json(data);
     }
 
-    if (clienteId) {
-      where.push(eq(processosAdministrativos.clienteId, parseInt(clienteId)));
-    }
-
-    const data = await db
-      .select({
-        id: processosAdministrativos.id,
-        numero: processosAdministrativos.numero,
-        dataCadastro: processosAdministrativos.dataCadastro,
-        cliente: {
-          id: clientes.id,
-          nome: clientes.nome,
+    // Use db.query for consistent relation handling when no complex search is needed
+    const data = await db.query.processosAdministrativos.findMany({
+      where: (processos, { eq, and }) => {
+        const conditions = [eq(processos.firmId, user.firmId)];
+        if (clienteId) {
+          conditions.push(eq(processos.clienteId, parseInt(clienteId)));
         }
-      })
-      .from(processosAdministrativos)
-      .leftJoin(clientes, eq(processosAdministrativos.clienteId, clientes.id))
-      .where(and(...where))
-      .limit(limitNum)
-      .offset(offset)
-      .orderBy(desc(processosAdministrativos.createdAt));
+        return and(...conditions);
+      },
+      with: {
+        cliente: true,
+      },
+      limit: limitNum,
+      offset: offset,
+      orderBy: [desc(processosAdministrativos.createdAt)],
+    });
 
     return c.json(data);
   })

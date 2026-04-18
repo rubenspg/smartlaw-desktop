@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { db } from '../db';
-import { clientes } from '../db/schema';
+import { clientes, processosJudiciais, processosAdministrativos } from '../db/schema';
 import { eq, ilike, or, and, sql, asc } from 'drizzle-orm';
 import { clienteSchema } from '@smartlaw/shared';
 import { authMiddleware, Variables } from '../middleware/auth';
@@ -112,7 +112,22 @@ const clientesRoutes = new Hono<{ Variables: Variables }>()
     const user = c.get('user');
     const id = parseInt(c.req.param('id'));
 
-    // TODO: Check if cliente has related processes before deleting
+    // Check for related processes (Judicial and Administrative)
+    const [judicialCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(processosJudiciais)
+      .where(eq(processosJudiciais.clienteId, id));
+
+    const [adminCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(processosAdministrativos)
+      .where(eq(processosAdministrativos.clienteId, id));
+
+    if (Number(judicialCount.count) > 0 || Number(adminCount.count) > 0) {
+      return c.json({ 
+        error: 'Não é possível excluir um cliente que possui processos vinculados. Considere inativar o cliente.' 
+      }, 400);
+    }
 
     const [deletedCliente] = await db
       .delete(clientes)

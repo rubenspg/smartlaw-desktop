@@ -279,4 +279,36 @@ export declare const honorarioSchema: z.ZodObject<{
     dataPagto?: string | null | undefined;
 }>;
 export type HonorarioInput = z.infer<typeof honorarioSchema>;
+export declare const tarefaSchema: z.ZodObject<{
+    usuarioId: z.ZodString;
+    clienteId: z.ZodNullable<z.ZodOptional<z.ZodNumber>>;
+    processoJudicialId: z.ZodNullable<z.ZodOptional<z.ZodNumber>>;
+    processoAdminId: z.ZodNullable<z.ZodOptional<z.ZodNumber>>;
+    titulo: z.ZodString;
+    descricao: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    dataLimite: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    prioridade: z.ZodEnum<["BAIXA", "MEDIA", "ALTA"]>;
+    status: z.ZodEnum<["PENDENTE", "CONCLUIDA", "CANCELADA"]>;
+}, "strip", z.ZodTypeAny, {
+    status: "PENDENTE" | "CONCLUIDA" | "CANCELADA";
+    usuarioId: string;
+    titulo: string;
+    prioridade: "BAIXA" | "MEDIA" | "ALTA";
+    clienteId?: number | null | undefined;
+    processoJudicialId?: number | null | undefined;
+    processoAdminId?: number | null | undefined;
+    descricao?: string | null | undefined;
+    dataLimite?: string | null | undefined;
+}, {
+    status: "PENDENTE" | "CONCLUIDA" | "CANCELADA";
+    usuarioId: string;
+    titulo: string;
+    prioridade: "BAIXA" | "MEDIA" | "ALTA";
+    clienteId?: number | null | undefined;
+    processoJudicialId?: number | null | undefined;
+    processoAdminId?: number | null | undefined;
+    descricao?: string | null | undefined;
+    dataLimite?: string | null | undefined;
+}>;
+export type TarefaInput = z.infer<typeof tarefaSchema>;
 //# sourceMappingURL=validation.d.ts.map

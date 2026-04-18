@@ -17,9 +17,9 @@ function NewClientePage() {
     try {
       const result = await createCliente.mutateAsync(data);
       navigate({ to: '/clientes/$id', params: { id: result.id.toString() } });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to create cliente:', err);
-      alert('Erro ao cadastrar cliente. Por favor, tente novamente.');
+      alert(err.message || 'Erro ao cadastrar cliente. Por favor, tente novamente.');
     }
   };
 
