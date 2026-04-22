@@ -152,6 +152,23 @@ export const honorarioSchema = z.object({
 
 export type HonorarioInput = z.infer<typeof honorarioSchema>;
 
+export const usuarioSchema = z.object({
+  nome: z.string().min(1, 'Nome é obrigatório'),
+  email: z.string().email('E-mail inválido'),
+  senha: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+  perfil: z.enum(['admin', 'usuario']).default('usuario'),
+});
+
+export type UsuarioInput = z.infer<typeof usuarioSchema>;
+
+export const usuarioUpdateSchema = z.object({
+  nome: z.string().min(1).optional(),
+  perfil: z.enum(['admin', 'usuario']).optional(),
+  ativo: z.boolean().optional(),
+});
+
+export type UsuarioUpdateInput = z.infer<typeof usuarioUpdateSchema>;
+
 export const tarefaSchema = z.object({
   usuarioId: z.string().uuid('Usuário inválido'),
   clienteId: z.number().optional().nullable(),

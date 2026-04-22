@@ -27,9 +27,13 @@ echo "▶ Starting Postgres via Docker Compose..."
 docker compose up -d postgres
 echo "  ✅ Postgres container ready"
 
+# ── Stop API container (if running) to free port 3001 ─────────────────────────
+echo "▶ Stopping any running API container..."
+docker compose stop api 2>/dev/null || true
+
 # ── Port Check ────────────────────────────────────────────────────────────────
 echo "▶ Checking for processes on port 3001..."
-if lsof -i :3001 -t >/dev/null; then
+if lsof -i :3001 -t >/dev/null 2>&1; then
   echo "  Found process on port 3001, killing..."
   lsof -i :3001 -t | xargs kill -9 2>/dev/null || true
 fi

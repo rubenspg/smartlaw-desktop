@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { 
-  Clock, 
-  ExternalLink, 
-  Calendar, 
-  Plus, 
+import {
+  Clock,
+  ExternalLink,
+  Calendar,
+  Plus,
   ClipboardCheck,
   CheckCircle2,
   MoreVertical,
@@ -13,7 +13,9 @@ import {
   AlertCircle,
   CheckCircle,
   User as UserIcon,
-  Loader2
+  Loader2,
+  RefreshCw,
+  Activity,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTarefas, useCreateTarefa, useUpdateTarefa, useDeleteTarefa } from '@/hooks/use-tarefas';
+import { useAndamentosRecentes } from '@/hooks/use-dashboard';
 import { TarefaForm } from '@/components/shared/tarefa-form';
 import { Tarefa, TarefaInput } from '@smartlaw/shared';
 import { cn } from '@/lib/utils';
@@ -47,6 +50,7 @@ function HomeComponent() {
   const [editingTarefa, setEditingTarefa] = useState<Tarefa | undefined>(undefined);
   
   const { data: tarefas, isLoading: isLoadingTarefas } = useTarefas();
+  const { data: andamentosRecentes, isLoading: isLoadingAndamentos, refetch: refetchAndamentos } = useAndamentosRecentes();
   const createTarefa = useCreateTarefa();
   const updateTarefa = useUpdateTarefa(editingTarefa?.id || 0);
   const deleteTarefa = useDeleteTarefa();
@@ -111,7 +115,103 @@ function HomeComponent() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Andamentos Recentes */}
         <div className="lg:col-span-2">
-          {/* ... Andamentos Card Content ... */}
+          <Card className="border-none shadow-sm flex flex-col bg-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-[#f1f5f9]">
+              <div className="flex items-center gap-2">
+                <Activity className="w-5 h-5 text-[#2563eb]" />
+                <CardTitle className="text-xl font-bold text-[#1e293b]">Andamentos Recentes</CardTitle>
+              </div>
+              <button
+                onClick={() => refetchAndamentos()}
+                className="p-1.5 rounded-lg text-[#94a3b8] hover:text-[#2563eb] hover:bg-[#eff6ff] transition-all"
+                title="Atualizar"
+              >
+                <RefreshCw className={cn('w-4 h-4', isLoadingAndamentos && 'animate-spin')} />
+              </button>
+            </CardHeader>
+            <CardContent className="p-0 overflow-auto max-h-[600px]">
+              {isLoadingAndamentos ? (
+                <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+                  <Loader2 className="w-8 h-8 animate-spin mb-2 text-[#2563eb] opacity-30" />
+                </div>
+              ) : andamentosRecentes?.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-48 text-center p-8">
+                  <div className="w-16 h-16 rounded-2xl bg-[#f1f5f9] flex items-center justify-center mb-4">
+                    <Clock className="w-8 h-8 text-[#cbd5e1]" />
+                  </div>
+                  <p className="text-[#64748b] font-medium">Nenhum andamento registrado.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-[#f1f5f9]">
+                  {andamentosRecentes?.map((a) => {
+                    const isSistema = a.tipo === 'SISTEMA';
+                    const isJudicial = !!a.processoJudicialId;
+                    const processo = isJudicial ? a.processoJudicial : a.processoAdmin;
+                    const cliente = processo?.cliente;
+                    const link = isJudicial
+                      ? `/processos/${a.processoJudicialId}`
+                      : `/processos/admin/${a.processoAdminId}`;
+
+                    return (
+                      <div
+                        key={a.id}
+                        className={cn(
+                          'p-4 hover:bg-[#f8fafc] transition-colors',
+                          isSistema && 'border-l-4 border-l-red-400 bg-red-50/40 hover:bg-red-50/60',
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0 space-y-1.5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {isSistema ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded bg-red-100 text-red-700 uppercase tracking-wider">
+                                  <AlertCircle className="w-3 h-3" /> ATENÇÃO
+                                </span>
+                              ) : isJudicial ? (
+                                <span className="text-[10px] font-black px-2 py-0.5 rounded bg-amber-100 text-amber-700 uppercase tracking-wider">
+                                  Judicial
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 uppercase tracking-wider">
+                                  Admin
+                                </span>
+                              )}
+                              {processo && (
+                                <span className="text-xs font-mono font-bold text-[#475569] truncate">
+                                  {processo.numero}
+                                </span>
+                              )}
+                              {cliente && (
+                                <span className="text-xs text-[#94a3b8] truncate">· {cliente.nome}</span>
+                              )}
+                            </div>
+                            {a.historico && (
+                              <p className="text-sm text-[#475569] italic line-clamp-2">
+                                "{a.historico}"
+                              </p>
+                            )}
+                            <div className="flex items-center gap-1 text-[10px] text-[#94a3b8]">
+                              <Calendar className="w-3 h-3" />
+                              {new Date(a.inclusao).toLocaleString('pt-BR')}
+                            </div>
+                          </div>
+                          {processo && (
+                            <Link
+                              to={link as any}
+                              className="shrink-0 p-1.5 rounded-lg text-[#94a3b8] hover:text-[#2563eb] hover:bg-[#eff6ff] transition-all"
+                              title="Ver processo"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Sidebar Cards */}

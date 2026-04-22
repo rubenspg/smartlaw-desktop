@@ -151,3 +151,74 @@ export interface DriftResult {
   newMovements: number;
 }
 
+export interface DashboardStats {
+  totais: {
+    clientes: number;
+    processosJudiciais: number;
+    processosAdministrativos: number;
+  };
+  aquisicaoClientes: Array<{ mes: string; total: number }>;
+  demografia: {
+    idade: Array<{ faixa: string; total: number }>;
+    cidades: Array<{ cidade: string; total: number }>;
+    profissoes: Array<{ profissao: string; total: number }>;
+  };
+  judiciaisPorComarca: Array<{ comarca: string; total: number }>;
+  judiciaisPorSituacao: Array<{ situacao: string; total: number }>;
+}
+
+export interface Usuario {
+  id: string;
+  nome: string;
+  email: string;
+  perfil: string | null;
+  ativo: boolean | null;
+  firmId: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface AuditLog {
+  id: number;
+  tableName: string;
+  recordId: string;
+  action: string;
+  oldData: any;
+  newData: any;
+  userId: string | null;
+  firmId: string | null;
+  createdAt: string | null;
+  usuario: { id: string; nome: string } | null;
+}
+
+export interface AndamentoRecente {
+  id: number;
+  historico: string | null;
+  tipo: string | null;
+  inclusao: string;
+  data: string;
+  processoJudicialId: number | null;
+  processoAdminId: number | null;
+  processoJudicial: { id: number; numero: string; cliente: { id: number; nome: string } | null } | null;
+  processoAdmin: { id: number; numero: string; cliente: { id: number; nome: string } | null } | null;
+}
+
+export interface Honorario {
+  id: number;
+  firmId: string | null;
+  clienteId: number | null;
+  processoJudicialId: number | null;
+  processoAdminId: number | null;
+  descricao: string;
+  valor: string;
+  valorPago: string | null;
+  dataVenc: string;
+  dataPagto: string | null;
+  status: string | null;
+  tipo: string | null;
+  observacoes: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  cliente: { id: number; nome: string } | null;
+}
+
