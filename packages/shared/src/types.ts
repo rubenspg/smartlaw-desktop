@@ -222,3 +222,9 @@ export interface Honorario {
   cliente: { id: number; nome: string } | null;
 }
 
+export interface HonorarioSummary {
+  totalRecebido: number;
+  totalPendente: number;
+  totalAtrasado: number;
+}
+

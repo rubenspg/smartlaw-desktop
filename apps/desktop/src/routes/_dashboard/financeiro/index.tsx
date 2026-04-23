@@ -13,6 +13,7 @@ import {
   Trash2,
   X,
   ChevronsUpDown,
+  Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,8 +39,10 @@ import {
   useCreateHonorario,
   useUpdateHonorario,
   useDeleteHonorario,
+  useHonorarioSummary,
 } from '@/hooks/use-honorarios';
 import { useClientes } from '@/hooks/use-clientes';
+import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import type { Honorario, HonorarioInput } from '@smartlaw/shared';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -59,15 +62,31 @@ export const Route = createFileRoute('/_dashboard/financeiro/')({
 const today = new Date().toISOString().split('T')[0];
 
 function FinanceiroPage() {
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
   const [status, setStatus] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Honorario | null>(null);
 
+  const { user } = useAuth();
+  const isAdmin = user?.perfil === 'admin';
+
+  console.log('DEBUG - Perfil atual:', user?.perfil, 'isAdmin:', isAdmin);
+
   const { data: honorarios, isLoading } = useHonorarios({
     status: status === 'all' ? undefined : status,
     limit: 100,
+    month: selectedMonth,
+    year: selectedYear,
   });
+  const { data: summary } = useHonorarioSummary({
+    month: selectedMonth,
+    year: selectedYear,
+  });
+
+  console.log('Financeiro summary:', summary);
 
   const createHonorario = useCreateHonorario();
   const updateHonorario = useUpdateHonorario();
@@ -79,18 +98,15 @@ function FinanceiroPage() {
   const filtered = honorarios?.filter((h) => {
     if (!search) return true;
     const term = search.toLowerCase();
-    return (
-      h.cliente?.nome.toLowerCase().includes(term) ||
-      h.descricao.toLowerCase().includes(term)
-    );
+    const nomeCliente = h.cliente?.nome?.toLowerCase() || '';
+    const descricao = h.descricao?.toLowerCase() || '';
+    
+    return nomeCliente.includes(term) || descricao.includes(term);
   });
 
-  const totalRecebido =
-    honorarios?.reduce((acc, h) => (h.status === 'PAGO' ? acc + Number(h.valorPago || h.valor) : acc), 0) ?? 0;
-  const totalPendente =
-    honorarios?.reduce((acc, h) => (h.status === 'PENDENTE' && h.dataVenc >= today ? acc + Number(h.valor) : acc), 0) ?? 0;
-  const totalAtrasado =
-    honorarios?.reduce((acc, h) => (h.status === 'PENDENTE' && h.dataVenc < today ? acc + Number(h.valor) : acc), 0) ?? 0;
+  const totalRecebido = summary?.totalRecebido ?? 0;
+  const totalPendente = summary?.totalPendente ?? 0;
+  const totalAtrasado = summary?.totalAtrasado ?? 0;
 
   const openCreate = () => {
     setEditing(null);
@@ -106,6 +122,30 @@ function FinanceiroPage() {
     if (!confirm(`Excluir o lançamento "${h.descricao}"?`)) return;
     try {
       await deleteHonorario.mutateAsync(h.id);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleQuitar = async (h: Honorario) => {
+    if (!confirm(`Marcar o lançamento "${h.descricao}" como PAGO?`)) return;
+    try {
+      await updateHonorario.mutateAsync({
+        id: h.id,
+        data: {
+          clienteId: h.clienteId!,
+          processoJudicialId: h.processoJudicialId,
+          processoAdminId: h.processoAdminId,
+          descricao: h.descricao,
+          valor: h.valor,
+          valorPago: h.valor, // Quita o valor total
+          dataVenc: h.dataVenc,
+          dataPagto: today, // Data de hoje
+          status: 'PAGO',
+          tipo: h.tipo ?? 'HONORARIO',
+          observacoes: h.observacoes,
+        },
+      });
     } catch (err: any) {
       alert(err.message);
     }
@@ -129,11 +169,44 @@ function FinanceiroPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-[#1e293b]">Financeiro</h1>
-          <p className="text-[#64748b] text-lg mt-1 font-medium">
-            Controle de honorários e pagamentos do escritório.
-          </p>
+        <div className="flex flex-col md:flex-row md:items-end gap-6">
+          <div>
+            <h1 className="text-4xl font-bold text-[#1e293b]">Financeiro</h1>
+            <p className="text-[#64748b] text-lg mt-1 font-medium">
+              Controle de honorários e pagamentos.
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-2 pb-1">
+            <Select 
+              value={selectedMonth.toString()} 
+              onValueChange={(v) => setSelectedMonth(parseInt(v))}
+            >
+              <SelectTrigger className="w-[140px] h-10 bg-white border-[#e2e8f0] font-bold text-[#1e293b]">
+                <SelectValue placeholder="Mês" />
+              </SelectTrigger>
+              <SelectContent>
+                {['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'].map((m, i) => (
+                  <SelectItem key={m} value={(i + 1).toString()}>{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select 
+              value={selectedYear.toString()} 
+              onValueChange={(v) => setSelectedYear(parseInt(v))}
+            >
+              <SelectTrigger className="w-[100px] h-10 bg-white border-[#e2e8f0] font-bold text-[#1e293b]">
+                <SelectValue placeholder="Ano" />
+              </SelectTrigger>
+              <SelectContent>
+                {[2024, 2025, 2026, 2027].map((y) => (
+                  <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <Button
           onClick={openCreate}
@@ -144,55 +217,57 @@ function FinanceiroPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="border-none shadow-sm bg-[#f0fdf4]">
-          <CardContent className="p-8">
-            <div className="flex items-center justify-between mb-6">
-              <span className="text-[11px] font-black text-[#166534] uppercase tracking-widest">
-                TOTAL RECEBIDO
-              </span>
-              <div className="w-8 h-8 rounded-full bg-[#dcfce7] flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5 text-[#166534]" />
+      {isAdmin && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="border-none shadow-sm bg-[#f0fdf4]">
+            <CardContent className="p-8">
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-[11px] font-black text-[#166534] uppercase tracking-widest">
+                  TOTAL RECEBIDO
+                </span>
+                <div className="w-8 h-8 rounded-full bg-[#dcfce7] flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-[#166534]" />
+                </div>
               </div>
-            </div>
-            <div className="text-4xl font-black text-[#166534] tracking-tight">
-              {formatCurrency(totalRecebido)}
-            </div>
-          </CardContent>
-        </Card>
+              <div className="text-4xl font-black text-[#166534] tracking-tight">
+                {formatCurrency(totalRecebido)}
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="border-none shadow-sm bg-[#fffbeb]">
-          <CardContent className="p-8">
-            <div className="flex items-center justify-between mb-6">
-              <span className="text-[11px] font-black text-[#92400e] uppercase tracking-widest">
-                PENDENTE
-              </span>
-              <div className="w-8 h-8 rounded-full bg-[#fef3c7] flex items-center justify-center">
-                <Clock className="w-5 h-5 text-[#92400e]" />
+          <Card className="border-none shadow-sm bg-[#fffbeb]">
+            <CardContent className="p-8">
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-[11px] font-black text-[#92400e] uppercase tracking-widest">
+                  PENDENTE
+                </span>
+                <div className="w-8 h-8 rounded-full bg-[#fef3c7] flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-[#92400e]" />
+                </div>
               </div>
-            </div>
-            <div className="text-4xl font-black text-[#92400e] tracking-tight">
-              {formatCurrency(totalPendente)}
-            </div>
-          </CardContent>
-        </Card>
+              <div className="text-4xl font-black text-[#92400e] tracking-tight">
+                {formatCurrency(totalPendente)}
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="border-none shadow-sm bg-[#fef2f2]">
-          <CardContent className="p-8">
-            <div className="flex items-center justify-between mb-6">
-              <span className="text-[11px] font-black text-[#991b1b] uppercase tracking-widest">
-                ATRASADO
-              </span>
-              <div className="w-8 h-8 rounded-full bg-[#fee2e2] flex items-center justify-center">
-                <AlertCircle className="w-5 h-5 text-[#991b1b]" />
+          <Card className="border-none shadow-sm bg-[#fef2f2]">
+            <CardContent className="p-8">
+              <div className="flex items-center justify-between mb-6">
+                <span className="text-[11px] font-black text-[#991b1b] uppercase tracking-widest">
+                  ATRASADO
+                </span>
+                <div className="w-8 h-8 rounded-full bg-[#fee2e2] flex items-center justify-center">
+                  <AlertCircle className="w-5 h-5 text-[#991b1b]" />
+                </div>
               </div>
-            </div>
-            <div className="text-4xl font-black text-[#991b1b] tracking-tight">
-              {formatCurrency(totalAtrasado)}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              <div className="text-4xl font-black text-[#991b1b] tracking-tight">
+                {formatCurrency(totalAtrasado)}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Card className="border-none shadow-sm">
         <div className="p-6 border-b border-[#f1f5f9] flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -320,6 +395,15 @@ function FinanceiroPage() {
                     </TableCell>
                     <TableCell className="text-right px-6">
                       <div className="flex items-center justify-end gap-1">
+                        {h.status !== 'PAGO' && (
+                          <button
+                            onClick={() => handleQuitar(h)}
+                            className="p-2 rounded-lg text-[#10b981] hover:bg-[#dcfce7] transition-all"
+                            title="Quitar"
+                          >
+                            <Check className="w-4 h-4 stroke-[3px]" />
+                          </button>
+                        )}
                         <button
                           onClick={() => openEdit(h)}
                           className="p-2 rounded-lg text-[#64748b] hover:bg-[#eff6ff] hover:text-[#2563eb] transition-all"
@@ -499,7 +583,18 @@ function HonorarioDialog({
               <select
                 className="w-full p-2 border border-[#e2e8f0] rounded-lg outline-none focus:ring-2 focus:ring-[#2563eb]/20 bg-white text-sm"
                 value={form.status ?? 'PENDENTE'}
-                onChange={(e) => set('status', e.target.value as HonorarioInput['status'])}
+                onChange={(e) => {
+                  const newStatus = e.target.value as HonorarioInput['status'];
+                  set('status', newStatus);
+                  // Se mudar para PAGO e não tiver data de pagamento, coloca hoje automaticamente
+                  if (newStatus === 'PAGO' && !form.dataPagto) {
+                    set('dataPagto', today);
+                  }
+                  // Se mudar para PAGO e não tiver valor pago, sugere o valor total
+                  if (newStatus === 'PAGO' && !form.valorPago) {
+                    set('valorPago', form.valor);
+                  }
+                }}
               >
                 <option value="PENDENTE">Pendente</option>
                 <option value="PAGO">Pago</option>

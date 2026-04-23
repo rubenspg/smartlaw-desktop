@@ -1,24 +1,85 @@
 import { Hono } from 'hono';
 import { db } from '../db';
 import { honorarios, clientes } from '../db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import { authMiddleware, Variables } from '../middleware/auth';
-import { honorarioSchema } from '@smartlaw/shared';
+import { honorarioSchema, type HonorarioSummary } from '@smartlaw/shared';
 import { zValidator } from '@hono/zod-validator';
 
 const honorariosRoutes = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
 
+  .get('/summary', async (c) => {
+    const user = c.get('user');
+    const { month, year } = c.req.query();
+    
+    // Only admins can see the financial summary (totals)
+    if (user.perfil !== 'admin') {
+      return c.json({
+        totalRecebido: 0,
+        totalPendente: 0,
+        totalAtrasado: 0,
+      } as HonorarioSummary);
+    }
+
+    const now = new Date();
+    const targetMonth = month ? parseInt(month) : now.getMonth() + 1;
+    const targetYear = year ? parseInt(year) : now.getFullYear();
+    const todayStr = now.toISOString().split('T')[0];
+
+    // Filter by month/year based on dataVenc
+    const monthFilter = sql`EXTRACT(MONTH FROM ${honorarios.dataVenc}) = ${targetMonth} AND EXTRACT(YEAR FROM ${honorarios.dataVenc}) = ${targetYear}`;
+
+    const [summary] = await db
+      .select({
+        totalRecebido: sql<number>`COALESCE(SUM(
+          CASE 
+            WHEN ${honorarios.status} = 'PAGO' 
+            THEN ${honorarios.valorPago}
+            ELSE 0 
+          END
+        )::double precision, 0)`,
+        totalPendente: sql<number>`COALESCE(SUM(
+          CASE 
+            WHEN ${honorarios.status} = 'PENDENTE' AND ${honorarios.dataVenc} >= ${todayStr} 
+            THEN (${honorarios.valor} - COALESCE(${honorarios.valorPago}, 0))
+            ELSE 0 
+          END
+        )::double precision, 0)`,
+        totalAtrasado: sql<number>`COALESCE(SUM(
+          CASE 
+            WHEN ${honorarios.status} = 'PENDENTE' AND ${honorarios.dataVenc} < ${todayStr} 
+            THEN (${honorarios.valor} - COALESCE(${honorarios.valorPago}, 0))
+            ELSE 0 
+          END
+        )::double precision, 0)`,
+      })
+      .from(honorarios)
+      .where(and(eq(honorarios.firmId, user.firmId), monthFilter));
+
+    return c.json(summary as HonorarioSummary);
+  })
+
   .get('/', async (c) => {
     const user = c.get('user');
-    const { status, page = '1', limit = '10' } = c.req.query();
+    const { status, page = '1', limit = '10', month, year } = c.req.query();
 
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.max(1, parseInt(limit) || 10);
     const offset = (pageNum - 1) * limitNum;
 
     const where = [eq(honorarios.firmId, user.firmId)];
     if (status) where.push(eq(honorarios.status, status));
+
+    if (month && year) {
+      where.push(sql`EXTRACT(MONTH FROM ${honorarios.dataVenc}) = ${parseInt(month)}`);
+      where.push(sql`EXTRACT(YEAR FROM ${honorarios.dataVenc}) = ${parseInt(year)}`);
+    } else {
+      // Default to current month if no filter is provided
+      const now = new Date();
+      where.push(sql`EXTRACT(MONTH FROM ${honorarios.dataVenc}) = ${now.getMonth() + 1}`);
+      where.push(sql`EXTRACT(YEAR FROM ${honorarios.dataVenc}) = ${now.getFullYear()}`);
+    }
 
     const data = await db
       .select({
@@ -52,6 +113,7 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
   .get('/:id', async (c) => {
     const user = c.get('user');
     const id = parseInt(c.req.param('id'));
+    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
 
     const [data] = await db
       .select({
@@ -97,6 +159,7 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
   .put('/:id', zValidator('json', honorarioSchema), async (c) => {
     const user = c.get('user');
     const id = parseInt(c.req.param('id'));
+    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
     const data = c.req.valid('json');
 
     const [updated] = await db
@@ -112,6 +175,7 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
   .delete('/:id', async (c) => {
     const user = c.get('user');
     const id = parseInt(c.req.param('id'));
+    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
 
     const [deleted] = await db
       .delete(honorarios)

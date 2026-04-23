@@ -99,14 +99,14 @@ export const clienteSchema = z.object({
 export type ClienteInput = z.infer<typeof clienteSchema>;
 
 export const clienteNotaSchema = z.object({
-  clienteId: z.number(),
+  clienteId: z.number().min(1, 'Cliente é obrigatório'),
   texto: z.string().min(1, 'O texto da nota é obrigatório'),
 });
 
 export type ClienteNotaInput = z.infer<typeof clienteNotaSchema>;
 
 export const processoJudicialSchema = z.object({
-  clienteId: z.number(),
+  clienteId: z.number().min(1, 'Cliente é obrigatório'),
   numero: z.string().min(1, 'Número do processo é obrigatório'),
   distribuicao: z.string().optional().nullable(),
   juizo: z.string().optional().nullable(),
@@ -124,7 +124,7 @@ export const processoJudicialSchema = z.object({
 export type ProcessoJudicialInput = z.infer<typeof processoJudicialSchema>;
 
 export const processoAdministrativoSchema = z.object({
-  clienteId: z.number(),
+  clienteId: z.number().min(1, 'Cliente é obrigatório'),
   numero: z.string().min(1, 'Número ou Identificação é obrigatório'),
   dataCadastro: z.string().optional().nullable(),
   abertura: z.string().optional().nullable(),
@@ -137,7 +137,7 @@ export const processoAdministrativoSchema = z.object({
 export type ProcessoAdministrativoInput = z.infer<typeof processoAdministrativoSchema>;
 
 export const honorarioSchema = z.object({
-  clienteId: z.number(),
+  clienteId: z.number().min(1, 'Cliente é obrigatório'),
   processoJudicialId: z.number().optional().nullable(),
   processoAdminId: z.number().optional().nullable(),
   descricao: z.string().min(1, 'Descrição é obrigatória'),
