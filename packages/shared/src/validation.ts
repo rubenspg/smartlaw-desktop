@@ -156,14 +156,14 @@ export const usuarioSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),
   email: z.string().email('E-mail inválido'),
   senha: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
-  perfil: z.enum(['admin', 'usuario']).default('usuario'),
+  perfil: z.enum(['admin', 'usuario', 'secretaria']).default('usuario'),
 });
 
 export type UsuarioInput = z.infer<typeof usuarioSchema>;
 
 export const usuarioUpdateSchema = z.object({
   nome: z.string().min(1).optional(),
-  perfil: z.enum(['admin', 'usuario']).optional(),
+  perfil: z.enum(['admin', 'usuario', 'secretaria']).optional(),
   ativo: z.boolean().optional(),
 });
 

@@ -1,5 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { useState } from 'react';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { useState, useEffect } from 'react';
 import {
   Users,
   FileText,
@@ -26,6 +26,7 @@ import {
   Legend,
 } from 'recharts';
 import { useDashboardStats } from '@/hooks/use-dashboard';
+import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/insights/')({
@@ -35,8 +36,16 @@ export const Route = createFileRoute('/_dashboard/insights/')({
 type TimeSlice = 'all' | '1y' | '6m' | '1m';
 
 function InsightsPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: stats, isLoading, error } = useDashboardStats();
   const [timeSlice, setTimeSlice] = useState<TimeSlice>('all');
+
+  useEffect(() => {
+    if (user?.perfil === 'usuario') {
+      navigate({ to: '/' });
+    }
+  }, [user, navigate]);
 
   if (isLoading) {
     return (

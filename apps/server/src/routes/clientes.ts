@@ -13,8 +13,8 @@ const clientesRoutes = new Hono<{ Variables: Variables }>()
     const user = c.get('user');
     const { q, situacao, page = '1', limit = '10' } = c.req.query();
     
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.max(1, parseInt(limit) || 10);
     const offset = (pageNum - 1) * limitNum;
 
     const where = [eq(clientes.firmId, user.firmId)];
@@ -57,6 +57,7 @@ const clientesRoutes = new Hono<{ Variables: Variables }>()
   .get('/:id', async (c) => {
     const user = c.get('user');
     const id = parseInt(c.req.param('id'));
+    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
 
     const [cliente] = await db
       .select()
@@ -90,6 +91,7 @@ const clientesRoutes = new Hono<{ Variables: Variables }>()
   .put('/:id', zValidator('json', clienteSchema), async (c) => {
     const user = c.get('user');
     const id = parseInt(c.req.param('id'));
+    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
     const data = c.req.valid('json');
 
     const [updatedCliente] = await db
@@ -111,6 +113,7 @@ const clientesRoutes = new Hono<{ Variables: Variables }>()
   .delete('/:id', async (c) => {
     const user = c.get('user');
     const id = parseInt(c.req.param('id'));
+    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
 
     // Check for related processes (Judicial and Administrative)
     const [judicialCount] = await db

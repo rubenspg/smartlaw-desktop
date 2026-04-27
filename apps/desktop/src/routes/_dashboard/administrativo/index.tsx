@@ -94,14 +94,6 @@ function AdministrativoPage() {
     }
   };
 
-  const handleChangePerfil = async (id: string, perfil: 'admin' | 'usuario') => {
-    try {
-      await updateUsuario.mutateAsync({ id, data: { perfil } });
-    } catch (err: any) {
-      alert(err.message);
-    }
-  };
-
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja remover permanentemente este usuário?')) return;
     try {
@@ -196,7 +188,9 @@ function AdministrativoPage() {
                             'w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg',
                             u.perfil === 'admin'
                               ? 'bg-[#eff6ff] text-[#2563eb] border-2 border-[#dbeafe]'
-                              : 'bg-[#f1f5f9] text-[#64748b]',
+                              : u.perfil === 'secretaria'
+                                ? 'bg-[#fffbeb] text-[#d97706] border-2 border-[#fef3c7]'
+                                : 'bg-[#f1f5f9] text-[#64748b]',
                           )}
                         >
                           {u.nome.substring(0, 2).toUpperCase()}
@@ -216,11 +210,15 @@ function AdministrativoPage() {
                                 'text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1',
                                 u.perfil === 'admin'
                                   ? 'bg-[#e0e7ff] text-[#4338ca]'
-                                  : 'bg-[#ecfdf5] text-[#047857]',
+                                  : u.perfil === 'secretaria'
+                                    ? 'bg-[#fef3c7] text-[#92400e]'
+                                    : 'bg-[#ecfdf5] text-[#047857]',
                               )}
                             >
                               {u.perfil === 'admin' ? (
                                 <ShieldCheck className="w-3 h-3" />
+                              ) : u.perfil === 'secretaria' ? (
+                                <Shield className="w-3 h-3" />
                               ) : (
                                 <UserIcon className="w-3 h-3" />
                               )}
@@ -234,18 +232,6 @@ function AdministrativoPage() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <select
-                          className="text-xs bg-white border border-[#e2e8f0] rounded p-1.5 outline-none"
-                          value={u.perfil ?? 'usuario'}
-                          onChange={(e) =>
-                            handleChangePerfil(u.id, e.target.value as 'admin' | 'usuario')
-                          }
-                          disabled={u.id === user.id}
-                        >
-                          <option value="admin">Admin</option>
-                          <option value="usuario">Usuário</option>
-                        </select>
-
                         <button
                           onClick={() => handleToggleStatus(u)}
                           disabled={u.id === user.id}
@@ -295,12 +281,19 @@ function AdministrativoPage() {
                   </p>
                 </div>
                 <div className="text-xs">
+                  <p className="font-bold text-[#92400e] uppercase tracking-widest mb-1 text-[9px]">
+                    Secretaria
+                  </p>
+                  <p className="text-[#b45309]">
+                    Gestão de clientes, processos, tarefas e financeiro operacional. Sem gestão de usuários.
+                  </p>
+                </div>
+                <div className="text-xs">
                   <p className="font-bold text-[#047857] uppercase tracking-widest mb-1 text-[9px]">
                     Usuário
                   </p>
                   <p className="text-[#059669]">
-                    Acesso a clientes, processos, tarefas e financeiro operacional. Sem gestão de
-                    usuários ou auditoria.
+                    Acesso limitado a processos e tarefas atribuídas.
                   </p>
                 </div>
               </div>
@@ -581,10 +574,11 @@ function NovoUsuarioDialog({
               className="w-full p-2 border border-[#e2e8f0] rounded-lg outline-none bg-white"
               value={formData.perfil}
               onChange={(e) =>
-                setFormData({ ...formData, perfil: e.target.value as 'admin' | 'usuario' })
+                setFormData({ ...formData, perfil: e.target.value as 'admin' | 'usuario' | 'secretaria' })
               }
             >
               <option value="usuario">Usuário</option>
+              <option value="secretaria">Secretaria</option>
               <option value="admin">Administrador</option>
             </select>
           </div>

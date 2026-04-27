@@ -49,6 +49,7 @@ const tarefasRoutes = new Hono<{ Variables: Variables }>()
   .get('/:id', async (c) => {
     const user = c.get('user');
     const id = parseInt(c.req.param('id'));
+    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
 
     const data = await db.query.tarefas.findFirst({
       where: and(eq(tarefas.id, id), eq(tarefas.firmId, user.firmId)),
@@ -95,6 +96,7 @@ const tarefasRoutes = new Hono<{ Variables: Variables }>()
   .put('/:id', zValidator('json', tarefaSchema), async (c) => {
     const user = c.get('user');
     const id = parseInt(c.req.param('id'));
+    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
     const data = c.req.valid('json');
 
     const [updatedTarefa] = await db
@@ -117,6 +119,7 @@ const tarefasRoutes = new Hono<{ Variables: Variables }>()
   .delete('/:id', async (c) => {
     const user = c.get('user');
     const id = parseInt(c.req.param('id'));
+    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
 
     const [deletedTarefa] = await db
       .delete(tarefas)

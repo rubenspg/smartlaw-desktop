@@ -32,50 +32,70 @@ const usuariosRoutes = new Hono<{ Variables: Variables }>()
     return c.json(data);
   })
 
-  .post('/', zValidator('json', usuarioSchema), async (c) => {
+  .post('/', zValidator('json', usuarioSchema, (result, c) => {
+    if (!result.success) {
+      console.error('[Usuarios] Erro de validação na criação:', result.error);
+      return c.json({ error: 'Erro de validação', details: result.error.format() }, 400);
+    }
+  }), async (c) => {
     const user = c.get('user');
     const { nome, email, senha, perfil } = c.req.valid('json');
 
-    const [existing] = await db
-      .select({ id: profiles.id })
-      .from(profiles)
-      .where(eq(profiles.email, email))
-      .limit(1);
+    console.log('[Usuarios] Tentando criar novo usuário:', { nome, email, perfil });
 
-    if (existing) {
-      return c.json({ error: 'Já existe um usuário com esse e-mail' }, 409);
+    try {
+      const [existing] = await db
+        .select({ id: profiles.id })
+        .from(profiles)
+        .where(eq(profiles.email, email))
+        .limit(1);
+
+      if (existing) {
+        return c.json({ error: 'Já existe um usuário com esse e-mail' }, 409);
+      }
+
+      const passwordHash = await bcrypt.hash(senha, 10);
+
+      const [created] = await db
+        .insert(profiles)
+        .values({
+          nome,
+          email,
+          passwordHash,
+          perfil,
+          ativo: true,
+          firmId: user.firmId,
+        })
+        .returning({
+          id: profiles.id,
+          nome: profiles.nome,
+          email: profiles.email,
+          perfil: profiles.perfil,
+          ativo: profiles.ativo,
+          firmId: profiles.firmId,
+          createdAt: profiles.createdAt,
+          updatedAt: profiles.updatedAt,
+        });
+
+      console.log('[Usuarios] Usuário criado com sucesso:', created.id);
+      return c.json(created, 201);
+    } catch (err: any) {
+      console.error('[Usuarios] Erro ao inserir usuário no banco:', err);
+      return c.json({ error: 'Erro ao salvar usuário no banco', details: err.message }, 500);
     }
-
-    const passwordHash = await bcrypt.hash(senha, 10);
-
-    const [created] = await db
-      .insert(profiles)
-      .values({
-        nome,
-        email,
-        passwordHash,
-        perfil,
-        ativo: true,
-        firmId: user.firmId,
-      })
-      .returning({
-        id: profiles.id,
-        nome: profiles.nome,
-        email: profiles.email,
-        perfil: profiles.perfil,
-        ativo: profiles.ativo,
-        firmId: profiles.firmId,
-        createdAt: profiles.createdAt,
-        updatedAt: profiles.updatedAt,
-      });
-
-    return c.json(created, 201);
   })
 
-  .patch('/:id', zValidator('json', usuarioUpdateSchema), async (c) => {
+  .patch('/:id', zValidator('json', usuarioUpdateSchema, (result, c) => {
+    if (!result.success) {
+      console.error('[Usuarios] Erro de validação na atualização:', result.error);
+      return c.json({ error: 'Erro de validação', details: result.error.format() }, 400);
+    }
+  }), async (c) => {
     const user = c.get('user');
     const id = c.req.param('id');
     const data = c.req.valid('json');
+
+    console.log(`[Usuarios] Tentando atualizar usuário ${id}:`, data);
 
     if (id === user.id && data.perfil && data.perfil !== 'admin') {
       return c.json({ error: 'Você não pode rebaixar seu próprio perfil' }, 400);
@@ -84,26 +104,33 @@ const usuariosRoutes = new Hono<{ Variables: Variables }>()
       return c.json({ error: 'Você não pode desativar a si mesmo' }, 400);
     }
 
-    const [updated] = await db
-      .update(profiles)
-      .set({ ...data, updatedAt: new Date() })
-      .where(and(eq(profiles.id, id), eq(profiles.firmId, user.firmId)))
-      .returning({
-        id: profiles.id,
-        nome: profiles.nome,
-        email: profiles.email,
-        perfil: profiles.perfil,
-        ativo: profiles.ativo,
-        firmId: profiles.firmId,
-        createdAt: profiles.createdAt,
-        updatedAt: profiles.updatedAt,
-      });
+    try {
+      const [updated] = await db
+        .update(profiles)
+        .set({ ...data, updatedAt: new Date() })
+        .where(and(eq(profiles.id, id), eq(profiles.firmId, user.firmId)))
+        .returning({
+          id: profiles.id,
+          nome: profiles.nome,
+          email: profiles.email,
+          perfil: profiles.perfil,
+          ativo: profiles.ativo,
+          firmId: profiles.firmId,
+          createdAt: profiles.createdAt,
+          updatedAt: profiles.updatedAt,
+        });
 
-    if (!updated) {
-      return c.json({ error: 'Usuário não encontrado' }, 404);
+      if (!updated) {
+        console.error(`[Usuarios] Usuário ${id} não encontrado ou não pertence à firma ${user.firmId}`);
+        return c.json({ error: 'Usuário não encontrado' }, 404);
+      }
+
+      console.log(`[Usuarios] Usuário ${id} atualizado com sucesso:`, updated.perfil);
+      return c.json(updated);
+    } catch (err: any) {
+      console.error(`[Usuarios] Erro ao atualizar usuário ${id}:`, err);
+      return c.json({ error: 'Erro interno ao atualizar usuário' }, 500);
     }
-
-    return c.json(updated);
   })
 
   .delete('/:id', async (c) => {

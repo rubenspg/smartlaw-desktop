@@ -2,7 +2,7 @@ import { pgTable, text, timestamp, uuid, boolean, pgEnum, bigint, date, decimal,
 import { relations } from 'drizzle-orm';
 
 // Enums (Optional, can also use text with Zod validation)
-export const perfilEnum = pgEnum('perfil', ['admin', 'usuario']);
+export const perfilEnum = pgEnum('perfil', ['admin', 'usuario', 'secretaria']);
 export const statusEnum = pgEnum('status', ['PENDENTE', 'PAGO', 'CANCELADO']);
 export const prioridadeEnum = pgEnum('prioridade', ['BAIXA', 'MEDIA', 'ALTA']);
 
@@ -55,7 +55,7 @@ export const profiles = pgTable('profiles', {
   nome: text('nome').notNull(),
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
-  perfil: text('perfil').default('usuario'), // 'admin' | 'usuario'
+  perfil: text('perfil').$type<'admin' | 'usuario' | 'secretaria'>().default('usuario'),
   ativo: boolean('ativo').default(true),
   firmId: uuid('firm_id').references(() => firms.id),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),

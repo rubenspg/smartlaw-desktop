@@ -21,8 +21,8 @@ const processosAdministrativosRoutes = new Hono<{ Variables: Variables }>()
     const user = c.get('user');
     const { q, page = '1', limit = '10', clienteId } = c.req.valid('query');
 
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.max(1, parseInt(limit) || 10);
     const offset = (pageNum - 1) * limitNum;
 
     // Use .select() when q is provided to support searching by client name
@@ -81,6 +81,7 @@ const processosAdministrativosRoutes = new Hono<{ Variables: Variables }>()
   .get('/:id', async (c) => {
     const user = c.get('user');
     const id = parseInt(c.req.param('id'));
+    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
 
     const data = await db.query.processosAdministrativos.findFirst({
       where: and(eq(processosAdministrativos.id, id), eq(processosAdministrativos.firmId, user.firmId)),
@@ -117,6 +118,7 @@ const processosAdministrativosRoutes = new Hono<{ Variables: Variables }>()
   .put('/:id', zValidator('json', processoAdministrativoSchema), async (c) => {
     const user = c.get('user');
     const id = parseInt(c.req.param('id'));
+    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
     const data = c.req.valid('json');
 
     const [updatedProcesso] = await db
@@ -141,6 +143,7 @@ const processosAdministrativosRoutes = new Hono<{ Variables: Variables }>()
   .delete('/:id', async (c) => {
     const user = c.get('user');
     const id = parseInt(c.req.param('id'));
+    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
 
     const [deletedProcesso] = await db
       .delete(processosAdministrativos)

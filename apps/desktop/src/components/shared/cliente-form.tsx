@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
+import { useState } from 'react';
+import { CheckCircle2, Loader2, Search, XCircle } from 'lucide-react';
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
@@ -46,6 +47,12 @@ function formatTelefone(v: string) {
   return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
 }
 
+function formatCEP(v: string) {
+  const d = v.replace(/\D/g, '').slice(0, 8);
+  if (d.length <= 5) return d;
+  return `${d.slice(0, 5)}-${d.slice(5)}`;
+}
+
 function formatDateForInput(v: string | null | undefined) {
   if (!v) return '';
   // If it's already YYYY-MM-DD
@@ -76,6 +83,7 @@ interface ClienteFormProps {
 }
 
 export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteFormProps) {
+  const [isSearchingCEP, setIsSearchingCEP] = useState(false);
   const { register, handleSubmit, control, formState: { errors }, setValue, watch } = useForm<ClienteInput>({
     resolver: zodResolver(clienteSchema),
     defaultValues: initialData ? {
@@ -109,6 +117,31 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
       situacao: 'A',
     },
   });
+
+  const handleCEPLookup = async (cep: string) => {
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length !== 8) return;
+
+    setIsSearchingCEP(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await response.json();
+
+      if (!data.erro) {
+        setValue('endereco', data.logradouro, { shouldValidate: true });
+        setValue('bairro', data.bairro, { shouldValidate: true });
+        setValue('municipio', data.localidade, { shouldValidate: true });
+        setValue('estado', data.uf, { shouldValidate: true });
+        setValue('municipioCodigo', data.ibge, { shouldValidate: true });
+        // Set focus to Number field after finding the address
+        document.getElementById('endNumero')?.focus();
+      }
+    } catch (error) {
+      console.error('Erro ao buscar CEP:', error);
+    } finally {
+      setIsSearchingCEP(false);
+    }
+  };
 
   const tipo = watch('tipo');
   const cpfCnpjValue = watch('cpfCnpj') ?? '';
@@ -387,7 +420,32 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="space-y-2">
               <Label htmlFor="cep">CEP</Label>
-              <Input id="cep" {...register('cep')} placeholder="00000-000" />
+              <div className="relative">
+                <Controller
+                  name="cep"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="cep"
+                      placeholder="00000-000"
+                      value={field.value ?? ''}
+                      onChange={(e) => field.onChange(formatCEP(e.target.value))}
+                      onBlur={(e) => {
+                        field.onBlur();
+                        handleCEPLookup(e.target.value);
+                      }}
+                      className="pr-8"
+                    />
+                  )}
+                />
+                <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                  {isSearchingCEP ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  ) : (
+                    <Search className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </div>
+              </div>
             </div>
             <div className="md:col-span-2 space-y-2">
               <Label htmlFor="endereco">Logradouro</Label>

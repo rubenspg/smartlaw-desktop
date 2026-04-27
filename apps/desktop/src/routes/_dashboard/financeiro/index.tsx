@@ -1,5 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { useState } from 'react';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { useState, useEffect } from 'react';
 import {
   Plus,
   Search,
@@ -62,6 +62,15 @@ export const Route = createFileRoute('/_dashboard/financeiro/')({
 const today = new Date().toISOString().split('T')[0];
 
 function FinanceiroPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user?.perfil === 'usuario') {
+      navigate({ to: '/' });
+    }
+  }, [user, navigate]);
+
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
@@ -70,7 +79,6 @@ function FinanceiroPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Honorario | null>(null);
 
-  const { user } = useAuth();
   const isAdmin = user?.perfil === 'admin';
 
   console.log('DEBUG - Perfil atual:', user?.perfil, 'isAdmin:', isAdmin);

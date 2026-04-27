@@ -7,6 +7,7 @@ import {
   FileText, 
   LogOut, 
   X,
+  Menu,
   Home,
   Settings,
   TrendingUp,
@@ -49,6 +50,16 @@ function DashboardLayout() {
 
   const userInitial = user?.nome?.charAt(0).toUpperCase() || 'U';
 
+  const filteredMenuItems = menuItems.filter((item) => {
+    if (user?.perfil === 'usuario') {
+      return !['/financeiro', '/insights', '/administrativo'].includes(item.to);
+    }
+    if (user?.perfil === 'secretaria') {
+      return !['/administrativo'].includes(item.to);
+    }
+    return true;
+  });
+
   return (
     <div className="min-h-screen bg-[#f8f9fa] flex">
       {/* Sidebar */}
@@ -64,7 +75,7 @@ function DashboardLayout() {
         </div>
 
         <nav className="flex-1 py-4 px-3 space-y-1">
-          {menuItems.map((item) => {
+          {filteredMenuItems.map((item) => {
             const isActive = location.pathname === item.to || (item.to !== '/' && location.pathname.startsWith(item.to));
             return (
               <Link
@@ -116,7 +127,7 @@ function DashboardLayout() {
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="p-2 rounded-md hover:bg-[#f1f5f9] transition-colors text-[#64748b]"
             >
-              <X className="w-5 h-5" />
+              {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
 

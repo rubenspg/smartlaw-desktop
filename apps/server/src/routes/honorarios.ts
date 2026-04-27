@@ -11,10 +11,15 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
 
   .get('/summary', async (c) => {
     const user = c.get('user');
+
+    if (user.perfil === 'usuario') {
+      return c.json({ error: 'Acesso negado' }, 403);
+    }
+
     const { month, year } = c.req.query();
     
     // Only admins can see the financial summary (totals)
-    if (user.perfil !== 'admin') {
+    if (user.perfil !== 'admin' && user.perfil !== 'secretaria') {
       return c.json({
         totalRecebido: 0,
         totalPendente: 0,
@@ -62,6 +67,11 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
 
   .get('/', async (c) => {
     const user = c.get('user');
+
+    if (user.perfil === 'usuario') {
+      return c.json({ error: 'Acesso negado' }, 403);
+    }
+
     const { status, page = '1', limit = '10', month, year } = c.req.query();
 
     const pageNum = Math.max(1, parseInt(page) || 1);
@@ -146,6 +156,11 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
 
   .post('/', zValidator('json', honorarioSchema), async (c) => {
     const user = c.get('user');
+
+    if (user.perfil === 'usuario') {
+      return c.json({ error: 'Acesso negado' }, 403);
+    }
+
     const data = c.req.valid('json');
 
     const [newHonorario] = await db
@@ -158,6 +173,11 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
 
   .put('/:id', zValidator('json', honorarioSchema), async (c) => {
     const user = c.get('user');
+
+    if (user.perfil === 'usuario') {
+      return c.json({ error: 'Acesso negado' }, 403);
+    }
+
     const id = parseInt(c.req.param('id'));
     if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
     const data = c.req.valid('json');
@@ -174,6 +194,11 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
 
   .delete('/:id', async (c) => {
     const user = c.get('user');
+
+    if (user.perfil === 'usuario') {
+      return c.json({ error: 'Acesso negado' }, 403);
+    }
+
     const id = parseInt(c.req.param('id'));
     if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
 

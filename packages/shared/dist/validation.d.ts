@@ -279,6 +279,37 @@ export declare const honorarioSchema: z.ZodObject<{
     dataPagto?: string | null | undefined;
 }>;
 export type HonorarioInput = z.infer<typeof honorarioSchema>;
+export declare const usuarioSchema: z.ZodObject<{
+    nome: z.ZodString;
+    email: z.ZodString;
+    senha: z.ZodString;
+    perfil: z.ZodDefault<z.ZodEnum<["admin", "usuario", "secretaria"]>>;
+}, "strip", z.ZodTypeAny, {
+    email: string;
+    nome: string;
+    senha: string;
+    perfil: "admin" | "usuario" | "secretaria";
+}, {
+    email: string;
+    nome: string;
+    senha: string;
+    perfil?: "admin" | "usuario" | "secretaria" | undefined;
+}>;
+export type UsuarioInput = z.infer<typeof usuarioSchema>;
+export declare const usuarioUpdateSchema: z.ZodObject<{
+    nome: z.ZodOptional<z.ZodString>;
+    perfil: z.ZodOptional<z.ZodEnum<["admin", "usuario", "secretaria"]>>;
+    ativo: z.ZodOptional<z.ZodBoolean>;
+}, "strip", z.ZodTypeAny, {
+    nome?: string | undefined;
+    perfil?: "admin" | "usuario" | "secretaria" | undefined;
+    ativo?: boolean | undefined;
+}, {
+    nome?: string | undefined;
+    perfil?: "admin" | "usuario" | "secretaria" | undefined;
+    ativo?: boolean | undefined;
+}>;
+export type UsuarioUpdateInput = z.infer<typeof usuarioUpdateSchema>;
 export declare const tarefaSchema: z.ZodObject<{
     usuarioId: z.ZodString;
     clienteId: z.ZodNullable<z.ZodOptional<z.ZodNumber>>;

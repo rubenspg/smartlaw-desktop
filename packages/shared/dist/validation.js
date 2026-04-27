@@ -101,11 +101,11 @@ export const clienteSchema = z.object({
     }
 });
 export const clienteNotaSchema = z.object({
-    clienteId: z.number(),
+    clienteId: z.number().min(1, 'Cliente é obrigatório'),
     texto: z.string().min(1, 'O texto da nota é obrigatório'),
 });
 export const processoJudicialSchema = z.object({
-    clienteId: z.number(),
+    clienteId: z.number().min(1, 'Cliente é obrigatório'),
     numero: z.string().min(1, 'Número do processo é obrigatório'),
     distribuicao: z.string().optional().nullable(),
     juizo: z.string().optional().nullable(),
@@ -120,7 +120,7 @@ export const processoJudicialSchema = z.object({
     localizacaoId: z.string().optional().nullable(),
 });
 export const processoAdministrativoSchema = z.object({
-    clienteId: z.number(),
+    clienteId: z.number().min(1, 'Cliente é obrigatório'),
     numero: z.string().min(1, 'Número ou Identificação é obrigatório'),
     dataCadastro: z.string().optional().nullable(),
     abertura: z.string().optional().nullable(),
@@ -130,7 +130,7 @@ export const processoAdministrativoSchema = z.object({
     especieId: z.string().optional().nullable(),
 });
 export const honorarioSchema = z.object({
-    clienteId: z.number(),
+    clienteId: z.number().min(1, 'Cliente é obrigatório'),
     processoJudicialId: z.number().optional().nullable(),
     processoAdminId: z.number().optional().nullable(),
     descricao: z.string().min(1, 'Descrição é obrigatória'),
@@ -141,6 +141,17 @@ export const honorarioSchema = z.object({
     status: z.enum(['PENDENTE', 'PAGO', 'CANCELADO']).default('PENDENTE'),
     tipo: z.string().default('HONORARIO'),
     observacoes: z.string().optional().nullable(),
+});
+export const usuarioSchema = z.object({
+    nome: z.string().min(1, 'Nome é obrigatório'),
+    email: z.string().email('E-mail inválido'),
+    senha: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+    perfil: z.enum(['admin', 'usuario', 'secretaria']).default('usuario'),
+});
+export const usuarioUpdateSchema = z.object({
+    nome: z.string().min(1).optional(),
+    perfil: z.enum(['admin', 'usuario', 'secretaria']).optional(),
+    ativo: z.boolean().optional(),
 });
 export const tarefaSchema = z.object({
     usuarioId: z.string().uuid('Usuário inválido'),

@@ -22,17 +22,38 @@ export class DatajudService {
     if (justiceType === '4') {
       alias = `api_publica_trf${parseInt(tribunalSet)}`;
     } else if (justiceType === '8') {
-      const tjCode = tribunalSet.padStart(2, '0');
-      alias = `api_publica_tj${tjCode.toLowerCase()}`;
+      const ufs: Record<string, string> = {
+        '01': 'ac', '02': 'al', '03': 'ap', '04': 'am', '05': 'ba',
+        '06': 'ce', '07': 'tjdft', '08': 'es', '09': 'go', '10': 'ma',
+        '11': 'mt', '12': 'ms', '13': 'mg', '14': 'pa', '15': 'pb',
+        '16': 'pr', '17': 'pe', '18': 'pi', '19': 'rj', '20': 'rn',
+        '21': 'rs', '22': 'ro', '23': 'rr', '24': 'sc', '25': 'se',
+        '26': 'sp', '27': 'to'
+      };
+      const uf = ufs[tribunalSet] || 'sp';
+      alias = uf === 'tjdft' ? 'api_publica_tjdft' : `api_publica_tj${uf}`;
     } else if (justiceType === '5') {
-      alias = 'api_publica_tst';
+      alias = `api_publica_trt${parseInt(tribunalSet)}`;
+    } else if (justiceType === '1') {
+      alias = 'api_publica_stf';
+    } else if (justiceType === '2') {
+      alias = 'api_publica_cnj';
+    } else if (justiceType === '3') {
+      alias = 'api_publica_stj';
+    } else if (justiceType === '6') {
+      alias = 'api_publica_tse';
+    } else if (justiceType === '7') {
+      alias = 'api_publica_stm';
     }
+
+    const apiKey = process.env.DATAJUD_API_KEY || '';
+    const authHeader = apiKey.startsWith('APIKey') ? apiKey : `APIKey ${apiKey}`;
 
     const response = await fetch(`https://api-publica.datajud.cnj.jus.br/${alias}/_search`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `${process.env.DATAJUD_API_KEY || ''}`
+        'Authorization': authHeader
       },
       body: JSON.stringify({
         query: { match: { numeroProcesso: numeroLimpo } }

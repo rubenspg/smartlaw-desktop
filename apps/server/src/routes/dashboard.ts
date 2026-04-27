@@ -8,6 +8,11 @@ const dashboard = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
   .get('/', async (c) => {
     const user = c.get('user');
+
+    if (user.perfil === 'usuario') {
+      return c.json({ error: 'Acesso negado' }, 403);
+    }
+
     const firmFilter = { firmId: user.firmId };
 
     const [
