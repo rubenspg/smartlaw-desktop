@@ -25,13 +25,22 @@ const lookupsRoutes = new Hono<{ Variables: Variables }>()
   .get('/municipios', async (c) => {
     const { q } = c.req.query();
     const query = db.select().from(municipios);
-    
+
     if (q) {
       query.where(ilike(municipios.nome, `%${q}%`));
     }
 
     const data = await query.limit(50).orderBy(asc(municipios.nome));
     return c.json(data);
+  })
+
+  .get('/municipios/by-ibge/:ibge', async (c) => {
+    const ibge = c.req.param('ibge');
+    const m = await db.query.municipios.findFirst({
+      where: eq(municipios.codIbge, ibge),
+    });
+    if (!m) return c.json({ error: 'Município não encontrado' }, 404);
+    return c.json(m);
   })
 
   .get('/especies-processo', async (c) => {

@@ -72,6 +72,27 @@ export function useUpdateTarefa(id: number) {
   });
 }
 
+export function useToggleTarefaStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: TarefaInput }) => {
+      const res = await api.tarefas[':id'].$put({
+        param: { id: id.toString() },
+        json: data as any,
+      });
+      if (!res.ok) {
+        const errData = await res.json() as any;
+        throw new Error(errData.error || 'Falha ao atualizar tarefa');
+      }
+      return res.json();
+    },
+    onSuccess: (_data, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['tarefas'] });
+      queryClient.invalidateQueries({ queryKey: ['tarefa', id] });
+    },
+  });
+}
+
 export function useDeleteTarefa() {
   const queryClient = useQueryClient();
   return useMutation({

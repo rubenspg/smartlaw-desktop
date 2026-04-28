@@ -16,8 +16,9 @@ import {
   Eye,
   Calendar,
   Database,
+  Pencil,
 } from 'lucide-react';
-import type { UsuarioInput, AuditLog, Usuario } from '@smartlaw/shared';
+import type { UsuarioInput, AuditLog, Usuario, UsuarioUpdateInput } from '@smartlaw/shared';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 import {
@@ -40,6 +41,7 @@ function AdministrativoPage() {
 
   const [activeTab, setActiveTab] = useState<Tab>('usuarios');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingUsuario, setEditingUsuario] = useState<Usuario | null>(null);
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [logSearchTerm, setLogSearchTerm] = useState('');
@@ -233,6 +235,14 @@ function AdministrativoPage() {
 
                       <div className="flex items-center gap-2">
                         <button
+                          onClick={() => setEditingUsuario(u)}
+                          className="p-2 rounded-lg text-[#64748b] hover:bg-[#eff6ff] hover:text-[#2563eb] transition-colors"
+                          title="Editar usuário"
+                        >
+                          <Pencil className="w-5 h-5" />
+                        </button>
+
+                        <button
                           onClick={() => handleToggleStatus(u)}
                           disabled={u.id === user.id}
                           className={cn(
@@ -414,17 +424,36 @@ function AdministrativoPage() {
       )}
 
       {showAddForm && (
-        <NovoUsuarioDialog
+        <UsuarioFormDialog
           onClose={() => setShowAddForm(false)}
           onSubmit={async (data) => {
             try {
-              await createUsuario.mutateAsync(data);
+              await createUsuario.mutateAsync(data as UsuarioInput);
               setShowAddForm(false);
             } catch (err: any) {
               alert(err.message);
             }
           }}
           isSubmitting={createUsuario.isPending}
+        />
+      )}
+
+      {editingUsuario && (
+        <UsuarioFormDialog
+          usuario={editingUsuario}
+          onClose={() => setEditingUsuario(null)}
+          onSubmit={async (data) => {
+            try {
+              await updateUsuario.mutateAsync({
+                id: editingUsuario.id,
+                data: data as UsuarioUpdateInput,
+              });
+              setEditingUsuario(null);
+            } catch (err: any) {
+              alert(err.message);
+            }
+          }}
+          isSubmitting={updateUsuario.isPending}
         />
       )}
     </div>
@@ -500,28 +529,40 @@ function AuditDetailDialog({ log, onClose }: { log: AuditLog; onClose: () => voi
   );
 }
 
-function NovoUsuarioDialog({
+function UsuarioFormDialog({
+  usuario,
   onClose,
   onSubmit,
   isSubmitting,
 }: {
+  usuario?: Usuario;
   onClose: () => void;
-  onSubmit: (data: UsuarioInput) => void;
+  onSubmit: (data: UsuarioInput | UsuarioUpdateInput) => void;
   isSubmitting: boolean;
 }) {
-  const [formData, setFormData] = useState<UsuarioInput>({
-    nome: '',
-    email: '',
+  const [formData, setFormData] = useState({
+    nome: usuario?.nome ?? '',
+    email: usuario?.email ?? '',
     senha: '',
-    perfil: 'usuario',
+    perfil: usuario?.perfil ?? 'usuario',
   });
+
+  const isEditing = !!usuario;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="p-6 border-b border-[#f1f5f9] flex items-center justify-between bg-[#f8fafc]">
           <h2 className="text-xl font-bold flex items-center gap-2 text-[#1e293b]">
-            <UserPlus className="w-5 h-5 text-[#2563eb]" /> Novo Usuário
+            {isEditing ? (
+              <>
+                <ShieldCheck className="w-5 h-5 text-[#2563eb]" /> Editar Usuário
+              </>
+            ) : (
+              <>
+                <UserPlus className="w-5 h-5 text-[#2563eb]" /> Novo Usuário
+              </>
+            )}
           </h2>
           <button onClick={onClose}>
             <XCircle className="w-6 h-6 text-[#64748b] hover:text-[#1e293b]" />
@@ -530,7 +571,12 @@ function NovoUsuarioDialog({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            onSubmit(formData);
+            if (isEditing) {
+              const { senha, ...updateData } = formData;
+              onSubmit(updateData);
+            } else {
+              onSubmit(formData as UsuarioInput);
+            }
           }}
           className="p-6 space-y-4"
         >
@@ -556,25 +602,30 @@ function NovoUsuarioDialog({
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             />
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-[#64748b] uppercase">Senha Inicial</label>
-            <input
-              type="password"
-              className="w-full p-2 border border-[#e2e8f0] rounded-lg focus:ring-2 focus:ring-[#2563eb] outline-none"
-              placeholder="Mínimo 6 caracteres"
-              minLength={6}
-              required
-              value={formData.senha}
-              onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
-            />
-          </div>
+          {!isEditing && (
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-[#64748b] uppercase">Senha Inicial</label>
+              <input
+                type="password"
+                className="w-full p-2 border border-[#e2e8f0] rounded-lg focus:ring-2 focus:ring-[#2563eb] outline-none"
+                placeholder="Mínimo 6 caracteres"
+                minLength={6}
+                required
+                value={formData.senha}
+                onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
+              />
+            </div>
+          )}
           <div className="space-y-1">
             <label className="text-xs font-bold text-[#64748b] uppercase">Cargo / Perfil</label>
             <select
               className="w-full p-2 border border-[#e2e8f0] rounded-lg outline-none bg-white"
               value={formData.perfil}
               onChange={(e) =>
-                setFormData({ ...formData, perfil: e.target.value as 'admin' | 'usuario' | 'secretaria' })
+                setFormData({
+                  ...formData,
+                  perfil: e.target.value as 'admin' | 'usuario' | 'secretaria',
+                })
               }
             >
               <option value="usuario">Usuário</option>
@@ -588,7 +639,13 @@ function NovoUsuarioDialog({
             disabled={isSubmitting}
             className="w-full py-3 bg-[#2563eb] text-white font-bold rounded-lg hover:bg-[#1d4ed8] shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
           >
-            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'CRIAR USUÁRIO'}
+            {isSubmitting ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : isEditing ? (
+              'SALVAR ALTERAÇÕES'
+            ) : (
+              'CRIAR USUÁRIO'
+            )}
           </button>
         </form>
       </div>

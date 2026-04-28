@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { db } from '../db';
-import { clientes, processosJudiciais, processosAdministrativos, andamentos } from '../db/schema';
-import { and, desc, eq, isNotNull, sql } from 'drizzle-orm';
+import { clientes, processosJudiciais, processosAdministrativos, andamentos, tarefas } from '../db/schema';
+import { and, desc, eq, isNotNull, isNull, ne, lt, gte, lte, sql, or } from 'drizzle-orm';
 import { authMiddleware, Variables } from '../middleware/auth';
 
 const dashboard = new Hono<{ Variables: Variables }>()
@@ -165,6 +165,161 @@ const dashboard = new Hono<{ Variables: Variables }>()
   });
 
 const dashboardRoutes = dashboard
+  .get('/resumo-pendencias', async (c) => {
+    const user = c.get('user');
+
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Tarefas: respeita escopo (usuario vê só as próprias; admin/secretaria veem todas da firma)
+    const baseTarefas = [
+      eq(tarefas.firmId, user.firmId),
+      ne(tarefas.status, 'CONCLUIDA'),
+    ];
+    if (user.perfil !== 'admin' && user.perfil !== 'secretaria') {
+      baseTarefas.push(eq(tarefas.usuarioId, user.id));
+    }
+
+    const [
+      [tarefasPendentesRow],
+      [tarefasHojeRow],
+      [tarefasAtrasadasRow],
+      [judiciaisAtivosRow],
+      [adminAtivosRow],
+    ] = await Promise.all([
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(tarefas)
+        .where(and(...baseTarefas)),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(tarefas)
+        .where(and(...baseTarefas, gte(tarefas.dataLimite, startOfDay), lte(tarefas.dataLimite, endOfDay))),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(tarefas)
+        .where(and(...baseTarefas, lt(tarefas.dataLimite, startOfDay))),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(processosJudiciais)
+        .where(and(eq(processosJudiciais.firmId, user.firmId), isNull(processosJudiciais.dtArquivado))),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(processosAdministrativos)
+        .where(
+          and(
+            eq(processosAdministrativos.firmId, user.firmId),
+            or(isNull(processosAdministrativos.decisao), eq(processosAdministrativos.decisao, '')),
+          ),
+        ),
+    ]);
+
+    return c.json({
+      tarefasPendentes: Number(tarefasPendentesRow?.count ?? 0),
+      tarefasHoje: Number(tarefasHojeRow?.count ?? 0),
+      tarefasAtrasadas: Number(tarefasAtrasadasRow?.count ?? 0),
+      processosJudiciaisAtivos: Number(judiciaisAtivosRow?.count ?? 0),
+      processosAdminAtivos: Number(adminAtivosRow?.count ?? 0),
+    });
+  })
+  .get('/resumo-ia', async (c) => {
+    const user = c.get('user');
+
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const baseTarefas = [
+      eq(tarefas.firmId, user.firmId),
+      ne(tarefas.status, 'CONCLUIDA'),
+    ];
+    if (user.perfil !== 'admin' && user.perfil !== 'secretaria') {
+      baseTarefas.push(eq(tarefas.usuarioId, user.id));
+    }
+
+    const [
+      [tarefasPendentesRow],
+      [tarefasHojeRow],
+      [tarefasAtrasadasRow],
+      [judiciaisAtivosRow],
+      [adminAtivosRow],
+    ] = await Promise.all([
+      db.select({ count: sql<number>`count(*)::int` }).from(tarefas).where(and(...baseTarefas)),
+      db.select({ count: sql<number>`count(*)::int` }).from(tarefas).where(and(...baseTarefas, gte(tarefas.dataLimite, startOfDay), lte(tarefas.dataLimite, endOfDay))),
+      db.select({ count: sql<number>`count(*)::int` }).from(tarefas).where(and(...baseTarefas, lt(tarefas.dataLimite, startOfDay))),
+      db.select({ count: sql<number>`count(*)::int` }).from(processosJudiciais).where(and(eq(processosJudiciais.firmId, user.firmId), isNull(processosJudiciais.dtArquivado))),
+      db.select({ count: sql<number>`count(*)::int` }).from(processosAdministrativos).where(
+        and(
+          eq(processosAdministrativos.firmId, user.firmId),
+          or(isNull(processosAdministrativos.decisao), eq(processosAdministrativos.decisao, '')),
+        ),
+      ),
+    ]);
+
+    const pendencias = {
+      tarefasPendentes: Number(tarefasPendentesRow?.count ?? 0),
+      tarefasHoje: Number(tarefasHojeRow?.count ?? 0),
+      tarefasAtrasadas: Number(tarefasAtrasadasRow?.count ?? 0),
+      processosJudiciaisAtivos: Number(judiciaisAtivosRow?.count ?? 0),
+      processosAdminAtivos: Number(adminAtivosRow?.count ?? 0),
+    };
+
+    const hojeFmt = new Date().toLocaleDateString('pt-BR', {
+      weekday: 'long', day: 'numeric', month: 'long',
+    });
+    const userPrompt = `Resuma a agenda do advogado para hoje (${hojeFmt}) com base nestes dados:
+- Tarefas pendentes no total: ${pendencias.tarefasPendentes}
+- Tarefas com prazo hoje: ${pendencias.tarefasHoje}
+- Tarefas atrasadas: ${pendencias.tarefasAtrasadas}
+- Processos judiciais ativos: ${pendencias.processosJudiciaisAtivos}
+- Processos administrativos ativos: ${pendencias.processosAdminAtivos}
+
+Se não houver pendências urgentes (sem tarefas hoje nem atrasadas), faça uma saudação positiva.`;
+
+    const LMSTUDIO_URL = process.env.LMSTUDIO_URL ?? 'http://localhost:1234';
+    const LMSTUDIO_MODEL = process.env.LMSTUDIO_MODEL ?? 'google/gemma-4-e4b';
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const res = await fetch(`${LMSTUDIO_URL}/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: LMSTUDIO_MODEL,
+          messages: [
+            { role: 'system', content: 'Você é um assistente jurídico. Responda em português do Brasil, em até 2 frases curtas e diretas, em texto corrido (sem markdown, listas ou cabeçalhos).' },
+            { role: 'user', content: userPrompt },
+          ],
+          stream: false,
+          temperature: 0.4,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        if (res.status === 404 || /model.*not.*(found|loaded)/i.test(errText)) {
+          return c.json({ texto: `Modelo '${LMSTUDIO_MODEL}' não está carregado no LM Studio.`, status: 'unavailable', pendencias });
+        }
+        return c.json({ texto: `LM Studio respondeu ${res.status}.`, status: 'error', pendencias });
+      }
+
+      const data: any = await res.json();
+      const texto = String(data?.choices?.[0]?.message?.content ?? '').trim();
+      return c.json({ texto, status: 'ready', pendencias });
+    } catch (err: any) {
+      clearTimeout(timeout);
+      const msg = err?.name === 'AbortError'
+        ? 'Tempo esgotado ao gerar resumo.'
+        : `IA local indisponível. Verifique se o LM Studio está rodando (porta 1234) com o modelo ${LMSTUDIO_MODEL} carregado.`;
+      return c.json({ texto: msg, status: 'unavailable' as const, pendencias });
+    }
+  })
   .get('/recentes', async (c) => {
     const user = c.get('user');
 

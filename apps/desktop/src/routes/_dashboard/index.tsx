@@ -33,8 +33,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useTarefas, useCreateTarefa, useUpdateTarefa, useDeleteTarefa } from '@/hooks/use-tarefas';
-import { useAndamentosRecentes } from '@/hooks/use-dashboard';
+import { useTarefas, useCreateTarefa, useUpdateTarefa, useDeleteTarefa, useToggleTarefaStatus } from '@/hooks/use-tarefas';
+import { useAndamentosRecentes, useResumoPendencias, useResumoIA } from '@/hooks/use-dashboard';
+import { Sparkles } from 'lucide-react';
 import { TarefaForm } from '@/components/shared/tarefa-form';
 import { Tarefa, TarefaInput } from '@smartlaw/shared';
 import { cn } from '@/lib/utils';
@@ -48,11 +49,15 @@ export const Route = createFileRoute('/_dashboard/')({
 function HomeComponent() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTarefa, setEditingTarefa] = useState<Tarefa | undefined>(undefined);
-  
+  const [confirmingTarefa, setConfirmingTarefa] = useState<Tarefa | undefined>(undefined);
+
   const { data: tarefas, isLoading: isLoadingTarefas } = useTarefas();
   const { data: andamentosRecentes, isLoading: isLoadingAndamentos, refetch: refetchAndamentos } = useAndamentosRecentes();
+  const { data: pendencias } = useResumoPendencias();
+  const { data: resumoIA, isFetching: isLoadingResumoIA } = useResumoIA(pendencias);
   const createTarefa = useCreateTarefa();
   const updateTarefa = useUpdateTarefa(editingTarefa?.id || 0);
+  const toggleStatus = useToggleTarefaStatus();
   const deleteTarefa = useDeleteTarefa();
 
   const handleCreate = () => {
@@ -71,16 +76,38 @@ function HomeComponent() {
     }
   };
 
-  const toggleStatus = async (tarefa: Tarefa) => {
-    const newStatus = tarefa.status === 'CONCLUIDA' ? 'PENDENTE' : 'CONCLUIDA';
-    await updateTarefa.mutateAsync({
-      usuarioId: tarefa.usuarioId,
-      titulo: tarefa.titulo,
-      descricao: tarefa.descricao,
-      dataLimite: tarefa.dataLimite,
-      prioridade: tarefa.prioridade as any,
-      status: newStatus as any,
+  const handleToggleClick = (tarefa: Tarefa) => {
+    if (tarefa.status === 'CONCLUIDA') {
+      toggleStatus.mutate({
+        id: tarefa.id,
+        data: {
+          usuarioId: tarefa.usuarioId,
+          titulo: tarefa.titulo,
+          descricao: tarefa.descricao,
+          dataLimite: tarefa.dataLimite,
+          prioridade: tarefa.prioridade as any,
+          status: 'PENDENTE' as any,
+        },
+      });
+    } else {
+      setConfirmingTarefa(tarefa);
+    }
+  };
+
+  const handleConfirmConcluir = async () => {
+    if (!confirmingTarefa) return;
+    await toggleStatus.mutateAsync({
+      id: confirmingTarefa.id,
+      data: {
+        usuarioId: confirmingTarefa.usuarioId,
+        titulo: confirmingTarefa.titulo,
+        descricao: confirmingTarefa.descricao,
+        dataLimite: confirmingTarefa.dataLimite,
+        prioridade: confirmingTarefa.prioridade as any,
+        status: 'CONCLUIDA' as any,
+      },
     });
+    setConfirmingTarefa(undefined);
   };
 
   const onSubmit = async (data: TarefaInput) => {
@@ -111,6 +138,34 @@ function HomeComponent() {
         <h1 className="text-4xl font-bold text-[#1e293b]">Início</h1>
         <p className="text-[#64748b] text-lg mt-1">Bem-vindo de volta. Veja o que há de novo hoje.</p>
       </div>
+
+      <Card className="border-none shadow-sm bg-gradient-to-br from-[#eef2ff] via-[#eff6ff] to-[#ecfeff]">
+        <CardContent className="p-5">
+          <div className="flex items-start gap-3">
+            <div className="shrink-0 w-9 h-9 rounded-xl bg-white/70 flex items-center justify-center">
+              <Sparkles className="w-4.5 h-4.5 text-[#6366f1]" />
+            </div>
+            <div className="flex-1 min-w-0 space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black tracking-wider text-[#4338ca] uppercase">Resumo do dia · IA local</span>
+                {isLoadingResumoIA && <Loader2 className="w-3 h-3 animate-spin text-[#6366f1]" />}
+              </div>
+              {isLoadingResumoIA && !resumoIA ? (
+                <p className="text-sm text-[#475569] italic">Gerando resumo...</p>
+              ) : resumoIA?.texto ? (
+                <p className={cn(
+                  'text-sm leading-relaxed font-medium',
+                  resumoIA.status === 'ready' ? 'text-[#1e293b]' : 'text-[#92400e]'
+                )}>
+                  {resumoIA.texto}
+                </p>
+              ) : (
+                <p className="text-sm text-[#475569] italic">Carregando dados...</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Andamentos Recentes */}
@@ -253,8 +308,8 @@ function HomeComponent() {
                       tarefa.status === 'CONCLUIDA' && "bg-slate-50/50"
                     )}>
                       <div className="flex items-start gap-3">
-                        <button 
-                          onClick={() => toggleStatus(tarefa)}
+                        <button
+                          onClick={() => handleToggleClick(tarefa)}
                           className={cn(
                             "mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all",
                             tarefa.status === 'CONCLUIDA' 
@@ -345,12 +400,36 @@ function HomeComponent() {
               {editingTarefa ? 'Atualize os detalhes da tarefa selecionada.' : 'Crie uma nova tarefa e atribua a um colaborador.'}
             </DialogDescription>
           </DialogHeader>
-          <TarefaForm 
+          <TarefaForm
             initialData={editingTarefa}
             onSubmit={onSubmit}
             isSubmitting={createTarefa.isPending || updateTarefa.isPending}
             onCancel={() => setIsFormOpen(false)}
           />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!confirmingTarefa} onOpenChange={(open) => !open && setConfirmingTarefa(undefined)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Concluir tarefa?</DialogTitle>
+            <DialogDescription>
+              Deseja marcar <strong>"{confirmingTarefa?.titulo}"</strong> como concluída?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 mt-2">
+            <Button variant="outline" onClick={() => setConfirmingTarefa(undefined)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmConcluir}
+              disabled={toggleStatus.isPending}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {toggleStatus.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+              Sim, concluída
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -163,6 +163,7 @@ export type UsuarioInput = z.infer<typeof usuarioSchema>;
 
 export const usuarioUpdateSchema = z.object({
   nome: z.string().min(1).optional(),
+  email: z.string().email('E-mail inválido').optional(),
   perfil: z.enum(['admin', 'usuario', 'secretaria']).optional(),
   ativo: z.boolean().optional(),
 });

@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { useUsuarios } from '@/hooks/use-lookups';
+import { useAuth } from '@/lib/auth';
 
 interface TarefaFormProps {
   initialData?: Tarefa;
@@ -17,7 +18,10 @@ interface TarefaFormProps {
 }
 
 export function TarefaForm({ initialData, onSubmit, isSubmitting, onCancel }: TarefaFormProps) {
+  const { user } = useAuth();
   const { data: usuarios, isLoading: isLoadingUsuarios } = useUsuarios();
+
+  const isManagement = user?.perfil === 'admin' || user?.perfil === 'secretaria';
 
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<TarefaInput>({
     resolver: zodResolver(tarefaSchema),
@@ -29,6 +33,7 @@ export function TarefaForm({ initialData, onSubmit, isSubmitting, onCancel }: Ta
       prioridade: initialData.prioridade as 'BAIXA' | 'MEDIA' | 'ALTA',
       status: initialData.status as 'PENDENTE' | 'CONCLUIDA' | 'CANCELADA',
     } : {
+      usuarioId: user?.id,
       prioridade: 'MEDIA',
       status: 'PENDENTE',
     },
@@ -39,7 +44,7 @@ export function TarefaForm({ initialData, onSubmit, isSubmitting, onCancel }: Ta
       <div className="space-y-2">
         <Label htmlFor="usuarioId">Atribuir para</Label>
         <Select
-          disabled={isLoadingUsuarios}
+          disabled={isLoadingUsuarios || !isManagement}
           value={watch('usuarioId')}
           onValueChange={(val) => setValue('usuarioId', val)}
         >

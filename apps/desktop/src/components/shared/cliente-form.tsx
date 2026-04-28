@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useState } from 'react';
 import { CheckCircle2, Loader2, Search, XCircle } from 'lucide-react';
+import { api } from '@/lib/api';
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
@@ -132,7 +133,24 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
         setValue('bairro', data.bairro, { shouldValidate: true });
         setValue('municipio', data.localidade, { shouldValidate: true });
         setValue('estado', data.uf, { shouldValidate: true });
-        setValue('municipioCodigo', data.ibge, { shouldValidate: true });
+
+        // Resolve IBGE → código interno do municipio (FK em clientes.municipio_codigo)
+        let municipioCodigo: string | null = null;
+        if (data.ibge) {
+          try {
+            const muniRes = await api.lookups.municipios['by-ibge'][':ibge'].$get({
+              param: { ibge: data.ibge },
+            });
+            if (muniRes.ok) {
+              const muni = await muniRes.json();
+              municipioCodigo = (muni as { codigo: string }).codigo;
+            }
+          } catch (err) {
+            console.error('Erro ao resolver código do município:', err);
+          }
+        }
+        setValue('municipioCodigo', municipioCodigo, { shouldValidate: true });
+
         // Set focus to Number field after finding the address
         document.getElementById('endNumero')?.focus();
       }
