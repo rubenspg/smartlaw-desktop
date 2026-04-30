@@ -10,8 +10,8 @@ const getServerUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL;
   if (envUrl) return envUrl;
 
-  // 3. Default to 127.0.0.1 (more reliable than 'localhost' in some WebViews)
-  return 'http://127.0.0.1:3001';
+  // 3. Default to the production URL
+  return 'https://smartlaw.rubenspg.com';
 };
 
 export const api = hc<AppType>(getServerUrl(), {

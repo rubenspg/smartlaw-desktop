@@ -55,6 +55,16 @@ rebuild: stop db-start
 
 # ── Database ──────────────────────────────────────────────────────────────────
 
+## Access Postgres shell inside docker
+db-shell:
+	@docker exec -it smartlaw-db psql -U smartlaw -d smartlaw
+
+## Import the smartlaw_backup.sql file into the running database
+db-import:
+	@echo "▶ Importing smartlaw_backup.sql into smartlaw-db..."
+	@cat smartlaw_backup.sql | docker exec -i smartlaw-db psql -U smartlaw -d smartlaw
+	@echo "  ✅ Import complete"
+
 ## Stop only the database container
 db-stop:
 	@docker compose stop postgres
@@ -100,6 +110,8 @@ help:
 	@echo "  make rebuild-api         Rebuild API docker image only"
 	@echo "  make db-start            Start Postgres if not already running"
 	@echo "  make db-stop             Stop Postgres"
+	@echo "  make db-shell            Open Postgres shell inside container"
+	@echo "  make db-import           Import smartlaw_backup.sql into DB"
 	@echo "  make db-reset            Destroy DB volume and recreate (destructive!)"
 	@echo "  make logs                Follow all docker logs"
 	@echo "  make logs-api            Follow API logs"

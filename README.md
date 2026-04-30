@@ -116,6 +116,50 @@ npm run migrate
 
 **Requirements:** Supabase must be running locally (`supabase start` in the Supabase project directory).
 
+## Deployment (Cloudflare Tunnel)
+
+To serve the office in Brazil from a US-hosted HP G6 (LXC), use Cloudflare Tunnel to expose the API securely on `rubenspg.com`.
+
+### 1. Server Setup (HP G6 LXC)
+
+1. **Install cloudflared**:
+   ```bash
+   curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+   sudo dpkg -i cloudflared.deb
+   ```
+2. **Authenticate**:
+   ```bash
+   cloudflared tunnel login
+   ```
+3. **Create Tunnel**:
+   ```bash
+   cloudflared tunnel create smartlaw-tunnel
+   ```
+4. **Configure DNS**:
+   Map `smartlaw.rubenspg.com` to your tunnel:
+   ```bash
+   cloudflared tunnel route dns smartlaw-tunnel smartlaw.rubenspg.com
+   ```
+5. **Run the Tunnel**:
+   Route incoming traffic to the local API port (3001):
+   ```bash
+   cloudflared tunnel run --url http://localhost:3001 smartlaw-tunnel
+   ```
+
+### 2. Desktop App Configuration
+
+> **Note:** Once Cloudflare is configured, ensure your production configuration points to the public URL.
+
+1. Update `apps/desktop/.env.production`:
+   ```env
+   VITE_API_URL=https://smartlaw.rubenspg.com
+   ```
+2. Build the binary:
+   ```bash
+   npm run build:desktop
+   ```
+3. Distribute the generated binary to the users in Brazil.
+
 ## Project structure
 
 ```
