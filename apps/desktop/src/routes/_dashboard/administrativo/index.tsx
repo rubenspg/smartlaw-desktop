@@ -540,11 +540,16 @@ function UsuarioFormDialog({
   onSubmit: (data: UsuarioInput | UsuarioUpdateInput) => void;
   isSubmitting: boolean;
 }) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    nome: string;
+    email: string;
+    senha: string;
+    perfil: 'admin' | 'usuario' | 'secretaria';
+  }>({
     nome: usuario?.nome ?? '',
     email: usuario?.email ?? '',
     senha: '',
-    perfil: usuario?.perfil ?? 'usuario',
+    perfil: (usuario?.perfil as 'admin' | 'usuario' | 'secretaria') ?? 'usuario',
   });
 
   const isEditing = !!usuario;

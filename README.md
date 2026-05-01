@@ -136,9 +136,9 @@ To serve the office in Brazil from a US-hosted HP G6 (LXC), use Cloudflare Tunne
    cloudflared tunnel create smartlaw-tunnel
    ```
 4. **Configure DNS**:
-   Map `smartlaw.rubenspg.com` to your tunnel:
+   Map `smartlaw-api.rubenspg.com` to your tunnel:
    ```bash
-   cloudflared tunnel route dns smartlaw-tunnel smartlaw.rubenspg.com
+   cloudflared tunnel route dns smartlaw-tunnel smartlaw-api.rubenspg.com
    ```
 5. **Run the Tunnel**:
    Route incoming traffic to the local API port (3001):
@@ -152,7 +152,7 @@ To serve the office in Brazil from a US-hosted HP G6 (LXC), use Cloudflare Tunne
 
 1. Update `apps/desktop/.env.production`:
    ```env
-   VITE_API_URL=https://smartlaw.rubenspg.com
+   VITE_API_URL=https://smartlaw-api.rubenspg.com
    ```
 2. Build the binary:
    ```bash

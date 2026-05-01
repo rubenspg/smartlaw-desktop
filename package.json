@@ -9,6 +9,8 @@
   "scripts": {
     "dev:desktop": "npm run tauri dev -w apps/desktop",
     "dev:server": "npm run dev -w apps/server",
+    "build:desktop": "npm run tauri build -w apps/desktop",
+    "tauri": "tauri",
     "build": "turbo build",
     "migrate": "./scripts/migrate.sh",
     "migrate:dry-run": "./scripts/migrate.sh --dry-run",

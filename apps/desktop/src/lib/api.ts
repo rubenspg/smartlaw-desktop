@@ -11,7 +11,7 @@ const getServerUrl = () => {
   if (envUrl) return envUrl;
 
   // 3. Default to the production URL
-  return 'https://smartlaw.rubenspg.com';
+  return 'https://smartlaw-api.rubenspg.com';
 };
 
 export const api = hc<AppType>(getServerUrl(), {
