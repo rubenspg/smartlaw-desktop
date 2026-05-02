@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { processoJudicialSchema, ProcessoJudicialInput, ProcessoJudicial } from '@smartlaw/shared';
+import { useRouter } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +18,7 @@ interface ProcessoJudicialFormProps {
 }
 
 export function ProcessoJudicialForm({ initialData, onSubmit, isSubmitting }: ProcessoJudicialFormProps) {
+  const router = useRouter();
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<ProcessoJudicialInput>({
     resolver: zodResolver(processoJudicialSchema),
     defaultValues: initialData ? {
@@ -187,7 +189,7 @@ export function ProcessoJudicialForm({ initialData, onSubmit, isSubmitting }: Pr
       </Card>
 
       <div className="flex justify-end gap-4">
-        <Button variant="outline" type="button" onClick={() => window.history.back()}>
+        <Button variant="outline" type="button" onClick={() => router.history.back()}>
           Cancelar
         </Button>
         <Button type="submit" disabled={isSubmitting}>

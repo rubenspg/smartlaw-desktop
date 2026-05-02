@@ -1,6 +1,7 @@
-import { createFileRoute, Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
-import { useState, useEffect } from 'react';
+import { createFileRoute, Link, Outlet, redirect, useLocation } from '@tanstack/react-router';
+import { useState } from 'react';
 import { useAuth } from '../lib/auth';
+import type { AuthContextType } from '../lib/auth';
 import { 
   Scale, 
   Users, 
@@ -25,26 +26,21 @@ const menuItems = [
 ];
 
 export const Route = createFileRoute('/_dashboard')({
+  beforeLoad: ({ context }) => {
+    const auth = (context as { auth: AuthContextType }).auth;
+    if (!auth.isLoading && !auth.isAuthenticated) {
+      throw redirect({ to: '/login' });
+    }
+  },
   component: DashboardLayout,
 });
 
 function DashboardLayout() {
   const { user, logout, isAuthenticated, isLoading } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate({ to: '/login' });
-    }
-  }, [isAuthenticated, isLoading, navigate]);
-
-  if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
-  }
-
-  if (!isAuthenticated) {
+  if (isLoading || !isAuthenticated) {
     return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
   }
 

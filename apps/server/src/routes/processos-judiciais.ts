@@ -8,6 +8,7 @@ import { ComparisonService } from '../services/ComparisonService';
 import { processoJudicialSchema } from '@smartlaw/shared';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
+import { parseIdParam } from '../utils';
 
 const querySchema = z.object({
   q: z.string().optional(),
@@ -84,8 +85,8 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
 
   .get('/:id', async (c) => {
     const user = c.get('user');
-    const id = parseInt(c.req.param('id'));
-    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
+    const id = parseIdParam(c.req.param('id'));
+    if (id === null) return c.json({ error: 'ID inválido' }, 400);
 
     const data = await db.query.processosJudiciais.findFirst({
       where: and(eq(processosJudiciais.id, id), eq(processosJudiciais.firmId, user.firmId)),
@@ -108,8 +109,8 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
 
   .put('/:id', zValidator('json', processoJudicialSchema), async (c) => {
     const user = c.get('user');
-    const id = parseInt(c.req.param('id'));
-    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
+    const id = parseIdParam(c.req.param('id'));
+    if (id === null) return c.json({ error: 'ID inválido' }, 400);
     const data = c.req.valid('json');
 
     const [updatedProcesso] = await db
@@ -131,8 +132,8 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
 
   .delete('/:id', async (c) => {
     const user = c.get('user');
-    const id = parseInt(c.req.param('id'));
-    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
+    const id = parseIdParam(c.req.param('id'));
+    if (id === null) return c.json({ error: 'ID inválido' }, 400);
 
     const [deletedProcesso] = await db
       .delete(processosJudiciais)
@@ -177,8 +178,8 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
 
   .post('/:id/sync', async (c) => {
     const user = c.get('user');
-    const id = parseInt(c.req.param('id'));
-    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
+    const id = parseIdParam(c.req.param('id'));
+    if (id === null) return c.json({ error: 'ID inválido' }, 400);
 
     try {
       const local = await db.query.processosJudiciais.findFirst({

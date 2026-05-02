@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { processoAdministrativoSchema, ProcessoAdministrativoInput, ProcessoAdministrativo } from '@smartlaw/shared';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useClientes } from '@/hooks/use-clientes';
 import { useEspeciesProcesso } from '@/hooks/use-lookups';
+import { useRouter } from '@tanstack/react-router';
 
 interface ProcessoAdminFormProps {
   initialData?: ProcessoAdministrativo;
@@ -17,7 +18,8 @@ interface ProcessoAdminFormProps {
 }
 
 export function ProcessoAdminForm({ initialData, onSubmit, isSubmitting }: ProcessoAdminFormProps) {
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<ProcessoAdministrativoInput>({
+  const router = useRouter();
+  const { register, handleSubmit, control, formState: { errors } } = useForm<ProcessoAdministrativoInput>({
     resolver: zodResolver(processoAdministrativoSchema),
     defaultValues: initialData ? {
       clienteId: initialData.clienteId || 0,
@@ -45,21 +47,27 @@ export function ProcessoAdminForm({ initialData, onSubmit, isSubmitting }: Proce
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="cliente">Cliente Responsável</Label>
-              <Select 
-                defaultValue={initialData?.clienteId?.toString()} 
-                onValueChange={(val) => setValue('clienteId', parseInt(val))}
-              >
-                <SelectTrigger id="cliente">
-                  <SelectValue placeholder="Selecione um cliente..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientesData?.data.map((c: any) => (
-                    <SelectItem key={c.id} value={c.id.toString()}>
-                      {c.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="clienteId"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value?.toString()}
+                    onValueChange={(val) => field.onChange(parseInt(val))}
+                  >
+                    <SelectTrigger id="cliente">
+                      <SelectValue placeholder="Selecione um cliente..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clientesData?.data.map((c: any) => (
+                        <SelectItem key={c.id} value={c.id.toString()}>
+                          {c.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.clienteId && <p className="text-xs text-destructive">Selecione um cliente</p>}
             </div>
 
@@ -73,21 +81,27 @@ export function ProcessoAdminForm({ initialData, onSubmit, isSubmitting }: Proce
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="especie">Espécie do Processo</Label>
-              <Select 
-                defaultValue={initialData?.especieId || undefined} 
-                onValueChange={(val) => setValue('especieId', val)}
-              >
-                <SelectTrigger id="especie">
-                  <SelectValue placeholder="Selecione a espécie..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {especies?.map((e: any) => (
-                    <SelectItem key={e.codigo} value={e.codigo}>
-                      {e.descricao}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="especieId"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value ?? undefined}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger id="especie">
+                      <SelectValue placeholder="Selecione a espécie..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {especies?.map((e: any) => (
+                        <SelectItem key={e.codigo} value={e.codigo}>
+                          {e.descricao}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
 
             <div className="space-y-2">
@@ -123,7 +137,7 @@ export function ProcessoAdminForm({ initialData, onSubmit, isSubmitting }: Proce
       </Card>
 
       <div className="flex justify-end gap-4">
-        <Button variant="outline" type="button" onClick={() => window.history.back()}>
+        <Button variant="outline" type="button" onClick={() => router.history.back()}>
           Cancelar
         </Button>
         <Button type="submit" disabled={isSubmitting}>

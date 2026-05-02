@@ -5,6 +5,7 @@ import { eq, ilike, or, and, sql, asc } from 'drizzle-orm';
 import { clienteSchema } from '@smartlaw/shared';
 import { authMiddleware, Variables } from '../middleware/auth';
 import { zValidator } from '@hono/zod-validator';
+import { parseIdParam } from '../utils';
 
 const clientesRoutes = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
@@ -56,8 +57,8 @@ const clientesRoutes = new Hono<{ Variables: Variables }>()
 
   .get('/:id', async (c) => {
     const user = c.get('user');
-    const id = parseInt(c.req.param('id'));
-    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
+    const id = parseIdParam(c.req.param('id'));
+    if (id === null) return c.json({ error: 'ID inválido' }, 400);
 
     const [cliente] = await db
       .select()
@@ -90,8 +91,8 @@ const clientesRoutes = new Hono<{ Variables: Variables }>()
 
   .put('/:id', zValidator('json', clienteSchema), async (c) => {
     const user = c.get('user');
-    const id = parseInt(c.req.param('id'));
-    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
+    const id = parseIdParam(c.req.param('id'));
+    if (id === null) return c.json({ error: 'ID inválido' }, 400);
     const data = c.req.valid('json');
 
     const [updatedCliente] = await db
@@ -112,8 +113,8 @@ const clientesRoutes = new Hono<{ Variables: Variables }>()
 
   .delete('/:id', async (c) => {
     const user = c.get('user');
-    const id = parseInt(c.req.param('id'));
-    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
+    const id = parseIdParam(c.req.param('id'));
+    if (id === null) return c.json({ error: 'ID inválido' }, 400);
 
     // Check for related processes (Judicial and Administrative)
     const [judicialCount] = await db
