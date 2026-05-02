@@ -141,8 +141,14 @@ export const honorarioSchema = z.object({
   processoJudicialId: z.number().optional().nullable(),
   processoAdminId: z.number().optional().nullable(),
   descricao: z.string().min(1, 'Descrição é obrigatória'),
-  valor: z.string().min(1, 'Valor é obrigatório'),
-  valorPago: z.string().optional().nullable(),
+  valor: z.string().min(1, 'Valor é obrigatório').refine(
+    (v) => !isNaN(Number(v)) && Number(v) > 0,
+    'Valor deve ser um número positivo',
+  ),
+  valorPago: z.string().optional().nullable().refine(
+    (v) => v == null || v === '' || (!isNaN(Number(v)) && Number(v) >= 0),
+    'Valor pago inválido',
+  ),
   dataVenc: z.string().min(1, 'Vencimento é obrigatório'),
   dataPagto: z.string().optional().nullable(),
   status: z.enum(['PENDENTE', 'PAGO', 'CANCELADO']).default('PENDENTE'),

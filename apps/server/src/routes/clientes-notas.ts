@@ -32,8 +32,13 @@ const clientesNotasRoutes = new Hono<{ Variables: Variables }>()
 
   .post('/', async (c) => {
     const user = c.get('user');
-    const body = await c.req.json();
-    
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ error: 'Invalid JSON body' }, 400);
+    }
+
     const result = clienteNotaSchema.safeParse(body);
     if (!result.success) {
       return c.json({ error: 'Dados inválidos', details: result.error.format() }, 400);

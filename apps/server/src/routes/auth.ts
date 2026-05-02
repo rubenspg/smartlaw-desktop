@@ -9,13 +9,20 @@ import { authMiddleware, UserPayload, Variables } from '../middleware/auth';
 
 const auth = new Hono<{ Variables: Variables }>()
   .post('/login', async (c) => {
-    const { email, password } = await c.req.json();
-    
+    let rawBody: unknown;
+    try {
+      rawBody = await c.req.json();
+    } catch {
+      return c.json({ error: 'Invalid JSON body' }, 400);
+    }
+
     // Validate with Zod
-    const result = loginSchema.safeParse({ email, password });
+    const result = loginSchema.safeParse(rawBody);
     if (!result.success) {
       return c.json({ error: 'Invalid input' }, 400);
     }
+
+    const { email, password } = result.data;
 
     const [user] = await db.select().from(profiles).where(eq(profiles.email, email)).limit(1);
 
