@@ -20,16 +20,14 @@ export function ProcessoAdminForm({ initialData, onSubmit, isSubmitting }: Proce
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<ProcessoAdministrativoInput>({
     resolver: zodResolver(processoAdministrativoSchema),
     defaultValues: initialData ? {
-      clienteId: initialData.clienteId || 0,
+      clienteId: initialData.clienteId || undefined,
       numero: initialData.numero,
       abertura: initialData.abertura,
       inicioBeneficio: initialData.inicioBeneficio,
       decisao: initialData.decisao,
       pasta: initialData.pasta,
       especieId: initialData.especieId,
-    } : {
-      clienteId: 0,
-    },
+    } : {},
   });
 
   const { data: clientesData } = useClientes({ limit: 100 });

@@ -24,11 +24,9 @@ const lookupsRoutes = new Hono<{ Variables: Variables }>()
   
   .get('/municipios', async (c) => {
     const { q } = c.req.query();
-    const query = db.select().from(municipios);
-
-    if (q) {
-      query.where(ilike(municipios.nome, `%${q}%`));
-    }
+    const query = q
+      ? db.select().from(municipios).where(ilike(municipios.nome, `%${q}%`))
+      : db.select().from(municipios);
 
     const data = await query.limit(50).orderBy(asc(municipios.nome));
     return c.json(data);

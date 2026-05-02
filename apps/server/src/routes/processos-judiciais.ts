@@ -164,8 +164,14 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
   })
 
   .post('/datajud/search', async (c) => {
-    const { numero } = await c.req.json();
-    if (!numero) return c.json({ error: 'Número é obrigatório' }, 400);
+    let rawBody: unknown;
+    try {
+      rawBody = await c.req.json();
+    } catch {
+      return c.json({ error: 'Invalid JSON body' }, 400);
+    }
+    const numero = (rawBody as Record<string, unknown>)?.numero;
+    if (!numero || typeof numero !== 'string') return c.json({ error: 'Número é obrigatório' }, 400);
 
     try {
       const source = await DatajudService.fetchFromDatajud(numero);
