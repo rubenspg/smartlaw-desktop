@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DADOS_DIR = path.resolve(__dirname, '../../../../../smartlaw/dados_sistema/dados_csv');
+const DADOS_DIR = process.env.CSV_DATA_DIR ?? path.resolve(__dirname, '../../../../../smartlaw/dados_sistema/dados_csv');
 
 function readCsv(filename: string): Record<string, string>[] {
   const filePath = path.join(DADOS_DIR, filename);
@@ -68,7 +68,7 @@ async function seed() {
   // 2. Create default admin
   const passwordHash = await bcrypt.hash('changeme', 10);
   const [admin] = await db.insert(profiles).values({
-    id: '00000000-0000-0000-0000-000000000000', // Use a fixed UUID for development
+    ...(process.env.NODE_ENV !== 'production' ? { id: '00000000-0000-0000-0000-000000000000' } : {}),
     nome: 'Admin',
     email: 'admin@smartlaw.local',
     passwordHash: passwordHash,

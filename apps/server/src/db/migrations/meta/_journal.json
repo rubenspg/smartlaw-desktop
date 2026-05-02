@@ -8,6 +8,13 @@
       "when": 1776435495019,
       "tag": "0000_little_captain_britain",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777753449294,
+      "tag": "0001_luxuriant_gorilla_man",
+      "breakpoints": true
     }
   ]
 }

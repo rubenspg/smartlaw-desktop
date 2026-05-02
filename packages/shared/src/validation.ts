@@ -28,7 +28,6 @@ function validateCNPJ(value: string): boolean {
   return (rem < 2 ? 0 : 11 - rem) === parseInt(d[13]);
 }
 
-// Existing schemas...
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
