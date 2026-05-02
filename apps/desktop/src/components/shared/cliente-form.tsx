@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useState } from 'react';
 import { CheckCircle2, Loader2, Search, XCircle } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useRouter } from '@tanstack/react-router';
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
@@ -84,6 +85,7 @@ interface ClienteFormProps {
 }
 
 export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteFormProps) {
+  const router = useRouter();
   const [isSearchingCEP, setIsSearchingCEP] = useState(false);
   const { register, handleSubmit, control, formState: { errors }, setValue, watch } = useForm<ClienteInput>({
     resolver: zodResolver(clienteSchema),
@@ -183,36 +185,45 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3">
               <Label>Tipo de Pessoa</Label>
-              <RadioGroup
-                value={tipo}
-                onValueChange={(val) => setValue('tipo', val as 'F' | 'J')}
-                className="flex gap-4"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="F" id="pf" />
-                  <Label htmlFor="pf" className="font-normal">Física</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="J" id="pj" />
-                  <Label htmlFor="pj" className="font-normal">Jurídica</Label>
-                </div>
-              </RadioGroup>
+              <Controller
+                name="tipo"
+                control={control}
+                render={({ field }) => (
+                  <RadioGroup
+                    value={field.value}
+                    onValueChange={(val) => field.onChange(val as 'F' | 'J')}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="F" id="pf" />
+                      <Label htmlFor="pf" className="font-normal">Física</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="J" id="pj" />
+                      <Label htmlFor="pj" className="font-normal">Jurídica</Label>
+                    </div>
+                  </RadioGroup>
+                )}
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="situacao">Situação</Label>
-              <Select
-                value={watch('situacao')}
-                onValueChange={(val) => setValue('situacao', val)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a situação" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="A">Ativo</SelectItem>
-                  <SelectItem value="I">Inativo</SelectItem>
-                </SelectContent>
-              </Select>
+              <Controller
+                name="situacao"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a situação" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="A">Ativo</SelectItem>
+                      <SelectItem value="I">Inativo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </div>
 
@@ -285,38 +296,44 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
 
               <div className="space-y-2">
                 <Label htmlFor="sexo">Sexo</Label>
-                <Select
-                  value={watch('sexo') || ''}
-                  onValueChange={(val) => setValue('sexo', val)}
-                >
-                  <SelectTrigger id="sexo">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="M">Masculino</SelectItem>
-                    <SelectItem value="F">Feminino</SelectItem>
-                    <SelectItem value="O">Outro</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="sexo"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                      <SelectTrigger id="sexo">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="M">Masculino</SelectItem>
+                        <SelectItem value="F">Feminino</SelectItem>
+                        <SelectItem value="O">Outro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="estCivil">Estado Civil</Label>
-                <Select
-                  value={watch('estCivil') || ''}
-                  onValueChange={(val) => setValue('estCivil', val)}
-                >
-                  <SelectTrigger id="estCivil">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Solteiro(a)">Solteiro(a)</SelectItem>
-                    <SelectItem value="Casado(a)">Casado(a)</SelectItem>
-                    <SelectItem value="Divorciado(a)">Divorciado(a)</SelectItem>
-                    <SelectItem value="Viúvo(a)">Viúvo(a)</SelectItem>
-                    <SelectItem value="União Estável">União Estável</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="estCivil"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                      <SelectTrigger id="estCivil">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Solteiro(a)">Solteiro(a)</SelectItem>
+                        <SelectItem value="Casado(a)">Casado(a)</SelectItem>
+                        <SelectItem value="Divorciado(a)">Divorciado(a)</SelectItem>
+                        <SelectItem value="Viúvo(a)">Viúvo(a)</SelectItem>
+                        <SelectItem value="União Estável">União Estável</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
 
               <div className="space-y-2">
@@ -518,7 +535,7 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
       </Card>
 
       <div className="flex justify-end gap-4">
-        <Button variant="outline" type="button" onClick={() => window.history.back()}>
+        <Button variant="outline" type="button" onClick={() => router.history.back()}>
           Cancelar
         </Button>
         <Button type="submit" disabled={isSubmitting}>

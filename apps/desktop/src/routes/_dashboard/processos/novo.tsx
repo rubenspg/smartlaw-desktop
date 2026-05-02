@@ -32,6 +32,7 @@ function NewProcessoPage() {
   const [step, setStep] = useState<'search' | 'confirm' | 'manual'>('search');
   const [processoData, setProcessoData] = useState<DatajudProcessData | null>(null);
   const [clienteId, setClienteId] = useState<string>('');
+  const [notFound, setNotFound] = useState(false);
   
   const searchMutation = useDatajudSearch();
   const createMutation = useCreateProcessoJudicial();
@@ -47,8 +48,9 @@ function NewProcessoPage() {
       if (source) {
         setProcessoData(source);
         setStep('confirm');
+        setNotFound(false);
       } else {
-        alert('Processo não encontrado no Datajud.');
+        setNotFound(true);
       }
     } catch (err) {
       console.error('Datajud search error:', err);
@@ -117,6 +119,12 @@ function NewProcessoPage() {
                     </Button>
                   </div>
                 </div>
+                {notFound && (
+                  <div className="flex items-center gap-2 mt-3 text-sm text-destructive">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    Processo não encontrado no Datajud.
+                  </div>
+                )}
               </form>
               <div className="mt-6 pt-6 border-t">
                 <p className="text-sm text-muted-foreground mb-4 text-center">Ou, se preferir, cadastre os dados manualmente.</p>

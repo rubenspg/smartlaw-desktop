@@ -1,17 +1,6 @@
-export interface DatajudProcessData {
-  numeroProcesso: string;
-  classe?: { nome: string };
-  sistema?: { nome: string };
-  formato?: { nome: string };
-  tribunal?: string;
-  dataAjuizamento?: string;
-  orgaoJulgador?: { nome: string; codigo?: string };
-  movimentos?: Array<{
-    nome: string;
-    dataHora: string;
-    complementosTabelados?: Array<{ nome: string; valor?: string }>;
-  }>;
-}
+import type { DatajudProcessData } from '@smartlaw/shared';
+
+export type { DatajudProcessData };
 
 export interface DriftResult {
   hasDrift: boolean;

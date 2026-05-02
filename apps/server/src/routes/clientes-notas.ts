@@ -4,14 +4,15 @@ import { clientesNotas, profiles } from '../db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { clienteNotaSchema } from '@smartlaw/shared';
 import { authMiddleware, Variables } from '../middleware/auth';
+import { parseIdParam } from '../utils';
 
 const clientesNotasRoutes = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
   
   .get('/:clienteId', async (c) => {
     const user = c.get('user');
-    const clienteId = parseInt(c.req.param('clienteId'));
-    if (isNaN(clienteId)) return c.json({ error: 'ID do cliente inválido' }, 400);
+    const clienteId = parseIdParam(c.req.param('clienteId'));
+    if (clienteId === null) return c.json({ error: 'ID do cliente inválido' }, 400);
 
     const data = await db
       .select({
@@ -59,8 +60,8 @@ const clientesNotasRoutes = new Hono<{ Variables: Variables }>()
 
   .delete('/:id', async (c) => {
     const user = c.get('user');
-    const id = parseInt(c.req.param('id'));
-    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
+    const id = parseIdParam(c.req.param('id'));
+    if (id === null) return c.json({ error: 'ID inválido' }, 400);
 
     const [deletedNota] = await db
       .delete(clientesNotas)

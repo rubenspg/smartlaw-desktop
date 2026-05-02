@@ -6,6 +6,7 @@ import { authMiddleware, Variables } from '../middleware/auth';
 import { processoAdministrativoSchema } from '@smartlaw/shared';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
+import { parseIdParam } from '../utils';
 
 const querySchema = z.object({
   q: z.string().optional(),
@@ -80,8 +81,8 @@ const processosAdministrativosRoutes = new Hono<{ Variables: Variables }>()
 
   .get('/:id', async (c) => {
     const user = c.get('user');
-    const id = parseInt(c.req.param('id'));
-    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
+    const id = parseIdParam(c.req.param('id'));
+    if (id === null) return c.json({ error: 'ID inválido' }, 400);
 
     const data = await db.query.processosAdministrativos.findFirst({
       where: and(eq(processosAdministrativos.id, id), eq(processosAdministrativos.firmId, user.firmId)),
@@ -117,8 +118,8 @@ const processosAdministrativosRoutes = new Hono<{ Variables: Variables }>()
 
   .put('/:id', zValidator('json', processoAdministrativoSchema), async (c) => {
     const user = c.get('user');
-    const id = parseInt(c.req.param('id'));
-    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
+    const id = parseIdParam(c.req.param('id'));
+    if (id === null) return c.json({ error: 'ID inválido' }, 400);
     const data = c.req.valid('json');
 
     const [updatedProcesso] = await db
@@ -142,8 +143,8 @@ const processosAdministrativosRoutes = new Hono<{ Variables: Variables }>()
 
   .delete('/:id', async (c) => {
     const user = c.get('user');
-    const id = parseInt(c.req.param('id'));
-    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
+    const id = parseIdParam(c.req.param('id'));
+    if (id === null) return c.json({ error: 'ID inválido' }, 400);
 
     const [deletedProcesso] = await db
       .delete(processosAdministrativos)

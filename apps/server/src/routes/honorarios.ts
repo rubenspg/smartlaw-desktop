@@ -5,6 +5,7 @@ import { eq, and, desc, sql } from 'drizzle-orm';
 import { authMiddleware, Variables } from '../middleware/auth';
 import { honorarioSchema, type HonorarioSummary } from '@smartlaw/shared';
 import { zValidator } from '@hono/zod-validator';
+import { parseIdParam } from '../utils';
 
 const honorariosRoutes = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
@@ -122,8 +123,8 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
 
   .get('/:id', async (c) => {
     const user = c.get('user');
-    const id = parseInt(c.req.param('id'));
-    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
+    const id = parseIdParam(c.req.param('id'));
+    if (id === null) return c.json({ error: 'ID inválido' }, 400);
 
     const [data] = await db
       .select({
@@ -178,8 +179,8 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
       return c.json({ error: 'Acesso negado' }, 403);
     }
 
-    const id = parseInt(c.req.param('id'));
-    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
+    const id = parseIdParam(c.req.param('id'));
+    if (id === null) return c.json({ error: 'ID inválido' }, 400);
     const data = c.req.valid('json');
 
     const [updated] = await db
@@ -199,8 +200,8 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
       return c.json({ error: 'Acesso negado' }, 403);
     }
 
-    const id = parseInt(c.req.param('id'));
-    if (isNaN(id)) return c.json({ error: 'ID inválido' }, 400);
+    const id = parseIdParam(c.req.param('id'));
+    if (id === null) return c.json({ error: 'ID inválido' }, 400);
 
     const [deleted] = await db
       .delete(honorarios)
