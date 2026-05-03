@@ -2,11 +2,13 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import type { AndamentoRecente, DashboardStats } from '@smartlaw/shared';
 
-export function useDashboardStats() {
+export function useDashboardStats(year?: number) {
   return useQuery({
-    queryKey: ['dashboard', 'stats'],
+    queryKey: ['dashboard', 'stats', year],
     queryFn: async () => {
-      const res = await api.dashboard.$get();
+      const res = await api.dashboard.$get(
+        year ? ({ query: { year: year.toString() } } as any) : undefined,
+      );
       if (!res.ok) throw new Error('Falha ao buscar estatísticas');
       return (await res.json()) as DashboardStats;
     },

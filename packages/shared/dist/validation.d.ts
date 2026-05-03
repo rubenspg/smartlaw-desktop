@@ -246,8 +246,8 @@ export declare const honorarioSchema: z.ZodObject<{
     processoJudicialId: z.ZodNullable<z.ZodOptional<z.ZodNumber>>;
     processoAdminId: z.ZodNullable<z.ZodOptional<z.ZodNumber>>;
     descricao: z.ZodString;
-    valor: z.ZodString;
-    valorPago: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    valor: z.ZodEffects<z.ZodString, string, string>;
+    valorPago: z.ZodEffects<z.ZodNullable<z.ZodOptional<z.ZodString>>, string | null | undefined, string | null | undefined>;
     dataVenc: z.ZodString;
     dataPagto: z.ZodNullable<z.ZodOptional<z.ZodString>>;
     status: z.ZodDefault<z.ZodEnum<["PENDENTE", "PAGO", "CANCELADO"]>>;
@@ -298,13 +298,16 @@ export declare const usuarioSchema: z.ZodObject<{
 export type UsuarioInput = z.infer<typeof usuarioSchema>;
 export declare const usuarioUpdateSchema: z.ZodObject<{
     nome: z.ZodOptional<z.ZodString>;
+    email: z.ZodOptional<z.ZodString>;
     perfil: z.ZodOptional<z.ZodEnum<["admin", "usuario", "secretaria"]>>;
     ativo: z.ZodOptional<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
+    email?: string | undefined;
     nome?: string | undefined;
     perfil?: "admin" | "usuario" | "secretaria" | undefined;
     ativo?: boolean | undefined;
 }, {
+    email?: string | undefined;
     nome?: string | undefined;
     perfil?: "admin" | "usuario" | "secretaria" | undefined;
     ativo?: boolean | undefined;

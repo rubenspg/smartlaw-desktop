@@ -33,7 +33,6 @@ function validateCNPJ(value) {
     rem = sum % 11;
     return (rem < 2 ? 0 : 11 - rem) === parseInt(d[13]);
 }
-// Existing schemas...
 export const loginSchema = z.object({
     email: z.string().email(),
     password: z.string().min(6),
@@ -134,8 +133,8 @@ export const honorarioSchema = z.object({
     processoJudicialId: z.number().optional().nullable(),
     processoAdminId: z.number().optional().nullable(),
     descricao: z.string().min(1, 'Descrição é obrigatória'),
-    valor: z.string().min(1, 'Valor é obrigatório'),
-    valorPago: z.string().optional().nullable(),
+    valor: z.string().min(1, 'Valor é obrigatório').refine((v) => !isNaN(Number(v)) && Number(v) > 0, 'Valor deve ser um número positivo'),
+    valorPago: z.string().optional().nullable().refine((v) => v == null || v === '' || (!isNaN(Number(v)) && Number(v) >= 0), 'Valor pago inválido'),
     dataVenc: z.string().min(1, 'Vencimento é obrigatório'),
     dataPagto: z.string().optional().nullable(),
     status: z.enum(['PENDENTE', 'PAGO', 'CANCELADO']).default('PENDENTE'),
@@ -150,6 +149,7 @@ export const usuarioSchema = z.object({
 });
 export const usuarioUpdateSchema = z.object({
     nome: z.string().min(1).optional(),
+    email: z.string().email('E-mail inválido').optional(),
     perfil: z.enum(['admin', 'usuario', 'secretaria']).optional(),
     ativo: z.boolean().optional(),
 });

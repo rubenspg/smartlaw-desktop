@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { db } from '../db';
-import { clientes, processosJudiciais, processosAdministrativos, andamentos, tarefas } from '../db/schema';
+import { clientes, processosJudiciais, processosAdministrativos, andamentos, tarefas, honorarios } from '../db/schema';
 import { and, desc, eq, isNotNull, isNull, ne, lt, gte, lte, sql, or } from 'drizzle-orm';
 import { authMiddleware, Variables } from '../middleware/auth';
 
@@ -14,6 +14,8 @@ const dashboard = new Hono<{ Variables: Variables }>()
     }
 
     const firmFilter = { firmId: user.firmId };
+    const { year: yearParam } = c.req.query();
+    const year = yearParam ? parseInt(yearParam) : new Date().getFullYear();
 
     const [
       [clientesCount],
@@ -25,6 +27,12 @@ const dashboard = new Hono<{ Variables: Variables }>()
       profissaoRows,
       comarcaRows,
       situacaoRows,
+      financeiroMensaisRows,
+      [financeiroTotaisRow],
+      tarefasPorPrioridadeRows,
+      tarefasPorStatusRows,
+      [tarefasTotalRow],
+      [tarefasAtrasadasRow],
     ] = await Promise.all([
       db
         .select({ count: sql<number>`count(*)::int` })
@@ -127,7 +135,74 @@ const dashboard = new Hono<{ Variables: Variables }>()
         )
         .groupBy(processosJudiciais.situacao)
         .orderBy(sql`count(*) desc`),
+
+      // Financeiro: receita mensal agrupada pelo ano selecionado
+      db.execute<{ mes: string; recebido: number; pendente: number; atrasado: number }>(sql`
+        SELECT
+          to_char(date_trunc('month', data_venc), 'YYYY-MM') AS mes,
+          COALESCE(SUM(CASE WHEN status = 'PAGO' THEN valor_pago::numeric ELSE 0 END)::double precision, 0) AS recebido,
+          COALESCE(SUM(CASE WHEN status = 'PENDENTE' AND data_venc >= CURRENT_DATE THEN valor::numeric ELSE 0 END)::double precision, 0) AS pendente,
+          COALESCE(SUM(CASE WHEN status = 'PENDENTE' AND data_venc < CURRENT_DATE THEN valor::numeric ELSE 0 END)::double precision, 0) AS atrasado
+        FROM honorarios
+        WHERE firm_id = ${firmFilter.firmId}
+          AND EXTRACT(YEAR FROM data_venc) = ${year}
+        GROUP BY 1
+        ORDER BY 1 ASC
+      `),
+
+      // Financeiro: totais do ano selecionado
+      db.execute<{ total_recebido: number; total_pendente: number; total_atrasado: number }>(sql`
+        SELECT
+          COALESCE(SUM(CASE WHEN status = 'PAGO' THEN valor_pago::numeric ELSE 0 END)::double precision, 0) AS total_recebido,
+          COALESCE(SUM(CASE WHEN status = 'PENDENTE' AND data_venc >= CURRENT_DATE THEN valor::numeric ELSE 0 END)::double precision, 0) AS total_pendente,
+          COALESCE(SUM(CASE WHEN status = 'PENDENTE' AND data_venc < CURRENT_DATE THEN valor::numeric ELSE 0 END)::double precision, 0) AS total_atrasado
+        FROM honorarios
+        WHERE firm_id = ${firmFilter.firmId}
+          AND EXTRACT(YEAR FROM data_venc) = ${year}
+      `),
+
+      // Tarefas por prioridade (apenas ativas)
+      db
+        .select({
+          prioridade: tarefas.prioridade,
+          total: sql<number>`count(*)::int`,
+        })
+        .from(tarefas)
+        .where(and(eq(tarefas.firmId, firmFilter.firmId), ne(tarefas.status, 'CONCLUIDA')))
+        .groupBy(tarefas.prioridade)
+        .orderBy(sql`count(*) desc`),
+
+      // Tarefas por status
+      db
+        .select({
+          status: tarefas.status,
+          total: sql<number>`count(*)::int`,
+        })
+        .from(tarefas)
+        .where(eq(tarefas.firmId, firmFilter.firmId))
+        .groupBy(tarefas.status)
+        .orderBy(sql`count(*) desc`),
+
+      // Total tarefas ativas
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(tarefas)
+        .where(and(eq(tarefas.firmId, firmFilter.firmId), ne(tarefas.status, 'CONCLUIDA'))),
+
+      // Tarefas atrasadas (ativas com data_limite no passado)
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(tarefas)
+        .where(
+          and(
+            eq(tarefas.firmId, firmFilter.firmId),
+            ne(tarefas.status, 'CONCLUIDA'),
+            lt(tarefas.dataLimite, new Date()),
+          ),
+        ),
     ]);
+
+    const financeiroTotais = financeiroTotaisRow as any;
 
     return c.json({
       totais: {
@@ -161,6 +236,29 @@ const dashboard = new Hono<{ Variables: Variables }>()
         situacao: r.situacao ?? '—',
         total: Number(r.total),
       })),
+      financeiro: {
+        mensais: [...financeiroMensaisRows].map((r: any) => ({
+          mes: r.mes,
+          recebido: Number(r.recebido),
+          pendente: Number(r.pendente),
+          atrasado: Number(r.atrasado),
+        })),
+        totalRecebido: Number(financeiroTotais?.total_recebido ?? 0),
+        totalPendente: Number(financeiroTotais?.total_pendente ?? 0),
+        totalAtrasado: Number(financeiroTotais?.total_atrasado ?? 0),
+      },
+      tarefas: {
+        total: Number(tarefasTotalRow?.count ?? 0),
+        atrasadas: Number(tarefasAtrasadasRow?.count ?? 0),
+        porPrioridade: tarefasPorPrioridadeRows.map((r) => ({
+          prioridade: r.prioridade ?? 'Sem prioridade',
+          total: Number(r.total),
+        })),
+        porStatus: tarefasPorStatusRows.map((r) => ({
+          status: r.status ?? 'Sem status',
+          total: Number(r.total),
+        })),
+      },
     });
   });
 
