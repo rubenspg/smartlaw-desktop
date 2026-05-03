@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { CheckCircle2, Loader2, Search, XCircle } from 'lucide-react';
 import { clienteSchema, ClienteInput, Cliente } from '@smartlaw/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { useState } from 'react';
-import { CheckCircle2, Loader2, Search, XCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useRouter } from '@tanstack/react-router';
 

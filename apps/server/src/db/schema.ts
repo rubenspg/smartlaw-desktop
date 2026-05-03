@@ -1,10 +1,5 @@
-import { pgTable, text, timestamp, uuid, boolean, pgEnum, bigint, date, decimal, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, boolean, bigint, date, decimal, jsonb } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-
-// Enums (Optional, can also use text with Zod validation)
-export const perfilEnum = pgEnum('perfil', ['admin', 'usuario', 'secretaria']);
-export const statusEnum = pgEnum('status', ['PENDENTE', 'PAGO', 'CANCELADO']);
-export const prioridadeEnum = pgEnum('prioridade', ['BAIXA', 'MEDIA', 'ALTA']);
 
 // Lookup Tables
 export const especiesProcesso = pgTable('especies_processo', {
@@ -57,14 +52,14 @@ export const profiles = pgTable('profiles', {
   passwordHash: text('password_hash').notNull(),
   perfil: text('perfil').$type<'admin' | 'usuario' | 'secretaria'>().default('usuario'),
   ativo: boolean('ativo').default(true),
-  firmId: uuid('firm_id').references(() => firms.id),
+  firmId: uuid('firm_id').references(() => firms.id).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
 export const clientes = pgTable('clientes', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
-  firmId: uuid('firm_id').references(() => firms.id),
+  firmId: uuid('firm_id').references(() => firms.id).notNull(),
   tipo: text('tipo').notNull(), // F=Física, J=Jurídica
   nome: text('nome').notNull(),
   fantasia: text('fantasia'),
@@ -100,7 +95,7 @@ export const clientes = pgTable('clientes', {
 
 export const processosJudiciais = pgTable('processos_judiciais', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
-  firmId: uuid('firm_id').references(() => firms.id),
+  firmId: uuid('firm_id').references(() => firms.id).notNull(),
   clienteId: bigint('cliente_id', { mode: 'number' }).references(() => clientes.id, { onDelete: 'cascade' }),
   numero: text('numero').notNull(),
   dataCadastro: timestamp('data_cadastro', { withTimezone: true }),
@@ -128,7 +123,7 @@ export const processosJudiciais = pgTable('processos_judiciais', {
 
 export const processosAdministrativos = pgTable('processos_administrativos', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
-  firmId: uuid('firm_id').references(() => firms.id),
+  firmId: uuid('firm_id').references(() => firms.id).notNull(),
   clienteId: bigint('cliente_id', { mode: 'number' }).references(() => clientes.id, { onDelete: 'cascade' }),
   numero: text('numero').notNull(),
   dataCadastro: timestamp('data_cadastro', { withTimezone: true }),
@@ -144,7 +139,7 @@ export const processosAdministrativos = pgTable('processos_administrativos', {
 
 export const andamentos = pgTable('andamentos', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
-  firmId: uuid('firm_id').references(() => firms.id),
+  firmId: uuid('firm_id').references(() => firms.id).notNull(),
   processoJudicialId: bigint('processo_judicial_id', { mode: 'number' }).references(() => processosJudiciais.id, { onDelete: 'cascade' }),
   processoAdminId: bigint('processo_admin_id', { mode: 'number' }).references(() => processosAdministrativos.id, { onDelete: 'cascade' }),
   usuarioId: uuid('usuario_id').references(() => profiles.id, { onDelete: 'set null' }),
@@ -154,8 +149,6 @@ export const andamentos = pgTable('andamentos', {
   tipo: text('tipo'),
   documento: text('documento'),
   externalId: text('external_id').unique(),
-  legacyProcessoRef: bigint('legacy_processo_ref', { mode: 'number' }),
-  
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
@@ -166,12 +159,12 @@ export const partes = pgTable('partes', {
   clienteId: bigint('cliente_id', { mode: 'number' }).references(() => clientes.id),
   posicaoId: text('posicao_id').references(() => posicoesParte.codigo),
   nome: text('nome').notNull(),
-  firmId: uuid('firm_id').references(() => firms.id),
+  firmId: uuid('firm_id').references(() => firms.id).notNull(),
 });
 
 export const honorarios = pgTable('honorarios', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
-  firmId: uuid('firm_id').references(() => firms.id),
+  firmId: uuid('firm_id').references(() => firms.id).notNull(),
   clienteId: bigint('cliente_id', { mode: 'number' }).references(() => clientes.id, { onDelete: 'cascade' }),
   processoJudicialId: bigint('processo_judicial_id', { mode: 'number' }).references(() => processosJudiciais.id),
   processoAdminId: bigint('processo_admin_id', { mode: 'number' }).references(() => processosAdministrativos.id),
@@ -189,7 +182,7 @@ export const honorarios = pgTable('honorarios', {
 
 export const tarefas = pgTable('tarefas', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
-  firmId: uuid('firm_id').references(() => firms.id),
+  firmId: uuid('firm_id').references(() => firms.id).notNull(),
   usuarioId: uuid('usuario_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull(),
   clienteId: bigint('cliente_id', { mode: 'number' }).references(() => clientes.id),
   processoJudicialId: bigint('processo_judicial_id', { mode: 'number' }).references(() => processosJudiciais.id),
@@ -208,7 +201,7 @@ export const clientesNotas = pgTable('clientes_notas', {
   clienteId: bigint('cliente_id', { mode: 'number' }).references(() => clientes.id, { onDelete: 'cascade' }),
   usuarioId: uuid('usuario_id').references(() => profiles.id, { onDelete: 'cascade' }).notNull(),
   texto: text('texto').notNull(),
-  firmId: uuid('firm_id').references(() => firms.id),
+  firmId: uuid('firm_id').references(() => firms.id).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
@@ -217,11 +210,11 @@ export const auditLogs = pgTable('audit_logs', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
   tableName: text('table_name').notNull(),
   recordId: text('record_id').notNull(),
-  action: text('action').notNull(), // 'INSERT', 'UPDATE', 'DELETE'
+  action: text('action').notNull(),
   oldData: jsonb('old_data'),
   newData: jsonb('new_data'),
   userId: uuid('user_id').references(() => profiles.id),
-  firmId: uuid('firm_id').references(() => firms.id),
+  firmId: uuid('firm_id').references(() => firms.id).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 

@@ -44,6 +44,10 @@ export class DatajudService {
       alias = 'api_publica_tse';
     } else if (justiceType === '7') {
       alias = 'api_publica_stm';
+    } else if (justiceType === '9') {
+      throw new Error('Justiça Militar Estadual (tipo 9) não é suportada pelo Datajud público.');
+    } else {
+      throw new Error(`Tipo de justiça desconhecido: ${justiceType}. Verifique o número CNJ.`);
     }
 
     const apiKey = process.env.DATAJUD_API_KEY || '';

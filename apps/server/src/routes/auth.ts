@@ -46,17 +46,9 @@ const auth = new Hono<{ Variables: Variables }>()
     };
 
     const token = await sign(payload, process.env.JWT_SECRET!, 'HS256');
+    const { exp: _exp, ...userResponse } = payload;
 
-    return c.json({
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        nome: user.nome,
-        perfil: user.perfil || 'usuario',
-        firmId: user.firmId!,
-      },
-    });
+    return c.json({ token, user: userResponse });
   })
   .get('/me', authMiddleware, async (c) => {
     const user = c.get('user');

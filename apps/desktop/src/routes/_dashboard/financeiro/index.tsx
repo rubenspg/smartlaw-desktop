@@ -1,5 +1,5 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState, useEffect } from 'react';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
   Plus,
   Search,
@@ -15,6 +15,7 @@ import {
   ChevronsUpDown,
   Check,
 } from 'lucide-react';
+import type { Honorario, HonorarioInput } from '@smartlaw/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -34,6 +35,15 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import {
   useHonorarios,
   useCreateHonorario,
@@ -44,16 +54,6 @@ import {
 import { useClientes } from '@/hooks/use-clientes';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
-import type { Honorario, HonorarioInput } from '@smartlaw/shared';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
 
 export const Route = createFileRoute('/_dashboard/financeiro/')({
   component: FinanceiroPage,
