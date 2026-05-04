@@ -9,6 +9,9 @@ import {
   Calendar,
   User as UserIcon,
   Loader2,
+  DollarSign,
+  CheckSquare,
+  ChevronDown,
 } from 'lucide-react';
 import {
   XAxis,
@@ -35,11 +38,32 @@ export const Route = createFileRoute('/_dashboard/insights/')({
 
 type TimeSlice = 'all' | '1y' | '6m' | '1m';
 
+const PRIORITY_COLORS: Record<string, string> = {
+  ALTA: '#dc2626',
+  MEDIA: '#d97706',
+  BAIXA: '#16a34a',
+  'Sem prioridade': '#94a3b8',
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  PENDENTE: 'Pendente',
+  EM_ANDAMENTO: 'Em andamento',
+  CONCLUIDA: 'Concluída',
+  'Sem status': 'Sem status',
+};
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+}
+
 function InsightsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: stats, isLoading, error } = useDashboardStats();
+  const currentYear = new Date().getFullYear();
   const [timeSlice, setTimeSlice] = useState<TimeSlice>('all');
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+
+  const { data: stats, isLoading, error } = useDashboardStats(selectedYear);
 
   useEffect(() => {
     if (user?.perfil === 'usuario') {
@@ -95,16 +119,32 @@ function InsightsPage() {
 
   const filtered = getFilteredData();
   const last12 = getLast12MonthsData();
+  const availableYears = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3];
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-4xl font-bold text-[#1e293b]">Insights</h1>
-        <p className="text-[#64748b] mt-1 text-lg">
-          Análise de desempenho e métricas estratégicas.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-bold text-[#1e293b]">Insights</h1>
+          <p className="text-[#64748b] mt-1 text-lg">
+            Análise de desempenho e métricas estratégicas.
+          </p>
+        </div>
+        <div className="relative">
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="appearance-none pl-4 pr-10 py-2 bg-white border border-[#e2e8f0] rounded-xl text-sm font-bold text-[#1e293b] shadow-sm cursor-pointer hover:border-[#2563eb] transition-colors focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20"
+          >
+            {availableYears.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748b] pointer-events-none" />
+        </div>
       </div>
 
+      {/* KPIs gerais */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <StatCard
           title="Total Clientes"
@@ -129,6 +169,191 @@ function InsightsPage() {
         />
       </div>
 
+      {/* Financeiro */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2 text-[#1e293b]">
+          <DollarSign className="w-6 h-6 text-[#2563eb]" />
+          Financeiro — {selectedYear}
+        </h2>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <StatCard
+            title="Recebido"
+            value={stats?.financeiro.totalRecebido ?? 0}
+            icon={DollarSign}
+            description={`Honorários pagos em ${selectedYear}`}
+            color="emerald"
+            currency
+          />
+          <StatCard
+            title="A Receber"
+            value={stats?.financeiro.totalPendente ?? 0}
+            icon={Calendar}
+            description="Pendentes com venc. futuro"
+            color="amber"
+            currency
+          />
+          <StatCard
+            title="Em Atraso"
+            value={stats?.financeiro.totalAtrasado ?? 0}
+            icon={AlertCircle}
+            description="Pendentes com venc. passado"
+            color="red"
+            currency
+          />
+        </div>
+
+        <div className="p-6 bg-white rounded-2xl border border-[#f1f5f9] shadow-sm">
+          <div>
+            <h3 className="text-lg font-bold flex items-center gap-2 text-[#1e293b] mb-1">
+              <TrendingUp className="w-5 h-5 text-[#2563eb]" />
+              Receita Mensal
+            </h3>
+            <p className="text-xs text-[#64748b] mb-4">Recebido, a receber e em atraso por mês em {selectedYear}</p>
+          </div>
+          <div className="h-[280px] w-full">
+            {(stats?.financeiro.mensais ?? []).length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats?.financeiro.mensais ?? []} barGap={2}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis
+                    dataKey="mes"
+                    tickFormatter={formatMonth}
+                    fontSize={9}
+                    fontWeight="bold"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#94a3b8' }}
+                  />
+                  <YAxis
+                    fontSize={9}
+                    fontWeight="bold"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#94a3b8' }}
+                    tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+                  />
+                  <Tooltip
+                    labelFormatter={formatMonth}
+                    formatter={(value, name) => [
+                      formatCurrency(Number(value)),
+                      name === 'recebido' ? 'Recebido' : name === 'pendente' ? 'A Receber' : 'Em Atraso',
+                    ]}
+                    contentStyle={{
+                      borderRadius: '12px',
+                      border: '1px solid #e2e8f0',
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                    }}
+                  />
+                  <Legend
+                    formatter={(value) =>
+                      value === 'recebido' ? 'Recebido' : value === 'pendente' ? 'A Receber' : 'Em Atraso'
+                    }
+                    wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '8px' }}
+                  />
+                  <Bar dataKey="recebido" fill="#16a34a" radius={[3, 3, 0, 0]} barSize={18} />
+                  <Bar dataKey="pendente" fill="#d97706" radius={[3, 3, 0, 0]} barSize={18} />
+                  <Bar dataKey="atrasado" fill="#dc2626" radius={[3, 3, 0, 0]} barSize={18} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <EmptyChart label={`Sem lançamentos financeiros em ${selectedYear}.`} />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Tarefas */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2 text-[#1e293b]">
+          <CheckSquare className="w-6 h-6 text-[#2563eb]" />
+          Tarefas
+        </h2>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <StatCard
+            title="Tarefas Ativas"
+            value={stats?.tarefas.total ?? 0}
+            icon={CheckSquare}
+            description="Pendentes e em andamento"
+            color="blue"
+          />
+          <StatCard
+            title="Em Atraso"
+            value={stats?.tarefas.atrasadas ?? 0}
+            icon={AlertCircle}
+            description="Com prazo vencido"
+            color="red"
+          />
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="p-6 bg-white rounded-2xl border border-[#f1f5f9] shadow-sm flex flex-col h-[320px]">
+            <h3 className="text-sm font-bold text-[#64748b] uppercase mb-4 tracking-wider">
+              Por Prioridade (ativas)
+            </h3>
+            <div className="flex-1">
+              {(stats?.tarefas.porPrioridade ?? []).length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={stats?.tarefas.porPrioridade ?? []}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="total"
+                      nameKey="prioridade"
+                    >
+                      {(stats?.tarefas.porPrioridade ?? []).map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={PRIORITY_COLORS[entry.prioridade] ?? '#94a3b8'}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: '12px',
+                        border: 'none',
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                        fontWeight: 'bold',
+                        fontSize: '12px',
+                      }}
+                    />
+                    <Legend
+                      verticalAlign="bottom"
+                      iconType="circle"
+                      wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyChart label="Sem tarefas ativas." />
+              )}
+            </div>
+          </div>
+
+          <div className="p-6 bg-white rounded-2xl border border-[#f1f5f9] shadow-sm">
+            <h3 className="text-sm font-bold text-[#64748b] uppercase mb-4 tracking-wider">
+              Por Status
+            </h3>
+            <BarList
+              rows={(stats?.tarefas.porStatus ?? []).map((r) => ({
+                ...r,
+                label: STATUS_LABEL[r.status] ?? r.status,
+              }))}
+              labelKey="label"
+              total={(stats?.tarefas.porStatus ?? []).reduce((acc, r) => acc + r.total, 0)}
+              barColor="bg-[#2563eb]"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Aquisição de Clientes */}
       <div className="p-6 bg-white rounded-2xl border border-[#f1f5f9] shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -211,6 +436,7 @@ function InsightsPage() {
         </div>
       </div>
 
+      {/* Demografia */}
       <div className="space-y-6">
         <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2 text-[#1e293b]">
           <UserIcon className="w-6 h-6 text-[#2563eb]" />
@@ -243,6 +469,7 @@ function InsightsPage() {
         </div>
       </div>
 
+      {/* Distribuição Judicial */}
       <div className="grid gap-6 md:grid-cols-2">
         <div className="p-6 bg-white rounded-2xl border border-[#f1f5f9] shadow-sm space-y-6">
           <div>
@@ -320,16 +547,6 @@ function InsightsPage() {
           />
         </div>
       </div>
-
-      <div className="bg-[#eff6ff] rounded-2xl border border-[#dbeafe] p-8 text-center space-y-4">
-        <TrendingUp className="w-12 h-12 text-[#2563eb]/40 mx-auto" />
-        <div>
-          <h3 className="text-xl font-bold text-[#2563eb]">Próximas Métricas</h3>
-          <p className="text-[#64748b] max-w-md mx-auto mt-2">
-            Em breve: origem de indicação, conversão de leads e faturamento por área de atuação.
-          </p>
-        </div>
-      </div>
     </div>
   );
 }
@@ -347,15 +564,17 @@ type StatCardProps = {
   value: number;
   icon: React.ComponentType<{ className?: string }>;
   description: string;
-  color: 'blue' | 'amber' | 'emerald' | 'purple';
+  color: 'blue' | 'amber' | 'emerald' | 'purple' | 'red';
+  currency?: boolean;
 };
 
-function StatCard({ title, value, icon: Icon, description, color }: StatCardProps) {
+function StatCard({ title, value, icon: Icon, description, color, currency }: StatCardProps) {
   const colors: Record<StatCardProps['color'], string> = {
     blue: 'text-[#2563eb] bg-[#eff6ff] border-[#dbeafe]',
     amber: 'text-[#b45309] bg-[#fffbeb] border-[#fef3c7]',
     emerald: 'text-[#047857] bg-[#ecfdf5] border-[#d1fae5]',
     purple: 'text-[#7c3aed] bg-[#f5f3ff] border-[#ede9fe]',
+    red: 'text-[#b91c1c] bg-[#fef2f2] border-[#fecaca]',
   };
   return (
     <div className="p-6 bg-white rounded-2xl border border-[#f1f5f9] shadow-sm space-y-3 hover:shadow-md transition-all group">
@@ -366,8 +585,8 @@ function StatCard({ title, value, icon: Icon, description, color }: StatCardProp
       </div>
       <div>
         <h3 className="text-sm font-bold text-[#64748b] uppercase tracking-wider">{title}</h3>
-        <div className="text-3xl font-black mt-1 text-[#1e293b] group-hover:scale-105 transition-transform">
-          {value}
+        <div className="text-2xl font-black mt-1 text-[#1e293b] group-hover:scale-105 transition-transform truncate">
+          {currency ? formatCurrency(value) : value}
         </div>
       </div>
       <p className="text-xs text-[#94a3b8] font-medium">{description}</p>

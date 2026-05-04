@@ -23,6 +23,10 @@ apps/desktop/src/routeTree.gen.ts
 /tmp/smartlaw_data_dump.sql
 /tmp/smartlaw_patched.sql
 
+# Database backups (may contain sensitive data/tokens)
+*_backup.sql
+*.dump
+
 # macOS
 .DS_Store
 **/.DS_Store

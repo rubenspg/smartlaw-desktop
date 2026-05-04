@@ -186,6 +186,29 @@ export interface DashboardStats {
         situacao: string;
         total: number;
     }>;
+    financeiro: {
+        mensais: Array<{
+            mes: string;
+            recebido: number;
+            pendente: number;
+            atrasado: number;
+        }>;
+        totalRecebido: number;
+        totalPendente: number;
+        totalAtrasado: number;
+    };
+    tarefas: {
+        total: number;
+        atrasadas: number;
+        porPrioridade: Array<{
+            prioridade: string;
+            total: number;
+        }>;
+        porStatus: Array<{
+            status: string;
+            total: number;
+        }>;
+    };
 }
 export interface Usuario {
     id: string;
