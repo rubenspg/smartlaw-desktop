@@ -2,16 +2,16 @@ import { hc } from 'hono/client';
 import type { AppType } from '../../../server/src/routes';
 
 const getServerUrl = () => {
-  // 1. Try localStorage (set via settings)
-  const stored = localStorage.getItem('smartlaw_server_url');
-  if (stored) return stored;
+  // Check localStorage first (allows runtime overrides in settings)
+  const savedUrl = localStorage.getItem('smartlaw_server_url');
+  if (savedUrl) return savedUrl;
 
-  // 2. Try env variable (Vite)
+  // Then check environment variables
   const envUrl = import.meta.env.VITE_API_URL;
   if (envUrl) return envUrl;
 
-  // 3. Default to the production URL
-  return 'https://smartlaw-api.rubenspg.com';
+  // Default to localhost
+  return 'http://localhost:3001';
 };
 
 export const api = hc<AppType>(getServerUrl(), {

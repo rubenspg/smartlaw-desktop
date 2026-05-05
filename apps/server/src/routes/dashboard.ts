@@ -271,12 +271,12 @@ const dashboardRoutes = dashboard
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Tarefas: respeita escopo (usuario vê só as próprias; admin/secretaria veem todas da firma)
+    // Tarefas: respeita escopo (usuario vê só as próprias; admin/administrativo veem todas da firma)
     const baseTarefas = [
       eq(tarefas.firmId, user.firmId),
       ne(tarefas.status, 'CONCLUIDA'),
     ];
-    if (user.perfil !== 'admin' && user.perfil !== 'secretaria') {
+    if (user.perfil !== 'admin' && user.perfil !== 'administrativo') {
       baseTarefas.push(eq(tarefas.usuarioId, user.id));
     }
 
@@ -334,7 +334,7 @@ const dashboardRoutes = dashboard
       eq(tarefas.firmId, user.firmId),
       ne(tarefas.status, 'CONCLUIDA'),
     ];
-    if (user.perfil !== 'admin' && user.perfil !== 'secretaria') {
+    if (user.perfil !== 'admin' && user.perfil !== 'administrativo') {
       baseTarefas.push(eq(tarefas.usuarioId, user.id));
     }
 

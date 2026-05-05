@@ -21,7 +21,7 @@ export function TarefaForm({ initialData, onSubmit, isSubmitting, onCancel }: Ta
   const { user } = useAuth();
   const { data: usuarios, isLoading: isLoadingUsuarios } = useUsuarios();
 
-  const isManagement = user?.perfil === 'admin' || user?.perfil === 'secretaria';
+  const isManagement = user?.perfil === 'admin' || user?.perfil === 'administrativo';
 
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<TarefaInput>({
     resolver: zodResolver(tarefaSchema),

@@ -13,14 +13,14 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
   .get('/summary', async (c) => {
     const user = c.get('user');
 
-    if (user.perfil === 'usuario') {
+    if (user.perfil === 'usuario' || user.perfil === 'secretaria') {
       return c.json({ error: 'Acesso negado' }, 403);
     }
 
-    const { month, year } = c.req.query();
+    const { month, year, clienteId } = c.req.query();
     
-    // Only admins can see the financial summary (totals)
-    if (user.perfil !== 'admin' && user.perfil !== 'secretaria') {
+    // Only admins/administrativo can see the financial summary (totals)
+    if (user.perfil !== 'admin' && user.perfil !== 'administrativo') {
       return c.json({
         totalRecebido: 0,
         totalPendente: 0,
@@ -29,12 +29,18 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
     }
 
     const now = new Date();
-    const targetMonth = month ? parseInt(month) : now.getMonth() + 1;
-    const targetYear = year ? parseInt(year) : now.getFullYear();
     const todayStr = now.toISOString().split('T')[0];
 
-    // Filter by month/year based on dataVenc
-    const monthFilter = sql`EXTRACT(MONTH FROM ${honorarios.dataVenc}) = ${targetMonth} AND EXTRACT(YEAR FROM ${honorarios.dataVenc}) = ${targetYear}`;
+    const where = [eq(honorarios.firmId, user.firmId)];
+    
+    if (clienteId) {
+      where.push(eq(honorarios.clienteId, parseInt(clienteId)));
+    }
+
+    if (month && year) {
+      where.push(sql`EXTRACT(MONTH FROM ${honorarios.dataVenc}) = ${parseInt(month)}`);
+      where.push(sql`EXTRACT(YEAR FROM ${honorarios.dataVenc}) = ${parseInt(year)}`);
+    }
 
     const [summary] = await db
       .select({
@@ -61,7 +67,7 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
         )::double precision, 0)`,
       })
       .from(honorarios)
-      .where(and(eq(honorarios.firmId, user.firmId), monthFilter));
+      .where(and(...where));
 
     return c.json(summary as HonorarioSummary);
   })
@@ -69,11 +75,11 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
   .get('/', async (c) => {
     const user = c.get('user');
 
-    if (user.perfil === 'usuario') {
+    if (user.perfil === 'usuario' || user.perfil === 'secretaria') {
       return c.json({ error: 'Acesso negado' }, 403);
     }
 
-    const { status, page = '1', limit = '10', month, year } = c.req.query();
+    const { status, page = '1', limit = '10', month, year, clienteId } = c.req.query();
 
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.max(1, parseInt(limit) || 10);
@@ -81,12 +87,13 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
 
     const where = [eq(honorarios.firmId, user.firmId)];
     if (status) where.push(eq(honorarios.status, status));
+    if (clienteId) where.push(eq(honorarios.clienteId, parseInt(clienteId)));
 
     if (month && year) {
       where.push(sql`EXTRACT(MONTH FROM ${honorarios.dataVenc}) = ${parseInt(month)}`);
       where.push(sql`EXTRACT(YEAR FROM ${honorarios.dataVenc}) = ${parseInt(year)}`);
-    } else {
-      // Default to current month if no filter is provided
+    } else if (!clienteId) {
+      // Default to current month only if no clienteId is provided
       const now = new Date();
       where.push(sql`EXTRACT(MONTH FROM ${honorarios.dataVenc}) = ${now.getMonth() + 1}`);
       where.push(sql`EXTRACT(YEAR FROM ${honorarios.dataVenc}) = ${now.getFullYear()}`);
@@ -158,7 +165,7 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
   .post('/', zValidator('json', honorarioSchema), async (c) => {
     const user = c.get('user');
 
-    if (user.perfil === 'usuario') {
+    if (user.perfil === 'usuario' || user.perfil === 'secretaria') {
       return c.json({ error: 'Acesso negado' }, 403);
     }
 
@@ -175,7 +182,7 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
   .put('/:id', zValidator('json', honorarioSchema), async (c) => {
     const user = c.get('user');
 
-    if (user.perfil === 'usuario') {
+    if (user.perfil === 'usuario' || user.perfil === 'secretaria') {
       return c.json({ error: 'Acesso negado' }, 403);
     }
 
@@ -196,7 +203,7 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
   .delete('/:id', async (c) => {
     const user = c.get('user');
 
-    if (user.perfil === 'usuario') {
+    if (user.perfil === 'usuario' || user.perfil === 'secretaria') {
       return c.json({ error: 'Acesso negado' }, 403);
     }
 

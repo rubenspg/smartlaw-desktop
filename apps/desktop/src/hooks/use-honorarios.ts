@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import type { Honorario, HonorarioInput, HonorarioSummary } from '@smartlaw/shared';
 
-export function useHonorarios(filters: { status?: string; page?: number; limit?: number; month?: number; year?: number }) {
+export function useHonorarios(filters: { status?: string; page?: number; limit?: number; month?: number; year?: number; clienteId?: number }) {
   return useQuery({
     queryKey: ['honorarios', filters],
     queryFn: async () => {
@@ -13,6 +13,7 @@ export function useHonorarios(filters: { status?: string; page?: number; limit?:
           limit: filters.limit?.toString(),
           month: filters.month?.toString(),
           year: filters.year?.toString(),
+          clienteId: filters.clienteId?.toString(),
         },
       });
       if (!res.ok) throw new Error('Falha ao buscar honorários');
@@ -21,7 +22,7 @@ export function useHonorarios(filters: { status?: string; page?: number; limit?:
   });
 }
 
-export function useHonorarioSummary(filters: { month?: number; year?: number } = {}) {
+export function useHonorarioSummary(filters: { month?: number; year?: number; clienteId?: number } = {}) {
   return useQuery({
     queryKey: ['honorarios', 'summary', filters],
     queryFn: async () => {
@@ -29,6 +30,7 @@ export function useHonorarioSummary(filters: { month?: number; year?: number } =
         query: {
           month: filters.month?.toString(),
           year: filters.year?.toString(),
+          clienteId: filters.clienteId?.toString(),
         },
       });
       if (!res.ok) throw new Error('Falha ao buscar resumo financeiro');

@@ -42,6 +42,7 @@ export const municipios = pgTable('municipios', {
 export const firms = pgTable('firms', {
   id: uuid('id').defaultRandom().primaryKey(),
   nome: text('nome').notNull().unique(),
+  logo: text('logo'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
@@ -50,7 +51,7 @@ export const profiles = pgTable('profiles', {
   nome: text('nome').notNull(),
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
-  perfil: text('perfil').$type<'admin' | 'usuario' | 'secretaria'>().default('usuario'),
+  perfil: text('perfil').$type<'admin' | 'usuario' | 'administrativo' | 'secretaria'>().default('usuario'),
   ativo: boolean('ativo').default(true),
   firmId: uuid('firm_id').references(() => firms.id).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),

@@ -283,33 +283,36 @@ export declare const usuarioSchema: z.ZodObject<{
     nome: z.ZodString;
     email: z.ZodString;
     senha: z.ZodString;
-    perfil: z.ZodDefault<z.ZodEnum<["admin", "usuario", "secretaria"]>>;
+    perfil: z.ZodDefault<z.ZodEnum<["admin", "usuario", "administrativo", "secretaria"]>>;
 }, "strip", z.ZodTypeAny, {
     email: string;
     nome: string;
     senha: string;
-    perfil: "admin" | "usuario" | "secretaria";
+    perfil: "admin" | "usuario" | "administrativo" | "secretaria";
 }, {
     email: string;
     nome: string;
     senha: string;
-    perfil?: "admin" | "usuario" | "secretaria" | undefined;
+    perfil?: "admin" | "usuario" | "administrativo" | "secretaria" | undefined;
 }>;
 export type UsuarioInput = z.infer<typeof usuarioSchema>;
 export declare const usuarioUpdateSchema: z.ZodObject<{
     nome: z.ZodOptional<z.ZodString>;
     email: z.ZodOptional<z.ZodString>;
-    perfil: z.ZodOptional<z.ZodEnum<["admin", "usuario", "secretaria"]>>;
+    senha: z.ZodOptional<z.ZodString>;
+    perfil: z.ZodOptional<z.ZodEnum<["admin", "usuario", "administrativo", "secretaria"]>>;
     ativo: z.ZodOptional<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
     email?: string | undefined;
     nome?: string | undefined;
-    perfil?: "admin" | "usuario" | "secretaria" | undefined;
+    senha?: string | undefined;
+    perfil?: "admin" | "usuario" | "administrativo" | "secretaria" | undefined;
     ativo?: boolean | undefined;
 }, {
     email?: string | undefined;
     nome?: string | undefined;
-    perfil?: "admin" | "usuario" | "secretaria" | undefined;
+    senha?: string | undefined;
+    perfil?: "admin" | "usuario" | "administrativo" | "secretaria" | undefined;
     ativo?: boolean | undefined;
 }>;
 export type UsuarioUpdateInput = z.infer<typeof usuarioUpdateSchema>;

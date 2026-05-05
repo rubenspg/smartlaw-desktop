@@ -15,6 +15,13 @@
       "when": 1777753449294,
       "tag": "0001_luxuriant_gorilla_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777934666970,
+      "tag": "0002_chubby_morlun",
+      "breakpoints": true
     }
   ]
 }

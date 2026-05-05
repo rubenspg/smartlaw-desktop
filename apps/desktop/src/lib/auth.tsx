@@ -21,21 +21,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       if (!token) {
+        console.log('No token found, skipping auth check');
         setIsLoading(false);
         return;
       }
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
       try {
-        const res = await api.auth.me.$get();
+        console.log('Checking auth with token...');
+        const res = await api.auth.me.$get({}, { init: { signal: controller.signal } });
+        clearTimeout(timeoutId);
+        
         if (res.ok) {
           const data = await res.json();
+          console.log('Auth check successful:', data.user.email);
           setUser(data.user);
         } else {
+          console.warn('Auth check failed with status:', res.status);
           logout();
         }
       } catch (err) {
-        console.error('Auth check failed:', err);
-        // Don't logout on network error, but maybe show indicator
+        console.error('Auth check error:', err);
+        // On network error or timeout, we should probably still stop loading
+        // but maybe not logout immediately if it's just a transient network issue
+        if (err instanceof Error && err.name === 'AbortError') {
+           console.error('Auth check timed out');
+        }
       } finally {
         setIsLoading(false);
       }

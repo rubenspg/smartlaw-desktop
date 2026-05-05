@@ -10,6 +10,7 @@ import tarefas from './tarefas';
 import dashboard from './dashboard';
 import usuarios from './usuarios';
 import auditLogs from './audit-logs';
+import firms from './firms';
 import { Variables } from '../middleware/auth';
 
 const routes = new Hono<{ Variables: Variables }>()
@@ -23,7 +24,8 @@ const routes = new Hono<{ Variables: Variables }>()
   .route('/tarefas', tarefas)
   .route('/dashboard', dashboard)
   .route('/usuarios', usuarios)
-  .route('/audit-logs', auditLogs);
+  .route('/audit-logs', auditLogs)
+  .route('/firms', firms);
 
 export type AppType = typeof routes;
 export default routes;

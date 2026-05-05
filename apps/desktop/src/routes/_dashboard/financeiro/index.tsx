@@ -53,6 +53,7 @@ import {
 } from '@/hooks/use-honorarios';
 import { useClientes } from '@/hooks/use-clientes';
 import { useAuth } from '@/lib/auth';
+import { useRegional } from '@/components/regional-provider';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/financeiro/')({
@@ -64,9 +65,10 @@ const today = new Date().toISOString().split('T')[0];
 function FinanceiroPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { formatCurrency, formatDate } = useRegional();
 
   useEffect(() => {
-    if (user?.perfil === 'usuario') {
+    if (user?.perfil === 'usuario' || user?.perfil === 'secretaria') {
       navigate({ to: '/' });
     }
   }, [user, navigate]);
@@ -99,9 +101,6 @@ function FinanceiroPage() {
   const createHonorario = useCreateHonorario();
   const updateHonorario = useUpdateHonorario();
   const deleteHonorario = useDeleteHonorario();
-
-  const formatCurrency = (value: string | number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value));
 
   const filtered = honorarios?.filter((h) => {
     if (!search) return true;
@@ -377,7 +376,7 @@ function FinanceiroPage() {
                             : 'text-[#475569]',
                         )}
                       >
-                        {new Date(h.dataVenc + 'T00:00:00').toLocaleDateString('pt-BR')}
+                        {formatDate(h.dataVenc + 'T00:00:00')}
                       </div>
                     </TableCell>
                     <TableCell className="text-center">

@@ -185,103 +185,74 @@ function ProcessoDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Tabs Section */}
-          <Tabs defaultValue="andamentos" className="w-full">
-            <TabsList className="bg-transparent border-b w-full justify-start rounded-none h-auto p-0 gap-8">
-              <TabsTrigger 
-                value="andamentos" 
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#2563eb] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-0 py-4 text-xs font-black uppercase tracking-widest text-slate-400 data-[state=active]:text-[#2563eb]"
-              >
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  Andamentos
-                </div>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="financeiro" 
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#2563eb] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-0 py-4 text-xs font-black uppercase tracking-widest text-slate-400 data-[state=active]:text-[#2563eb]"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="font-bold">$</span>
-                  Financeiro
-                </div>
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="andamentos" className="mt-8 space-y-8">
-              {/* Novo Andamento Form */}
-              <Card className="border-none bg-[#f8fafc]">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-6">
-                    <Plus className="w-4 h-4 text-[#2563eb]" />
-                    <h4 className="text-sm font-bold text-[#1e293b]">Novo Andamento</h4>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-bold text-slate-400 uppercase">Data</Label>
-                      <Input type="date" defaultValue={new Date().toISOString().split('T')[0]} className="bg-white border-slate-200" />
-                    </div>
-                    <div className="md:col-span-3 space-y-2">
-                      <Label className="text-[10px] font-bold text-slate-400 uppercase">Histórico</Label>
-                      <Textarea placeholder="Descreva o que ocorreu..." className="bg-white border-slate-200 min-h-[80px]" />
-                    </div>
-                  </div>
-                  <div className="flex justify-end mt-4">
-                    <Button className="bg-[#2563eb] hover:bg-[#1d4ed8] font-bold text-xs uppercase px-8">Adicionar</Button>
-                  </div>
-                </CardContent>
-              </Card>
+          {/* Andamentos Section */}
+          <div className="space-y-8">
+            <div className="flex items-center gap-2 border-b pb-4">
+              <Clock className="w-5 h-5 text-[#2563eb]" />
+              <h3 className="text-sm font-black uppercase tracking-widest text-[#2563eb]">Andamentos</h3>
+            </div>
 
-              {/* Timeline */}
-              <div className="relative pl-8 space-y-8 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#f1f5f9]">
-                {processo.andamentos?.length === 0 ? (
-                  <div className="text-center py-12 bg-white rounded-xl border-2 border-dashed border-slate-100">
-                    <p className="text-slate-400 font-medium">Nenhuma movimentação registrada.</p>
+            {/* Novo Andamento Form */}
+            <Card className="border-none bg-[#f8fafc]">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2 mb-6">
+                  <Plus className="w-4 h-4 text-[#2563eb]" />
+                  <h4 className="text-sm font-bold text-[#1e293b]">Novo Andamento</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold text-slate-400 uppercase">Data</Label>
+                    <Input type="date" defaultValue={new Date().toISOString().split('T')[0]} className="bg-white border-slate-200" />
                   </div>
-                ) : (
-                  processo.andamentos?.map((andamento: any) => (
-                    <div key={andamento.id} className="relative">
-                      {/* Timeline Dot */}
-                      <div className="absolute -left-[2.35rem] top-1.5 w-3 h-3 rounded-full border-2 border-white bg-[#2563eb] shadow-sm z-10" />
-                      
-                      <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
-                        <CardContent className="p-6 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-slate-400">
-                              <CalendarIcon className="w-3.5 h-3.5" />
-                              <span className="text-xs font-bold tracking-tight">
-                                {new Date(andamento.data).toLocaleDateString('pt-BR')}
-                              </span>
-                            </div>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-300">
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
+                  <div className="md:col-span-3 space-y-2">
+                    <Label className="text-[10px] font-bold text-slate-400 uppercase">Histórico</Label>
+                    <Textarea placeholder="Descreva o que ocorreu..." className="bg-white border-slate-200 min-h-[80px]" />
+                  </div>
+                </div>
+                <div className="flex justify-end mt-4">
+                  <Button className="bg-[#2563eb] hover:bg-[#1d4ed8] font-bold text-xs uppercase px-8">Adicionar</Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Timeline */}
+            <div className="relative pl-8 space-y-8 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#f1f5f9]">
+              {processo.andamentos?.length === 0 ? (
+                <div className="text-center py-12 bg-white rounded-xl border-2 border-dashed border-slate-100">
+                  <p className="text-slate-400 font-medium">Nenhuma movimentação registrada.</p>
+                </div>
+              ) : (
+                processo.andamentos?.map((andamento: any) => (
+                  <div key={andamento.id} className="relative">
+                    {/* Timeline Dot */}
+                    <div className="absolute -left-[2.35rem] top-1.5 w-3 h-3 rounded-full border-2 border-white bg-[#2563eb] shadow-sm z-10" />
+                    
+                    <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
+                      <CardContent className="p-6 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-slate-400">
+                            <CalendarIcon className="w-3.5 h-3.5" />
+                            <span className="text-xs font-bold tracking-tight">
+                              {new Date(andamento.data).toLocaleDateString('pt-BR')}
+                            </span>
                           </div>
-                          <p className="text-sm font-bold text-[#334155] leading-relaxed">
-                            {andamento.historico}
-                          </p>
-                          {andamento.tipo === 'SISTEMA' && (
-                             <Badge variant="secondary" className="bg-slate-100 text-slate-400 font-black px-1.5 py-0 h-4 text-[9px] border-none uppercase tracking-tighter">L</Badge>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </div>
-                  ))
-                )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="financeiro" className="mt-8">
-              <Card className="border-none shadow-sm">
-                <CardContent className="p-12 text-center">
-                  <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-4">
-                    <Info className="w-8 h-8 text-slate-300" />
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-300">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <p className="text-sm font-bold text-[#334155] leading-relaxed">
+                          {andamento.historico}
+                        </p>
+                        {andamento.tipo === 'SISTEMA' && (
+                           <Badge variant="secondary" className="bg-slate-100 text-slate-400 font-black px-1.5 py-0 h-4 text-[9px] border-none uppercase tracking-tighter">L</Badge>
+                        )}
+                      </CardContent>
+                    </Card>
                   </div>
-                  <p className="text-slate-500 font-medium italic">Dados financeiros em desenvolvimento...</p>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                ))
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Sidebar (Right) */}

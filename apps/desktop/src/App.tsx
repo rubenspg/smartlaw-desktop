@@ -1,6 +1,8 @@
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './lib/auth';
+import { ThemeProvider } from './components/theme-provider';
+import { RegionalProvider } from './components/regional-provider';
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen';
@@ -25,15 +27,20 @@ declare module '@tanstack/react-router' {
 
 function InnerApp() {
   const auth = useAuth();
+  console.log('InnerApp rendering, auth state:', { isLoading: auth.isLoading, isAuthenticated: auth.isAuthenticated });
   return <RouterProvider router={router} context={{ auth }} />;
 }
 
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <InnerApp />
-      </AuthProvider>
+      <ThemeProvider defaultTheme="light" storageKey="smartlaw_theme">
+        <RegionalProvider>
+          <AuthProvider>
+            <InnerApp />
+          </AuthProvider>
+        </RegionalProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

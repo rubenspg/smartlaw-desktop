@@ -20,11 +20,11 @@ const tarefasRoutes = new Hono<{ Variables: Variables }>()
       where.push(eq(tarefas.status, status));
     }
 
-    // Se não for admin nem secretaria, só vê as próprias tarefas
-    if (user.perfil !== 'admin' && user.perfil !== 'secretaria') {
+    // Se não for admin nem administrativo, só vê as próprias tarefas
+    if (user.perfil !== 'admin' && user.perfil !== 'administrativo') {
       where.push(eq(tarefas.usuarioId, user.id));
     } else if (usuarioId) {
-      // Se for admin/secretaria, pode filtrar por um usuário específico se quiser
+      // Se for admin/administrativo, pode filtrar por um usuário específico se quiser
       where.push(eq(tarefas.usuarioId, usuarioId));
     }
 
@@ -114,7 +114,7 @@ const tarefasRoutes = new Hono<{ Variables: Variables }>()
     const data = c.req.valid('json');
 
     const whereUpdate = [eq(tarefas.id, id), eq(tarefas.firmId, user.firmId)];
-    if (user.perfil !== 'admin' && user.perfil !== 'secretaria') {
+    if (user.perfil !== 'admin' && user.perfil !== 'administrativo') {
       whereUpdate.push(eq(tarefas.usuarioId, user.id));
     }
 
@@ -141,7 +141,7 @@ const tarefasRoutes = new Hono<{ Variables: Variables }>()
     if (id === null) return c.json({ error: 'ID inválido' }, 400);
 
     const whereDelete = [eq(tarefas.id, id), eq(tarefas.firmId, user.firmId)];
-    if (user.perfil !== 'admin' && user.perfil !== 'secretaria') {
+    if (user.perfil !== 'admin' && user.perfil !== 'administrativo') {
       whereDelete.push(eq(tarefas.usuarioId, user.id));
     }
 

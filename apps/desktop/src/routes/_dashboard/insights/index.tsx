@@ -30,6 +30,7 @@ import {
 } from 'recharts';
 import { useDashboardStats } from '@/hooks/use-dashboard';
 import { useAuth } from '@/lib/auth';
+import { useRegional } from '@/components/regional-provider';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/insights/')({
@@ -52,21 +53,19 @@ const STATUS_LABEL: Record<string, string> = {
   'Sem status': 'Sem status',
 };
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-}
-
 function InsightsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { formatCurrency, formatDate } = useRegional();
   const currentYear = new Date().getFullYear();
+
   const [timeSlice, setTimeSlice] = useState<TimeSlice>('all');
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
   const { data: stats, isLoading, error } = useDashboardStats(selectedYear);
 
   useEffect(() => {
-    if (user?.perfil === 'usuario') {
+    if (user?.perfil === 'usuario' || user?.perfil === 'secretaria') {
       navigate({ to: '/' });
     }
   }, [user, navigate]);
@@ -114,7 +113,7 @@ function InsightsPage() {
     if (!monthStr || typeof monthStr !== 'string') return String(monthStr ?? '');
     const [year, month] = monthStr.split('-');
     const date = new Date(parseInt(year), parseInt(month) - 1);
-    return date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).toUpperCase();
+    return formatDate(date, { month: 'short', year: '2-digit' }).toUpperCase();
   };
 
   const filtered = getFilteredData();
@@ -569,6 +568,7 @@ type StatCardProps = {
 };
 
 function StatCard({ title, value, icon: Icon, description, color, currency }: StatCardProps) {
+  const { formatCurrency } = useRegional();
   const colors: Record<StatCardProps['color'], string> = {
     blue: 'text-[#2563eb] bg-[#eff6ff] border-[#dbeafe]',
     amber: 'text-[#b45309] bg-[#fffbeb] border-[#fef3c7]',

@@ -93,9 +93,9 @@ const usuariosRoutes = new Hono<{ Variables: Variables }>()
   }), async (c) => {
     const user = c.get('user');
     const id = c.req.param('id');
-    const data = c.req.valid('json');
+    const { senha, ...data } = c.req.valid('json');
 
-    console.log(`[Usuarios] Tentando atualizar usuário ${id}:`, data);
+    console.log(`[Usuarios] Tentando atualizar usuário ${id}:`, { ...data, hasPassword: !!senha });
 
     if (id === user.id && data.perfil && data.perfil !== 'admin') {
       return c.json({ error: 'Você não pode rebaixar seu próprio perfil' }, 400);
@@ -105,9 +105,15 @@ const usuariosRoutes = new Hono<{ Variables: Variables }>()
     }
 
     try {
+      const updateData: any = { ...data, updatedAt: new Date() };
+
+      if (senha) {
+        updateData.passwordHash = await bcrypt.hash(senha, 10);
+      }
+
       const [updated] = await db
         .update(profiles)
-        .set({ ...data, updatedAt: new Date() })
+        .set(updateData)
         .where(and(eq(profiles.id, id), eq(profiles.firmId, user.firmId)))
         .returning({
           id: profiles.id,

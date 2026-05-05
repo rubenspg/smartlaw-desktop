@@ -38,6 +38,7 @@ import { useAndamentosRecentes, useResumoPendencias, useResumoIA } from '@/hooks
 import { Sparkles } from 'lucide-react';
 import { TarefaForm } from '@/components/shared/tarefa-form';
 import { Tarefa, TarefaInput } from '@smartlaw/shared';
+import { useRegional } from '@/components/regional-provider';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/')({
@@ -51,6 +52,7 @@ function HomeComponent() {
   const [editingTarefa, setEditingTarefa] = useState<Tarefa | undefined>(undefined);
   const [confirmingTarefa, setConfirmingTarefa] = useState<Tarefa | undefined>(undefined);
 
+  const { formatDate, t } = useRegional();
   const { data: tarefas, isLoading: isLoadingTarefas } = useTarefas();
   const { data: andamentosRecentes, isLoading: isLoadingAndamentos, refetch: refetchAndamentos } = useAndamentosRecentes();
   const { data: pendencias } = useResumoPendencias();
@@ -133,34 +135,46 @@ function HomeComponent() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-10">
-      <div>
-        <h1 className="text-4xl font-bold text-[#1e293b]">Início</h1>
-        <p className="text-[#64748b] text-lg mt-1">Bem-vindo de volta. Veja o que há de novo hoje.</p>
+    <div className="space-y-10 pb-10">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-extrabold text-foreground tracking-tight">{t('nav.home')}</h1>
+          <p className="text-foreground/90 text-lg mt-1 font-semibold">{t('home.welcome')}</p>
+        </div>
+        <div className="flex items-center gap-3">
+           <Button 
+            onClick={handleCreate}
+            className="rounded-xl shadow-premium hover:shadow-premium-lg transition-all active:scale-95"
+          >
+            <Plus className="w-4.5 h-4.5 mr-2" />
+            {t('home.new_task')}
+          </Button>
+        </div>
       </div>
 
-      <Card className="border-none shadow-sm bg-gradient-to-br from-[#eef2ff] via-[#eff6ff] to-[#ecfeff]">
-        <CardContent className="p-5">
-          <div className="flex items-start gap-3">
-            <div className="shrink-0 w-9 h-9 rounded-xl bg-white/70 flex items-center justify-center">
-              <Sparkles className="w-4.5 h-4.5 text-[#6366f1]" />
+      <Card className="border border-border/50 shadow-premium bg-linear-to-br from-primary/5 via-transparent to-background overflow-hidden relative group transition-all hover:shadow-premium-lg">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-primary/10 transition-colors" />
+        <CardContent className="p-6">
+          <div className="flex items-start gap-4">
+            <div className="shrink-0 w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center shadow-inner">
+              <Sparkles className="w-5 h-5 text-primary" />
             </div>
-            <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex-1 min-w-0 space-y-1.5">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black tracking-wider text-[#4338ca] uppercase">Resumo do dia · IA local</span>
-                {isLoadingResumoIA && <Loader2 className="w-3 h-3 animate-spin text-[#6366f1]" />}
+                <span className="text-[10px] font-black tracking-widest text-primary uppercase">{t('home.ai_summary')}</span>
+                {isLoadingResumoIA && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
               </div>
               {isLoadingResumoIA && !resumoIA ? (
-                <p className="text-sm text-[#475569] italic">Gerando resumo...</p>
+                <p className="text-sm text-muted-foreground italic animate-pulse">Gerando resumo executivo...</p>
               ) : resumoIA?.texto ? (
                 <p className={cn(
-                  'text-sm leading-relaxed font-medium',
-                  resumoIA.status === 'ready' ? 'text-[#1e293b]' : 'text-[#92400e]'
+                  'text-sm leading-relaxed font-semibold',
+                  resumoIA.status === 'ready' ? 'text-foreground/90' : 'text-amber-600 dark:text-amber-400'
                 )}>
                   {resumoIA.texto}
                 </p>
               ) : (
-                <p className="text-sm text-[#475569] italic">Carregando dados...</p>
+                <p className="text-sm text-muted-foreground italic">Carregando dados operacionais...</p>
               )}
             </div>
           </div>
@@ -169,35 +183,37 @@ function HomeComponent() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Andamentos Recentes */}
-        <div className="lg:col-span-2">
-          <Card className="border-none shadow-sm flex flex-col bg-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-[#f1f5f9]">
-              <div className="flex items-center gap-2">
-                <Activity className="w-5 h-5 text-[#2563eb]" />
-                <CardTitle className="text-xl font-bold text-[#1e293b]">Andamentos Recentes</CardTitle>
-              </div>
-              <button
-                onClick={() => refetchAndamentos()}
-                className="p-1.5 rounded-lg text-[#94a3b8] hover:text-[#2563eb] hover:bg-[#eff6ff] transition-all"
-                title="Atualizar"
-              >
-                <RefreshCw className={cn('w-4 h-4', isLoadingAndamentos && 'animate-spin')} />
-              </button>
-            </CardHeader>
-            <CardContent className="p-0 overflow-auto max-h-[600px]">
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <Activity className="w-5 h-5 text-primary" />
+              <h3 className="text-xl font-bold text-foreground">{t('home.recent_updates')}</h3>
+            </div>
+            <button
+              onClick={() => refetchAndamentos()}
+              className="p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all active:scale-90"
+              title="Atualizar"
+            >
+              <RefreshCw className={cn('w-4 h-4', isLoadingAndamentos && 'animate-spin')} />
+            </button>
+          </div>
+          
+          <Card className="border border-border/40 shadow-premium flex flex-col bg-card/50 backdrop-blur-sm overflow-hidden">
+            <CardContent className="p-0 overflow-auto max-h-[600px] custom-scrollbar">
               {isLoadingAndamentos ? (
                 <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
-                  <Loader2 className="w-8 h-8 animate-spin mb-2 text-[#2563eb] opacity-30" />
+                  <Loader2 className="w-8 h-8 animate-spin mb-2 text-primary/30" />
                 </div>
               ) : andamentosRecentes?.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-48 text-center p-8">
-                  <div className="w-16 h-16 rounded-2xl bg-[#f1f5f9] flex items-center justify-center mb-4">
-                    <Clock className="w-8 h-8 text-[#cbd5e1]" />
+                <div className="flex flex-col items-center justify-center h-64 text-center p-8">
+                  <div className="w-20 h-20 rounded-3xl bg-muted/50 flex items-center justify-center mb-4 shadow-inner">
+                    <Clock className="w-10 h-10 text-muted-foreground/50" />
                   </div>
-                  <p className="text-[#64748b] font-medium">Nenhum andamento registrado.</p>
+                  <p className="text-muted-foreground font-semibold">Nenhum andamento registrado.</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">Os novos eventos aparecerão aqui automaticamente.</p>
                 </div>
               ) : (
-                <div className="divide-y divide-[#f1f5f9]">
+                <div className="divide-y divide-border/30">
                   {andamentosRecentes?.map((a) => {
                     const isSistema = a.tipo === 'SISTEMA';
                     const isJudicial = !!a.processoJudicialId;
@@ -211,52 +227,61 @@ function HomeComponent() {
                       <div
                         key={a.id}
                         className={cn(
-                          'p-4 hover:bg-[#f8fafc] transition-colors',
-                          isSistema && 'border-l-4 border-l-red-400 bg-red-50/40 hover:bg-red-50/60',
+                          'p-5 hover:bg-primary/5 transition-all group relative overflow-hidden',
+                          isSistema && 'bg-destructive/[0.02] hover:bg-destructive/[0.05]',
                         )}
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0 space-y-1.5">
+                        {isSistema && (
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-destructive" />
+                        )}
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0 space-y-2">
                             <div className="flex items-center gap-2 flex-wrap">
                               {isSistema ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded bg-red-100 text-red-700 uppercase tracking-wider">
-                                  <AlertCircle className="w-3 h-3" /> ATENÇÃO
-                                </span>
+                                <Badge variant="destructive" className="text-[9px] font-black px-1.5 py-0 rounded-md uppercase tracking-widest border-none shadow-sm">
+                                  <AlertCircle className="w-2.5 h-2.5 mr-1" /> URGENTE
+                                </Badge>
                               ) : isJudicial ? (
-                                <span className="text-[10px] font-black px-2 py-0.5 rounded bg-amber-100 text-amber-700 uppercase tracking-wider">
+                                <Badge className="text-[9px] font-black px-1.5 py-0 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border-none uppercase tracking-widest">
                                   Judicial
-                                </span>
+                                </Badge>
                               ) : (
-                                <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 uppercase tracking-wider">
+                                <Badge className="text-[9px] font-black px-1.5 py-0 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-none uppercase tracking-widest">
                                   Admin
-                                </span>
+                                </Badge>
                               )}
                               {processo && (
-                                <span className="text-xs font-mono font-bold text-[#475569] truncate">
+                                <span className="text-xs font-mono font-bold text-foreground/80 bg-muted/50 px-2 py-0.5 rounded-lg border border-border/30">
                                   {processo.numero}
                                 </span>
                               )}
                               {cliente && (
-                                <span className="text-xs text-[#94a3b8] truncate">· {cliente.nome}</span>
+                                <span className="text-xs text-muted-foreground font-medium">· {cliente.nome}</span>
                               )}
                             </div>
                             {a.historico && (
-                              <p className="text-sm text-[#475569] italic line-clamp-2">
+                              <p className="text-sm text-foreground/80 font-medium leading-relaxed line-clamp-2 italic">
                                 "{a.historico}"
                               </p>
                             )}
-                            <div className="flex items-center gap-1 text-[10px] text-[#94a3b8]">
-                              <Calendar className="w-3 h-3" />
-                              {new Date(a.inclusao).toLocaleString('pt-BR')}
+                            <div className="flex items-center gap-3 text-[10px] text-muted-foreground/70 font-bold uppercase tracking-wider">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {formatDate(a.inclusao)}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {new Date(a.inclusao).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
                             </div>
                           </div>
                           {processo && (
                             <Link
                               to={link as any}
-                              className="shrink-0 p-1.5 rounded-lg text-[#94a3b8] hover:text-[#2563eb] hover:bg-[#eff6ff] transition-all"
+                              className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all shadow-sm opacity-0 group-hover:opacity-100 focus:opacity-100"
                               title="Ver processo"
                             >
-                              <ExternalLink className="w-4 h-4" />
+                              <ExternalLink className="w-4.5 h-4.5" />
                             </Link>
                           )}
                         </div>
@@ -272,119 +297,118 @@ function HomeComponent() {
         {/* Sidebar Cards */}
         <div className="space-y-8">
           {/* Tarefas */}
-          <Card className="border-none shadow-sm min-h-[500px] flex flex-col bg-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6 border-b border-[#f1f5f9]">
+          <div className="space-y-4">
+             <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-2">
-                <ClipboardCheck className="w-5 h-5 text-[#2563eb]" />
-                <CardTitle className="text-xl font-bold text-[#1e293b]">Tarefas</CardTitle>
+                <ClipboardCheck className="w-5 h-5 text-primary" />
+                <h3 className="text-xl font-bold text-foreground">{t('home.tasks')}</h3>
               </div>
-              <Button 
-                onClick={handleCreate}
-                size="icon" 
-                variant="ghost" 
-                className="h-8 w-8 rounded-full bg-[#2563eb] text-white hover:bg-[#1d4ed8] hover:text-white"
-              >
-                <Plus className="w-5 h-5" />
-              </Button>
-            </CardHeader>
-            <CardContent className="flex-1 p-0 overflow-auto max-h-[600px]">
-              {isLoadingTarefas ? (
-                <div className="flex flex-col items-center justify-center h-full p-10 text-muted-foreground">
-                  <Loader2 className="w-8 h-8 animate-spin mb-2" />
-                  <p>Carregando tarefas...</p>
-                </div>
-              ) : tarefas?.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full p-10 text-center">
-                   <div className="w-16 h-16 rounded-2xl bg-[#f1f5f9] flex items-center justify-center mb-4">
-                    <CheckCircle2 className="w-8 h-8 text-[#cbd5e1]" />
-                  </div>
-                  <p className="text-[#64748b] font-medium">Sem tarefas pendentes.</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-[#f1f5f9]">
-                  {tarefas?.map((tarefa: Tarefa) => (
-                    <div key={tarefa.id} className={cn(
-                      "p-4 group hover:bg-[#f8fafc] transition-colors",
-                      tarefa.status === 'CONCLUIDA' && "bg-slate-50/50"
-                    )}>
-                      <div className="flex items-start gap-3">
-                        <button
-                          onClick={() => handleToggleClick(tarefa)}
-                          className={cn(
-                            "mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all",
-                            tarefa.status === 'CONCLUIDA' 
-                              ? "bg-green-500 border-green-500 text-white" 
-                              : "border-slate-300 hover:border-[#2563eb]"
-                          )}
-                        >
-                          {tarefa.status === 'CONCLUIDA' && <CheckCircle className="w-3.5 h-3.5" />}
-                        </button>
-                        
-                        <div className="flex-1 min-w-0">
-                          <h4 className={cn(
-                            "text-sm font-bold truncate",
-                            tarefa.status === 'CONCLUIDA' ? "text-slate-400 line-through" : "text-[#1e293b]"
-                          )}>
-                            {tarefa.titulo}
-                          </h4>
-                          {tarefa.descricao && (
-                            <p className="text-xs text-slate-500 mt-0.5 line-clamp-2 italic">
-                              {tarefa.descricao}
-                            </p>
-                          )}
-                          
-                          <div className="flex flex-wrap items-center gap-2 mt-2">
-                            <Badge className={cn("text-[10px] px-1.5 py-0 border-none font-bold", getPriorityColor(tarefa.prioridade))}>
-                              {tarefa.prioridade}
-                            </Badge>
-                            
-                            {tarefa.dataLimite && (
-                              <div className="flex items-center gap-1 text-[10px] font-medium text-slate-400">
-                                <Calendar className="w-3 h-3" />
-                                {new Date(tarefa.dataLimite).toLocaleDateString('pt-BR')}
-                              </div>
-                            )}
+            </div>
 
-                            <div className="flex items-center gap-1 text-[10px] font-medium text-slate-400">
-                                <UserIcon className="w-3 h-3" />
-                                {tarefa.usuario?.nome.split(' ')[0]}
+            <Card className="border border-border/40 shadow-premium min-h-[500px] flex flex-col bg-card/50 backdrop-blur-sm overflow-hidden">
+              <CardContent className="flex-1 p-0 overflow-auto max-h-[600px] custom-scrollbar">
+                {isLoadingTarefas ? (
+                  <div className="flex flex-col items-center justify-center h-full p-10 text-muted-foreground">
+                    <Loader2 className="w-8 h-8 animate-spin mb-2" />
+                    <p className="text-sm font-medium">Carregando...</p>
+                  </div>
+                ) : tarefas?.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full p-10 text-center">
+                    <div className="w-20 h-20 rounded-3xl bg-muted/50 flex items-center justify-center mb-4 shadow-inner">
+                      <CheckCircle2 className="w-10 h-10 text-muted-foreground/30" />
+                    </div>
+                    <p className="text-muted-foreground font-bold">Tudo em dia!</p>
+                    <p className="text-xs text-muted-foreground/60 mt-1">Você não tem tarefas pendentes.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border/30">
+                    {tarefas?.map((tarefa: Tarefa) => (
+                      <div key={tarefa.id} className={cn(
+                        "p-5 group hover:bg-primary/5 transition-all",
+                        tarefa.status === 'CONCLUIDA' && "opacity-50 grayscale"
+                      )}>
+                        <div className="flex items-start gap-4">
+                          <button
+                            onClick={() => handleToggleClick(tarefa)}
+                            className={cn(
+                              "mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shadow-sm",
+                              tarefa.status === 'CONCLUIDA' 
+                                ? "bg-emerald-500 border-emerald-500 text-white" 
+                                : "border-border/60 hover:border-primary bg-background"
+                            )}
+                          >
+                            {tarefa.status === 'CONCLUIDA' && <CheckCircle className="w-4 h-4" />}
+                          </button>
+                          
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <h4 className={cn(
+                              "text-sm font-bold truncate leading-none",
+                              tarefa.status === 'CONCLUIDA' ? "text-muted-foreground line-through" : "text-foreground/90"
+                            )}>
+                              {tarefa.titulo}
+                            </h4>
+                            {tarefa.descricao && (
+                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 italic font-medium">
+                                {tarefa.descricao}
+                              </p>
+                            )}
+                            
+                            <div className="flex flex-wrap items-center gap-3 mt-3">
+                              <Badge className={cn("text-[9px] px-1.5 py-0 border-none font-black tracking-widest uppercase rounded-md shadow-sm", getPriorityColor(tarefa.prioridade))}>
+                                {tarefa.prioridade}
+                              </Badge>
+                              
+                              {tarefa.dataLimite && (
+                                <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider">
+                                  <Calendar className="w-3 h-3" />
+                                  {formatDate(tarefa.dataLimite)}
+                                </div>
+                              )}
+
+                              <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider">
+                                  <UserIcon className="w-3 h-3" />
+                                  {tarefa.usuario?.nome.split(' ')[0]}
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <MoreVertical className="w-4 h-4 text-slate-400" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEdit(tarefa)}>
-                              <Edit2 className="w-3.5 h-3.5 mr-2" />
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDelete(tarefa.id)}
-                              className="text-red-600 focus:text-red-600"
-                            >
-                              <Trash2 className="w-3.5 h-3.5 mr-2" />
-                              Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-primary/10">
+                                <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="rounded-xl shadow-premium-lg border-border/40">
+                              <DropdownMenuItem onClick={() => handleEdit(tarefa)} className="rounded-lg">
+                                <Edit2 className="w-3.5 h-3.5 mr-2" />
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDelete(tarefa.id)}
+                                className="text-destructive focus:text-destructive rounded-lg"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 mr-2" />
+                                Excluir
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Dica do Dia */}
-          <Card className="border-none shadow-sm bg-[#eff6ff]">
+          <Card className="border border-primary/20 shadow-premium bg-primary/[0.03] overflow-hidden relative">
+            <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
             <CardContent className="p-6 space-y-3">
-              <h4 className="text-[10px] font-black text-[#2563eb] tracking-wider uppercase">DICA DO DIA</h4>
-              <p className="text-sm text-[#1e3a8a] italic font-medium leading-relaxed">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-primary tracking-widest uppercase bg-primary/10 px-2 py-0.5 rounded-md">{t('home.tip_of_day')}</span>
+              </div>
+              <p className="text-sm text-foreground/80 italic font-semibold leading-relaxed">
                 "Mantenha os cadastros de clientes sempre atualizados para garantir a agilidade nas consultas ao Datajud."
               </p>
             </CardContent>
