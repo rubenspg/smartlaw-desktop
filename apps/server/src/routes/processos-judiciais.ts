@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { db } from '../db';
-import { processosJudiciais, clientes, andamentos } from '../db/schema';
+import { processosJudiciais, clientes, andamentos, firms } from '../db/schema';
 import { eq, and, ilike, or, desc } from 'drizzle-orm';
 import { authMiddleware, Variables } from '../middleware/auth';
 import { DatajudService } from '../services/DatajudService';
@@ -30,11 +30,19 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
 
     // Use .select() when q is provided to support searching by client name
     if (q) {
+      const cleanQ = q.replace(/\D/g, '');
       const where = [eq(processosJudiciais.firmId, user.firmId)];
-      where.push(or(
+      
+      const searchConditions = [
         ilike(processosJudiciais.numero, `%${q}%`),
         ilike(clientes.nome, `%${q}%`)
-      )!);
+      ];
+
+      if (cleanQ.length > 0) {
+        searchConditions.push(sql`REPLACE(REPLACE(${processosJudiciais.numero}, '.', ''), '-', '') ILIKE ${`%${cleanQ}%`}`);
+      }
+
+      where.push(or(...searchConditions)!);
 
       if (clienteId) {
         where.push(eq(processosJudiciais.clienteId, parseInt(clienteId)));
@@ -165,6 +173,7 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
   })
 
   .post('/datajud/search', async (c) => {
+    const user = c.get('user');
     let rawBody: unknown;
     try {
       rawBody = await c.req.json();
@@ -175,7 +184,10 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
     if (!numero || typeof numero !== 'string') return c.json({ error: 'Número é obrigatório' }, 400);
 
     try {
-      const source = await DatajudService.fetchFromDatajud(numero);
+      // Get firm specific API key
+      const [firm] = await db.select({ key: firms.datajudApiKey }).from(firms).where(eq(firms.id, user.firmId)).limit(1);
+      
+      const source = await DatajudService.fetchFromDatajud(numero, firm?.key || undefined);
       return c.json({ data: { hits: { hits: source ? [{ _source: source }] : [] } } });
     } catch (err: any) {
       return c.json({ error: err.message }, 400);
@@ -197,7 +209,10 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
 
       if (!local) return c.json({ error: 'Processo não encontrado' }, 404);
 
-      const remote = await DatajudService.fetchFromDatajud(local.numero);
+      // Get firm specific API key
+      const [firm] = await db.select({ key: firms.datajudApiKey }).from(firms).where(eq(firms.id, user.firmId)).limit(1);
+
+      const remote = await DatajudService.fetchFromDatajud(local.numero, firm?.key || undefined);
       if (!remote) return c.json({ error: 'Processo não encontrado no Datajud' }, 404);
 
       const drift = ComparisonService.checkDrift(local, remote);

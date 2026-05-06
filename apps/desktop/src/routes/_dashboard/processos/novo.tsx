@@ -33,6 +33,7 @@ function NewProcessoPage() {
   const [processoData, setProcessoData] = useState<DatajudProcessData | null>(null);
   const [clienteId, setClienteId] = useState<string>('');
   const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const searchMutation = useDatajudSearch();
   const createMutation = useCreateProcessoJudicial();
@@ -41,6 +42,9 @@ function NewProcessoPage() {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!numero.trim()) return;
+
+    setNotFound(false);
+    setError(null);
 
     try {
       const res = await searchMutation.mutateAsync(numero);
@@ -52,8 +56,9 @@ function NewProcessoPage() {
       } else {
         setNotFound(true);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Datajud search error:', err);
+      setError(err.message || 'Ocorreu um erro ao buscar o processo. Verifique sua conexão e a chave da API.');
     }
   };
 
@@ -123,6 +128,12 @@ function NewProcessoPage() {
                   <div className="flex items-center gap-2 mt-3 text-sm text-destructive">
                     <AlertCircle className="w-4 h-4 shrink-0" />
                     Processo não encontrado no Datajud.
+                  </div>
+                )}
+                {error && (
+                  <div className="flex items-center gap-2 mt-3 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    {error}
                   </div>
                 )}
               </form>

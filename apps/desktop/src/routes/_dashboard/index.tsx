@@ -127,10 +127,10 @@ function HomeComponent() {
 
   const getPriorityColor = (p: string | null) => {
     switch (p) {
-      case 'ALTA': return 'bg-red-100 text-red-700';
-      case 'MEDIA': return 'bg-amber-100 text-amber-700';
-      case 'BAIXA': return 'bg-blue-100 text-blue-700';
-      default: return 'bg-slate-100 text-slate-700';
+      case 'ALTA': return 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400';
+      case 'MEDIA': return 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400';
+      case 'BAIXA': return 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -139,7 +139,7 @@ function HomeComponent() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="text-4xl font-extrabold text-foreground tracking-tight">{t('nav.home')}</h1>
-          <p className="text-foreground/90 text-lg mt-1 font-semibold">{t('home.welcome')}</p>
+          <p className="text-muted-foreground text-lg mt-1 font-semibold">{t('home.welcome')}</p>
         </div>
         <div className="flex items-center gap-3">
            <Button 

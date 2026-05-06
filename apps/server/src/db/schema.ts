@@ -43,6 +43,7 @@ export const firms = pgTable('firms', {
   id: uuid('id').defaultRandom().primaryKey(),
   nome: text('nome').notNull().unique(),
   logo: text('logo'),
+  datajudApiKey: text('datajud_api_key'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
@@ -264,6 +265,21 @@ export const clientesRelations = relations(clientes, ({ many }) => ({
   processosAdministrativos: many(processosAdministrativos),
   notas: many(clientesNotas),
   tarefas: many(tarefas),
+}));
+
+export const honorariosRelations = relations(honorarios, ({ one }) => ({
+  cliente: one(clientes, {
+    fields: [honorarios.clienteId],
+    references: [clientes.id],
+  }),
+  processoJudicial: one(processosJudiciais, {
+    fields: [honorarios.processoJudicialId],
+    references: [processosJudiciais.id],
+  }),
+  processoAdmin: one(processosAdministrativos, {
+    fields: [honorarios.processoAdminId],
+    references: [processosAdministrativos.id],
+  }),
 }));
 
 export const profilesRelations = relations(profiles, ({ many }) => ({

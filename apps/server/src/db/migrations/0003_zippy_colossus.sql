@@ -1,0 +1,1 @@
+ALTER TABLE "firms" ADD COLUMN "datajud_api_key" text;

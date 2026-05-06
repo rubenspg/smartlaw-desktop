@@ -1,6 +1,6 @@
 import { db } from '../apps/server/src/db';
 import { firms, profiles, clientes, processosJudiciais, tarefas, andamentos } from '../apps/server/src/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
 async function fullSeed() {
@@ -41,18 +41,26 @@ async function fullSeed() {
 
   const createdClientes = [];
   for (const nome of nomesClientes) {
-    const [c] = await db.insert(clientes).values({
-      firmId: firm.id,
-      tipo: nome.includes('Ltda') || nome.includes('Condomínio') ? 'J' : 'F',
-      nome,
-      cpfCnpj: Math.random().toString().slice(2, 13),
-      email: `${nome.toLowerCase().replace(/ /g, '.')}@email.com`,
-      situacao: 'A',
-      profissao: 'Consultor',
-    }).returning();
+    // Check if exists
+    let [c] = await db.select().from(clientes).where(and(eq(clientes.nome, nome), eq(clientes.firmId, firm.id))).limit(1);
+    
+    if (!c) {
+      [c] = await db.insert(clientes).values({
+        firmId: firm.id,
+        tipo: nome.includes('Ltda') || nome.includes('Condomínio') ? 'J' : 'F',
+        nome,
+        cpfCnpj: Math.random().toString().slice(2, 13),
+        email: `${nome.toLowerCase().replace(/ /g, '.')}@email.com`,
+        situacao: 'A',
+        profissao: 'Consultor',
+      }).returning();
+      console.log(`✅ Cliente criado: ${nome}`);
+    } else {
+      console.log(`ℹ️ Cliente já existe: ${nome}`);
+    }
     createdClientes.push(c);
   }
-  console.log('✅ 8 Clientes criados');
+  console.log(`✅ ${createdClientes.length} Clientes processados`);
 
   // 3. Criar Processos e Andamentos
   for (let i = 0; i < 5; i++) {

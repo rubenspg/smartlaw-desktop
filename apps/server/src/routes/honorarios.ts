@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { db } from '../db';
-import { honorarios, clientes } from '../db/schema';
+import { honorarios, clientes, processosJudiciais, processosAdministrativos } from '../db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { authMiddleware, Variables } from '../middleware/auth';
 import { honorarioSchema, type HonorarioSummary } from '@smartlaw/shared';
@@ -117,9 +117,19 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
           id: clientes.id,
           nome: clientes.nome,
         },
+        processoJudicial: {
+          id: processosJudiciais.id,
+          numero: processosJudiciais.numero,
+        },
+        processoAdmin: {
+          id: processosAdministrativos.id,
+          numero: processosAdministrativos.numero,
+        },
       })
       .from(honorarios)
       .leftJoin(clientes, eq(honorarios.clienteId, clientes.id))
+      .leftJoin(processosJudiciais, eq(honorarios.processoJudicialId, processosJudiciais.id))
+      .leftJoin(processosAdministrativos, eq(honorarios.processoAdminId, processosAdministrativos.id))
       .where(and(...where))
       .limit(limitNum)
       .offset(offset)
@@ -153,9 +163,19 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
           id: clientes.id,
           nome: clientes.nome,
         },
+        processoJudicial: {
+          id: processosJudiciais.id,
+          numero: processosJudiciais.numero,
+        },
+        processoAdmin: {
+          id: processosAdministrativos.id,
+          numero: processosAdministrativos.numero,
+        },
       })
       .from(honorarios)
       .leftJoin(clientes, eq(honorarios.clienteId, clientes.id))
+      .leftJoin(processosJudiciais, eq(honorarios.processoJudicialId, processosJudiciais.id))
+      .leftJoin(processosAdministrativos, eq(honorarios.processoAdminId, processosAdministrativos.id))
       .where(and(eq(honorarios.id, id), eq(honorarios.firmId, user.firmId)));
 
     if (!data) return c.json({ error: 'Honorário não encontrado' }, 404);

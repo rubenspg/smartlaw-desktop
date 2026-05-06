@@ -22,6 +22,13 @@
       "when": 1777934666970,
       "tag": "0002_chubby_morlun",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778024594246,
+      "tag": "0003_zippy_colossus",
+      "breakpoints": true
     }
   ]
 }

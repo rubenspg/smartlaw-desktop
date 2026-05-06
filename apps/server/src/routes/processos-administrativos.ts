@@ -28,11 +28,19 @@ const processosAdministrativosRoutes = new Hono<{ Variables: Variables }>()
 
     // Use .select() when q is provided to support searching by client name
     if (q) {
+      const cleanQ = q.replace(/\D/g, '');
       const where = [eq(processosAdministrativos.firmId, user.firmId)];
-      where.push(or(
+
+      const searchConditions = [
         ilike(processosAdministrativos.numero, `%${q}%`),
         ilike(clientes.nome, `%${q}%`)
-      )!);
+      ];
+
+      if (cleanQ.length > 0) {
+        searchConditions.push(sql`REPLACE(REPLACE(${processosAdministrativos.numero}, '.', ''), '-', '') ILIKE ${`%${cleanQ}%`}`);
+      }
+
+      where.push(or(...searchConditions)!);
 
       if (clienteId) {
         where.push(eq(processosAdministrativos.clienteId, parseInt(clienteId)));

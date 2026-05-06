@@ -38,6 +38,7 @@ const firmsRoutes = new Hono<{ Variables: Variables }>()
         .set({
           nome: data.nome,
           logo: data.logo,
+          datajudApiKey: data.datajudApiKey,
         })
         .where(eq(firms.id, user.firmId))
         .returning();

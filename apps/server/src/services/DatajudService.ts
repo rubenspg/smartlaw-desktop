@@ -7,7 +7,7 @@ export class DatajudService {
     return `${clean.substring(0, 7)}-${clean.substring(7, 9)}.${clean.substring(9, 13)}.${clean.substring(13, 14)}.${clean.substring(14, 16)}.${clean.substring(16, 20)}`;
   }
 
-  static async fetchFromDatajud(numero: string): Promise<DatajudProcessData | null> {
+  static async fetchFromDatajud(numero: string, customApiKey?: string): Promise<DatajudProcessData | null> {
     const cnjFormatado = this.formatCnj(numero);
     const numeroLimpo = cnjFormatado.replace(/\D/g, '');
     const parts = cnjFormatado.split('.');
@@ -50,7 +50,7 @@ export class DatajudService {
       throw new Error(`Tipo de justiça desconhecido: ${justiceType}. Verifique o número CNJ.`);
     }
 
-    const apiKey = process.env.DATAJUD_API_KEY || '';
+    const apiKey = customApiKey || process.env.DATAJUD_API_KEY || '';
     const authHeader = apiKey.startsWith('APIKey') ? apiKey : `APIKey ${apiKey}`;
 
     const response = await fetch(`https://api-publica.datajud.cnj.jus.br/${alias}/_search`, {

@@ -107,8 +107,13 @@ function FinanceiroPage() {
     const term = search.toLowerCase();
     const nomeCliente = h.cliente?.nome?.toLowerCase() || '';
     const descricao = h.descricao?.toLowerCase() || '';
+    const numJudicial = h.processoJudicial?.numero?.toLowerCase() || '';
+    const numAdmin = h.processoAdmin?.numero?.toLowerCase() || '';
     
-    return nomeCliente.includes(term) || descricao.includes(term);
+    return nomeCliente.includes(term) || 
+           descricao.includes(term) || 
+           numJudicial.includes(term) || 
+           numAdmin.includes(term);
   });
 
   const totalRecebido = summary?.totalRecebido ?? 0;
@@ -178,8 +183,8 @@ function FinanceiroPage() {
       <div className="flex items-center justify-between">
         <div className="flex flex-col md:flex-row md:items-end gap-6">
           <div>
-            <h1 className="text-4xl font-bold text-[#1e293b]">Financeiro</h1>
-            <p className="text-[#64748b] text-lg mt-1 font-medium">
+            <h1 className="text-4xl font-bold text-foreground">Financeiro</h1>
+            <p className="text-muted-foreground text-lg mt-1 font-medium">
               Controle de honorários e pagamentos.
             </p>
           </div>
@@ -189,7 +194,7 @@ function FinanceiroPage() {
               value={selectedMonth.toString()} 
               onValueChange={(v) => setSelectedMonth(parseInt(v))}
             >
-              <SelectTrigger className="w-[140px] h-10 bg-white border-[#e2e8f0] font-bold text-[#1e293b]">
+              <SelectTrigger className="w-[140px] h-10 bg-card border-input font-bold text-foreground">
                 <SelectValue placeholder="Mês" />
               </SelectTrigger>
               <SelectContent>
@@ -204,7 +209,7 @@ function FinanceiroPage() {
               value={selectedYear.toString()} 
               onValueChange={(v) => setSelectedYear(parseInt(v))}
             >
-              <SelectTrigger className="w-[100px] h-10 bg-white border-[#e2e8f0] font-bold text-[#1e293b]">
+              <SelectTrigger className="w-[100px] h-10 bg-card border-input font-bold text-foreground">
                 <SelectValue placeholder="Ano" />
               </SelectTrigger>
               <SelectContent>
@@ -217,7 +222,7 @@ function FinanceiroPage() {
         </div>
         <Button
           onClick={openCreate}
-          className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white px-6 py-6 rounded-xl font-bold gap-2 shadow-lg shadow-blue-200 uppercase tracking-wide"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-6 rounded-xl font-bold gap-2 shadow-lg shadow-primary/20 uppercase tracking-wide"
         >
           <Plus className="w-5 h-5 stroke-[3px]" />
           Novo Lançamento
@@ -226,49 +231,49 @@ function FinanceiroPage() {
 
       {isAdmin && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="border-none shadow-sm bg-[#f0fdf4]">
+          <Card className="border-none shadow-sm bg-emerald-50 dark:bg-emerald-950/20">
             <CardContent className="p-8">
               <div className="flex items-center justify-between mb-6">
-                <span className="text-[11px] font-black text-[#166534] uppercase tracking-widest">
+                <span className="text-[11px] font-black text-emerald-800 dark:text-emerald-400 uppercase tracking-widest">
                   TOTAL RECEBIDO
                 </span>
-                <div className="w-8 h-8 rounded-full bg-[#dcfce7] flex items-center justify-center">
-                  <CheckCircle2 className="w-5 h-5 text-[#166534]" />
+                <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-800 dark:text-emerald-400" />
                 </div>
               </div>
-              <div className="text-4xl font-black text-[#166534] tracking-tight">
+              <div className="text-4xl font-black text-emerald-800 dark:text-emerald-400 tracking-tight">
                 {formatCurrency(totalRecebido)}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-sm bg-[#fffbeb]">
+          <Card className="border-none shadow-sm bg-amber-50 dark:bg-amber-950/20">
             <CardContent className="p-8">
               <div className="flex items-center justify-between mb-6">
-                <span className="text-[11px] font-black text-[#92400e] uppercase tracking-widest">
+                <span className="text-[11px] font-black text-amber-800 dark:text-amber-400 uppercase tracking-widest">
                   PENDENTE
                 </span>
-                <div className="w-8 h-8 rounded-full bg-[#fef3c7] flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-[#92400e]" />
+                <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-amber-800 dark:text-amber-400" />
                 </div>
               </div>
-              <div className="text-4xl font-black text-[#92400e] tracking-tight">
+              <div className="text-4xl font-black text-amber-800 dark:text-amber-400 tracking-tight">
                 {formatCurrency(totalPendente)}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-sm bg-[#fef2f2]">
+          <Card className="border-none shadow-sm bg-red-50 dark:bg-red-950/20">
             <CardContent className="p-8">
               <div className="flex items-center justify-between mb-6">
-                <span className="text-[11px] font-black text-[#991b1b] uppercase tracking-widest">
+                <span className="text-[11px] font-black text-red-800 dark:text-red-400 uppercase tracking-widest">
                   ATRASADO
                 </span>
-                <div className="w-8 h-8 rounded-full bg-[#fee2e2] flex items-center justify-center">
-                  <AlertCircle className="w-5 h-5 text-[#991b1b]" />
+                <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
+                  <AlertCircle className="w-5 h-5 text-red-800 dark:text-red-400" />
                 </div>
               </div>
-              <div className="text-4xl font-black text-[#991b1b] tracking-tight">
+              <div className="text-4xl font-black text-red-800 dark:text-red-400 tracking-tight">
                 {formatCurrency(totalAtrasado)}
               </div>
             </CardContent>
@@ -276,29 +281,29 @@ function FinanceiroPage() {
         </div>
       )}
 
-      <Card className="border-none shadow-sm">
-        <div className="p-6 border-b border-[#f1f5f9] flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <Card className="border-none shadow-sm bg-card">
+        <div className="p-6 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#eff6ff] flex items-center justify-center">
-              <Receipt className="w-5 h-5 text-[#2563eb]" />
+            <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center">
+              <Receipt className="w-5 h-5 text-primary" />
             </div>
-            <h2 className="text-xl font-black text-[#1e293b] uppercase tracking-tight">
+            <h2 className="text-xl font-black text-foreground uppercase tracking-tight">
               Lançamentos
             </h2>
           </div>
 
           <div className="flex flex-col md:flex-row items-center gap-3 flex-1 max-w-2xl justify-end">
             <div className="relative w-full max-w-sm group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8] group-focus-within:text-[#2563eb] transition-colors" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <Input
                 placeholder="Buscar cliente ou descrição..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 h-11 bg-[#f8fafc] border-[#e2e8f0] focus:border-[#2563eb] focus:ring-[#2563eb]/10 rounded-lg"
+                className="pl-10 h-11 bg-muted/50 border-input focus:border-primary focus:ring-primary/10 rounded-lg"
               />
             </div>
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-[180px] h-11 bg-[#f8fafc] border-[#e2e8f0] font-medium text-[#64748b]">
+              <SelectTrigger className="w-[180px] h-11 bg-muted/50 border-input font-medium text-muted-foreground">
                 <SelectValue placeholder="Todos Status" />
               </SelectTrigger>
               <SelectContent>
@@ -313,24 +318,24 @@ function FinanceiroPage() {
 
         <div className="relative overflow-x-auto">
           <Table>
-            <TableHeader className="bg-[#f8fafc]">
-              <TableRow className="hover:bg-transparent border-b border-[#f1f5f9]">
-                <TableHead className="py-4 text-[10px] font-black text-[#94a3b8] uppercase tracking-widest px-6">
+            <TableHeader className="bg-muted/50">
+              <TableRow className="hover:bg-transparent border-b border-border">
+                <TableHead className="py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest px-6">
                   CLIENTE / DESCRIÇÃO
                 </TableHead>
-                <TableHead className="py-4 text-[10px] font-black text-[#94a3b8] uppercase tracking-widest">
+                <TableHead className="py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                   VENCIMENTO
                 </TableHead>
-                <TableHead className="py-4 text-[10px] font-black text-[#94a3b8] uppercase tracking-widest text-center">
+                <TableHead className="py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-center">
                   VALOR TOTAL
                 </TableHead>
-                <TableHead className="py-4 text-[10px] font-black text-[#94a3b8] uppercase tracking-widest text-center">
+                <TableHead className="py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-center">
                   SALDO PAGO
                 </TableHead>
-                <TableHead className="py-4 text-[10px] font-black text-[#94a3b8] uppercase tracking-widest text-center">
+                <TableHead className="py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-center">
                   STATUS
                 </TableHead>
-                <TableHead className="py-4 text-[10px] font-black text-[#94a3b8] uppercase tracking-widest text-right px-6">
+                <TableHead className="py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-right px-6">
                   AÇÕES
                 </TableHead>
               </TableRow>
@@ -339,17 +344,17 @@ function FinanceiroPage() {
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-64 text-center">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#2563eb] opacity-20" />
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary opacity-20" />
                   </TableCell>
                 </TableRow>
               ) : filtered?.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan={6} className="h-64 text-center py-12">
                     <div className="flex flex-col items-center justify-center space-y-4">
-                      <div className="w-16 h-16 rounded-full bg-[#f8fafc] flex items-center justify-center">
-                        <Filter className="w-8 h-8 text-[#cbd5e1]" />
+                      <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center">
+                        <Filter className="w-8 h-8 text-muted-foreground/30" />
                       </div>
-                      <p className="text-[#64748b] font-medium italic">
+                      <p className="text-muted-foreground font-medium italic">
                         Nenhum lançamento financeiro encontrado.
                       </p>
                     </div>
@@ -359,11 +364,11 @@ function FinanceiroPage() {
                 filtered?.map((h) => (
                   <TableRow
                     key={h.id}
-                    className="group hover:bg-[#f8fafc] transition-colors border-b border-[#f1f5f9]"
+                    className="group hover:bg-muted/50 transition-colors border-b border-border"
                   >
                     <TableCell className="px-6 py-5">
-                      <div className="font-bold text-[#1e293b]">{h.cliente?.nome || '-'}</div>
-                      <div className="text-xs text-[#94a3b8] font-medium mt-0.5 truncate max-w-[200px]">
+                      <div className="font-bold text-foreground">{h.cliente?.nome || '-'}</div>
+                      <div className="text-xs text-muted-foreground font-medium mt-0.5 truncate max-w-[200px]">
                         {h.descricao}
                       </div>
                     </TableCell>
@@ -372,29 +377,29 @@ function FinanceiroPage() {
                         className={cn(
                           'font-bold',
                           h.status === 'PENDENTE' && h.dataVenc < today
-                            ? 'text-[#dc2626]'
-                            : 'text-[#475569]',
+                            ? 'text-destructive'
+                            : 'text-muted-foreground',
                         )}
                       >
                         {formatDate(h.dataVenc + 'T00:00:00')}
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      <div className="font-black text-[#1e293b]">{formatCurrency(h.valor)}</div>
+                      <div className="font-black text-foreground">{formatCurrency(h.valor)}</div>
                     </TableCell>
                     <TableCell className="text-center">
-                      <div className="font-bold text-[#10b981]">
+                      <div className="font-bold text-emerald-600 dark:text-emerald-400">
                         {formatCurrency(h.valorPago || 0)}
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge
                         className={cn(
-                          'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border-none',
-                          h.status === 'PAGO' && 'bg-[#dcfce7] text-[#166534]',
-                          h.status === 'PENDENTE' && h.dataVenc >= today && 'bg-[#fef3c7] text-[#92400e]',
-                          h.status === 'PENDENTE' && h.dataVenc < today && 'bg-[#fee2e2] text-[#991b1b]',
-                          h.status === 'CANCELADO' && 'bg-[#f1f5f9] text-[#64748b]',
+                          'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border-none shadow-sm',
+                          h.status === 'PAGO' && 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400',
+                          h.status === 'PENDENTE' && h.dataVenc >= today && 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400',
+                          h.status === 'PENDENTE' && h.dataVenc < today && 'bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-400',
+                          h.status === 'CANCELADO' && 'bg-muted text-muted-foreground',
                         )}
                       >
                         {h.status === 'PENDENTE' && h.dataVenc < today ? 'ATRASADO' : h.status}
@@ -405,7 +410,7 @@ function FinanceiroPage() {
                         {h.status !== 'PAGO' && (
                           <button
                             onClick={() => handleQuitar(h)}
-                            className="p-2 rounded-lg text-[#10b981] hover:bg-[#dcfce7] transition-all"
+                            className="p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40 transition-all"
                             title="Quitar"
                           >
                             <Check className="w-4 h-4 stroke-[3px]" />
@@ -413,14 +418,14 @@ function FinanceiroPage() {
                         )}
                         <button
                           onClick={() => openEdit(h)}
-                          className="p-2 rounded-lg text-[#64748b] hover:bg-[#eff6ff] hover:text-[#2563eb] transition-all"
+                          className="p-2 rounded-lg text-muted-foreground hover:bg-blue-50 hover:text-primary dark:hover:bg-blue-950/30 transition-all"
                           title="Editar"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(h)}
-                          className="p-2 rounded-lg text-[#64748b] hover:bg-[#fef2f2] hover:text-[#dc2626] transition-all"
+                          className="p-2 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-destructive dark:hover:bg-red-950/30 transition-all"
                           title="Excluir"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -489,15 +494,15 @@ function HonorarioDialog({
     setForm((prev) => ({ ...prev, [field]: value }));
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
-        <div className="p-6 border-b border-[#f1f5f9] flex items-center justify-between bg-[#f8fafc]">
-          <h2 className="text-xl font-bold text-[#1e293b] flex items-center gap-2">
-            <Receipt className="w-5 h-5 text-[#2563eb]" />
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
+      <div className="bg-card w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col border border-border">
+        <div className="p-6 border-b border-border flex items-center justify-between bg-muted/50">
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <Receipt className="w-5 h-5 text-primary" />
             {honorario ? 'Editar Lançamento' : 'Novo Lançamento'}
           </h2>
-          <button onClick={onClose} className="p-1 hover:bg-[#f1f5f9] rounded-full transition-colors">
-            <X className="w-5 h-5 text-[#64748b]" />
+          <button onClick={onClose} className="p-1 hover:bg-muted rounded-full transition-colors">
+            <X className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
 
@@ -510,20 +515,20 @@ function HonorarioDialog({
         >
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 space-y-1">
-              <label className="text-xs font-bold text-[#64748b] uppercase">Cliente *</label>
+              <label className="text-xs font-bold text-muted-foreground uppercase">Cliente *</label>
               <Popover open={clienteOpen} onOpenChange={setClienteOpen}>
                 <PopoverTrigger asChild>
                   <button
                     type="button"
                     className={cn(
-                      'w-full flex items-center justify-between p-2 border rounded-lg text-sm text-left bg-white transition-colors',
-                      clienteOpen ? 'border-[#2563eb] ring-2 ring-[#2563eb]/20' : 'border-[#e2e8f0] hover:border-[#94a3b8]',
+                      'w-full flex items-center justify-between p-2 border rounded-lg text-sm text-left bg-card transition-colors',
+                      clienteOpen ? 'border-primary ring-2 ring-primary/20' : 'border-input hover:border-muted-foreground/50',
                     )}
                   >
-                    <span className={selectedClienteNome ? 'text-[#1e293b]' : 'text-[#94a3b8]'}>
+                    <span className={selectedClienteNome ? 'text-foreground' : 'text-muted-foreground'}>
                       {selectedClienteNome || 'Selecione um cliente...'}
                     </span>
-                    <ChevronsUpDown className="w-4 h-4 text-[#94a3b8] shrink-0" />
+                    <ChevronsUpDown className="w-4 h-4 text-muted-foreground shrink-0" />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
@@ -561,21 +566,21 @@ function HonorarioDialog({
             </div>
 
             <div className="col-span-2 space-y-1">
-              <label className="text-xs font-bold text-[#64748b] uppercase">Descrição *</label>
+              <label className="text-xs font-bold text-muted-foreground uppercase">Descrição *</label>
               <input
                 type="text"
                 required
                 placeholder="Ex: Honorários contratuais - Janeiro/2025"
-                className="w-full p-2 border border-[#e2e8f0] rounded-lg outline-none focus:ring-2 focus:ring-[#2563eb]/20 text-sm"
+                className="w-full p-2 border border-input rounded-lg outline-none focus:ring-2 focus:ring-primary/20 bg-card text-foreground text-sm"
                 value={form.descricao}
                 onChange={(e) => set('descricao', e.target.value)}
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-[#64748b] uppercase">Tipo</label>
+              <label className="text-xs font-bold text-muted-foreground uppercase">Tipo</label>
               <select
-                className="w-full p-2 border border-[#e2e8f0] rounded-lg outline-none focus:ring-2 focus:ring-[#2563eb]/20 bg-white text-sm"
+                className="w-full p-2 border border-input rounded-lg outline-none focus:ring-2 focus:ring-primary/20 bg-card text-foreground text-sm"
                 value={form.tipo ?? 'HONORARIO'}
                 onChange={(e) => set('tipo', e.target.value)}
               >
@@ -586,9 +591,9 @@ function HonorarioDialog({
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-[#64748b] uppercase">Status</label>
+              <label className="text-xs font-bold text-muted-foreground uppercase">Status</label>
               <select
-                className="w-full p-2 border border-[#e2e8f0] rounded-lg outline-none focus:ring-2 focus:ring-[#2563eb]/20 bg-white text-sm"
+                className="w-full p-2 border border-input rounded-lg outline-none focus:ring-2 focus:ring-primary/20 bg-card text-foreground text-sm"
                 value={form.status ?? 'PENDENTE'}
                 onChange={(e) => {
                   const newStatus = e.target.value as HonorarioInput['status'];
@@ -610,55 +615,55 @@ function HonorarioDialog({
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-[#64748b] uppercase">Valor Total (R$) *</label>
+              <label className="text-xs font-bold text-muted-foreground uppercase">Valor Total (R$) *</label>
               <input
                 type="number"
                 step="0.01"
                 min="0"
                 required
                 placeholder="0,00"
-                className="w-full p-2 border border-[#e2e8f0] rounded-lg outline-none focus:ring-2 focus:ring-[#2563eb]/20 text-sm"
+                className="w-full p-2 border border-input rounded-lg outline-none focus:ring-2 focus:ring-primary/20 bg-card text-foreground text-sm"
                 value={form.valor}
                 onChange={(e) => set('valor', e.target.value)}
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-[#64748b] uppercase">Valor Pago (R$)</label>
+              <label className="text-xs font-bold text-muted-foreground uppercase">Valor Pago (R$)</label>
               <input
                 type="number"
                 step="0.01"
                 min="0"
                 placeholder="0,00"
-                className="w-full p-2 border border-[#e2e8f0] rounded-lg outline-none focus:ring-2 focus:ring-[#2563eb]/20 text-sm"
+                className="w-full p-2 border border-input rounded-lg outline-none focus:ring-2 focus:ring-primary/20 bg-card text-foreground text-sm"
                 value={form.valorPago ?? ''}
                 onChange={(e) => set('valorPago', e.target.value || null)}
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-[#64748b] uppercase">Vencimento *</label>
+              <label className="text-xs font-bold text-muted-foreground uppercase">Vencimento *</label>
               <input
                 type="date"
                 required
-                className="w-full p-2 border border-[#e2e8f0] rounded-lg outline-none focus:ring-2 focus:ring-[#2563eb]/20 text-sm"
+                className="w-full p-2 border border-input rounded-lg outline-none focus:ring-2 focus:ring-primary/20 bg-card text-foreground text-sm"
                 value={form.dataVenc}
                 onChange={(e) => set('dataVenc', e.target.value)}
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-[#64748b] uppercase">Data de Pagamento</label>
+              <label className="text-xs font-bold text-muted-foreground uppercase">Data de Pagamento</label>
               <input
                 type="date"
-                className="w-full p-2 border border-[#e2e8f0] rounded-lg outline-none focus:ring-2 focus:ring-[#2563eb]/20 text-sm"
+                className="w-full p-2 border border-input rounded-lg outline-none focus:ring-2 focus:ring-primary/20 bg-card text-foreground text-sm"
                 value={form.dataPagto ?? ''}
                 onChange={(e) => set('dataPagto', e.target.value || null)}
               />
             </div>
 
             <div className="col-span-2 space-y-1">
-              <label className="text-xs font-bold text-[#64748b] uppercase">Observações</label>
+              <label className="text-xs font-bold text-muted-foreground uppercase">Observações</label>
               <textarea
                 rows={3}
                 placeholder="Observações adicionais..."
@@ -673,14 +678,14 @@ function HonorarioDialog({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 border border-[#e2e8f0] rounded-lg text-sm font-bold text-[#64748b] hover:bg-[#f8fafc] transition-colors"
+              className="flex-1 py-2.5 border border-input rounded-lg text-sm font-bold text-muted-foreground hover:bg-muted transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSubmitting || !form.clienteId}
-              className="flex-1 py-2.5 bg-[#2563eb] text-white font-bold rounded-lg hover:bg-[#1d4ed8] shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+              className="flex-1 py-2.5 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

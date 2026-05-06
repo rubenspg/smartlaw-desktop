@@ -76,11 +76,6 @@ function SettingsPage() {
   const [localCurrency, setLocalCurrency] = useState<Currency>(currency);
   const [timezone, setTimezone] = useState(localStorage.getItem('smartlaw_timezone') || 'America/Sao_Paulo');
 
-  // UI Preferences
-  const [sidebarDensity, setSidebarDensity] = useState<'default' | 'compact'>(
-    (localStorage.getItem('smartlaw_sidebar_density') as 'default' | 'compact') || 'default'
-  );
-
   // Automation Settings
   const [notifyDeadlines, setNotifyDeadlines] = useState(true);
   const [syncCalendar, setSyncCalendar] = useState(false);
@@ -109,11 +104,13 @@ function SettingsPage() {
 
   const [firmName, setFirmName] = useState('');
   const [firmLogo, setFirmLogo] = useState<string | null>(null);
+  const [datajudApiKey, setDatajudApiKey] = useState('');
 
   useEffect(() => {
     if (firm && 'nome' in firm) {
       setFirmName(firm.nome);
       setFirmLogo(firm.logo || null);
+      setDatajudApiKey((firm as any).datajudApiKey || '');
     }
   }, [firm]);
 
@@ -136,9 +133,9 @@ function SettingsPage() {
   };
 
   const updateFirm = useMutation({
-    mutationFn: async ({ nome, logo }: { nome: string, logo: string | null }) => {
+    mutationFn: async ({ nome, logo, datajudApiKey }: { nome: string, logo: string | null, datajudApiKey: string }) => {
       console.log('Enviando atualização do escritório...', { nome, logoLength: logo?.length });
-      const res = await api.firms.me.$patch({ json: { nome, logo } });
+      const res = await api.firms.me.$patch({ json: { nome, logo, datajudApiKey } });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ error: 'Erro desconhecido' }));
         console.error('Falha na resposta do servidor:', errorData);
@@ -528,6 +525,28 @@ function SettingsPage() {
                   className="bg-muted/30"
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="datajud-key">Chave API Datajud (CNJ)</Label>
+                <div className="relative">
+                  <Input 
+                    id="datajud-key" 
+                    type="password"
+                    value={datajudApiKey}
+                    onChange={(e) => setDatajudApiKey(e.target.value)}
+                    disabled={isLoadingFirm || user?.perfil !== 'admin'}
+                    className="bg-muted/30 pr-10"
+                    placeholder="APIKey ..."
+                  />
+                  <div className="absolute right-3 top-2.5 text-muted-foreground">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground italic">
+                  Esta chave é usada para buscar processos automaticamente no tribunal.
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <Label>Logo do Escritório</Label>
                 <input 
@@ -559,7 +578,7 @@ function SettingsPage() {
                 </div>
               </div>
               <Button 
-                onClick={() => updateFirm.mutate({ nome: firmName, logo: firmLogo })} 
+                onClick={() => updateFirm.mutate({ nome: firmName, logo: firmLogo, datajudApiKey })} 
                 disabled={updateFirm.isPending || user?.perfil !== 'admin'}
                 className="gap-2 px-8"
               >
@@ -602,33 +621,6 @@ function SettingsPage() {
                     onClick={() => setTheme('dark')}
                   >
                     <Moon className="w-4 h-4" /> Escuro
-                  </Button>
-                </div>
-              </div>
-              
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Densidade da Barra Lateral</Label>
-                  <p className="text-sm text-muted-foreground">Escolha o estilo da navegação lateral.</p>
-                </div>
-                <div className="flex bg-muted p-1 rounded-lg">
-                  <Button 
-                    variant={sidebarDensity === 'default' ? 'default' : 'ghost'} 
-                    size="sm"
-                    className="h-8 shadow-none px-4"
-                    onClick={() => setSidebarDensity('default')}
-                  >
-                    Padrão
-                  </Button>
-                  <Button 
-                    variant={sidebarDensity === 'compact' ? 'default' : 'ghost'} 
-                    size="sm"
-                    className="h-8 shadow-none px-4"
-                    onClick={() => setSidebarDensity('compact')}
-                  >
-                    Compacto
                   </Button>
                 </div>
               </div>
