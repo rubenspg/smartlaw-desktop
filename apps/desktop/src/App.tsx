@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './lib/auth';
@@ -27,7 +28,13 @@ declare module '@tanstack/react-router' {
 
 function InnerApp() {
   const auth = useAuth();
+
   console.log('InnerApp rendering, auth state:', { isLoading: auth.isLoading, isAuthenticated: auth.isAuthenticated });
+
+  // Re-validate the router when auth state changes
+  useEffect(() => {
+    router.invalidate();
+  }, [auth.isAuthenticated, auth.isLoading]);
   return <RouterProvider router={router} context={{ auth }} />;
 }
 

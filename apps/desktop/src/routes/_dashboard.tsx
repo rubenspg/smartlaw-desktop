@@ -1,5 +1,5 @@
-import { createFileRoute, Link, Outlet, redirect, useLocation } from '@tanstack/react-router';
-import { useState } from 'react';
+import { createFileRoute, Link, Outlet, redirect, useLocation, useNavigate } from '@tanstack/react-router';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../lib/auth';
 import type { AuthContextType } from '../lib/auth';
 import { useRegional } from '../components/regional-provider';
@@ -39,10 +39,21 @@ function DashboardLayout() {
   const { user, logout, isAuthenticated, isLoading } = useAuth();
   const { t } = useRegional();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  if (isLoading || !isAuthenticated) {
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate({ to: '/login', replace: true });
+    }
+  }, [isLoading, isAuthenticated, navigate]);
+
+  if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return null;
   }
 
   const userInitial = user?.nome?.charAt(0).toUpperCase() || 'U';
