@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { db } from '../db';
 import { processosJudiciais, clientes, andamentos, firms } from '../db/schema';
-import { eq, and, ilike, or, desc } from 'drizzle-orm';
+import { eq, and, ilike, or, desc, sql } from 'drizzle-orm';
 import { authMiddleware, Variables } from '../middleware/auth';
 import { DatajudService } from '../services/DatajudService';
 import { ComparisonService } from '../services/ComparisonService';
@@ -59,6 +59,9 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
           cliente: {
             id: clientes.id,
             nome: clientes.nome,
+            celular: clientes.celular,
+            telefone1: clientes.telefone1,
+            telefone2: clientes.telefone2,
           }
         })
         .from(processosJudiciais)
@@ -217,12 +220,23 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
 
       const drift = ComparisonService.checkDrift(local, remote);
 
+      // Update basic fields if they are missing
+      const updateData: any = {
+        lastSync: new Date(),
+        syncStatus: drift.hasDrift ? 'DIVERGENTE' : 'SUCESSO',
+        datajudRaw: remote as any
+      };
+
+      if (!local.juizo && remote.orgaoJulgador?.nome) updateData.juizo = remote.orgaoJulgador.nome;
+      if (!local.justica && remote.tribunal) updateData.justica = remote.tribunal;
+      
+      // Update situacao based on latest movement if it's currently empty/NA
+      if ((!local.situacao || local.situacao === 'N/A') && remote.movimentos && remote.movimentos.length > 0) {
+        updateData.situacao = remote.movimentos[0].nome;
+      }
+
       await db.update(processosJudiciais)
-        .set({
-          lastSync: new Date(),
-          syncStatus: drift.hasDrift ? 'DIVERGENTE' : 'SUCESSO',
-          datajudRaw: remote as any
-        })
+        .set(updateData)
         .where(eq(processosJudiciais.id, id));
 
       if (drift.newMovements > 0) {
@@ -243,6 +257,7 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
         newMovements: drift.newMovements 
       });
     } catch (err: any) {
+      console.error('Sync Error:', err);
       return c.json({ error: 'Erro ao sincronizar: ' + err.message }, 500);
     }
   });

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import {
   Clock,
@@ -13,9 +13,11 @@ import {
   AlertCircle,
   CheckCircle,
   User as UserIcon,
+  Users,
   Loader2,
   RefreshCw,
   Activity,
+  MessageSquare,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -40,6 +42,7 @@ import { TarefaForm } from '@/components/shared/tarefa-form';
 import { Tarefa, TarefaInput } from '@smartlaw/shared';
 import { useRegional } from '@/components/regional-provider';
 import { cn } from '@/lib/utils';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 export const Route = createFileRoute('/_dashboard/')({
   component: HomeComponent,
@@ -48,6 +51,7 @@ export const Route = createFileRoute('/_dashboard/')({
 // ... andamentos const remains same ...
 
 function HomeComponent() {
+  const navigate = useNavigate();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTarefa, setEditingTarefa] = useState<Tarefa | undefined>(undefined);
   const [confirmingTarefa, setConfirmingTarefa] = useState<Tarefa | undefined>(undefined);
@@ -61,6 +65,14 @@ function HomeComponent() {
   const updateTarefa = useUpdateTarefa(editingTarefa?.id || 0);
   const toggleStatus = useToggleTarefaStatus();
   const deleteTarefa = useDeleteTarefa();
+
+  const handleWhatsApp = async (cliente: any) => {
+    const numberToUse = cliente.celular || cliente.telefone1 || cliente.telefone2;
+    if (!numberToUse) return;
+    const cleaned = numberToUse.replace(/\D/g, '');
+    const number = cleaned.startsWith('55') ? cleaned : `55${cleaned}`;
+    await openUrl(`https://wa.me/${number}`);
+  };
 
   const handleCreate = () => {
     setEditingTarefa(undefined);
@@ -256,9 +268,36 @@ function HomeComponent() {
                                 </span>
                               )}
                               {cliente && (
-                                <span className="text-xs text-muted-foreground font-medium">· {cliente.nome}</span>
+                                <div className="flex items-center gap-1.5">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <span className="text-xs text-muted-foreground font-medium hover:text-primary transition-colors cursor-pointer">
+                                        · {cliente.nome}
+                                      </span>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start">
+                                      <DropdownMenuItem onClick={() => navigate({ to: '/clientes/$id', params: { id: cliente.id.toString() } })}>
+                                        <Users className="w-4 h-4 mr-2" /> Ver Detalhes
+                                      </DropdownMenuItem>
+                                      {((cliente as any).celular || (cliente as any).telefone1 || (cliente as any).telefone2) && (
+                                        <DropdownMenuItem onClick={() => handleWhatsApp(cliente)}>
+                                          <MessageSquare className="w-4 h-4 mr-2 text-green-600" /> WhatsApp
+                                        </DropdownMenuItem>
+                                      )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                  {((cliente as any).celular || (cliente as any).telefone1 || (cliente as any).telefone2) && (
+                                    <button 
+                                      onClick={() => handleWhatsApp(cliente)}
+                                      className="text-green-600 hover:text-green-700 transition-colors p-0.5 rounded-md hover:bg-green-50"
+                                      title="WhatsApp"
+                                    >
+                                      <MessageSquare className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </div>
                               )}
-                            </div>
+                              </div>
                             {a.historico && (
                               <p className="text-sm text-foreground/80 font-medium leading-relaxed line-clamp-2 italic">
                                 "{a.historico}"

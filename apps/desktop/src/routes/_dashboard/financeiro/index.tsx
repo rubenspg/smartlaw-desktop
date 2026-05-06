@@ -102,7 +102,7 @@ function FinanceiroPage() {
   const updateHonorario = useUpdateHonorario();
   const deleteHonorario = useDeleteHonorario();
 
-  const filtered = honorarios?.filter((h) => {
+  const filtered = honorarios?.filter((h: any) => {
     if (!search) return true;
     const term = search.toLowerCase();
     const nomeCliente = h.cliente?.nome?.toLowerCase() || '';
@@ -361,7 +361,7 @@ function FinanceiroPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered?.map((h) => (
+                filtered?.map((h: any) => (
                   <TableRow
                     key={h.id}
                     className="group hover:bg-muted/50 transition-colors border-b border-border"

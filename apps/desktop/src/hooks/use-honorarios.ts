@@ -17,7 +17,7 @@ export function useHonorarios(filters: { status?: string; page?: number; limit?:
         },
       });
       if (!res.ok) throw new Error('Falha ao buscar honorários');
-      return (await res.json()) as Honorario[];
+      return (await res.json()) as any;
     },
   });
 }

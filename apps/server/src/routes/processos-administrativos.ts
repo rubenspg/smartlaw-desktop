@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { db } from '../db';
 import { processosAdministrativos, clientes, andamentos } from '../db/schema';
-import { eq, and, ilike, or, desc } from 'drizzle-orm';
+import { eq, and, ilike, or, desc, sql } from 'drizzle-orm';
 import { authMiddleware, Variables } from '../middleware/auth';
 import { processoAdministrativoSchema } from '@smartlaw/shared';
 import { zValidator } from '@hono/zod-validator';
@@ -55,6 +55,9 @@ const processosAdministrativosRoutes = new Hono<{ Variables: Variables }>()
           cliente: {
             id: clientes.id,
             nome: clientes.nome,
+            celular: clientes.celular,
+            telefone1: clientes.telefone1,
+            telefone2: clientes.telefone2,
           }
         })
         .from(processosAdministrativos)

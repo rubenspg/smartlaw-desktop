@@ -10,7 +10,9 @@ import {
   AlertCircle,
   CheckCircle2,
   Gavel,
-  ClipboardList
+  ClipboardList,
+  MessageSquare,
+  Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +35,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProcessosJudiciais, useProcessosAdministrativos, useSyncProcesso } from '@/hooks/use-processos';
 import { cn } from '@/lib/utils';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 export const Route = createFileRoute('/_dashboard/processos/')({
   component: ProcessosListPage,
@@ -49,12 +52,21 @@ function ProcessosListPage() {
   const { data: administrativos, isLoading: loadingAdm, isError: errorAdm } = useProcessosAdministrativos({ q, page, limit });
   const syncProcesso = useSyncProcesso();
 
+  const handleWhatsApp = async (cliente: any) => {
+    const numberToUse = cliente.celular || cliente.telefone1 || cliente.telefone2;
+    if (!numberToUse) return;
+    const cleaned = numberToUse.replace(/\D/g, '');
+    const number = cleaned.startsWith('55') ? cleaned : `55${cleaned}`;
+    await openUrl(`https://wa.me/${number}`);
+  };
+
   const handleSync = async (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
     try {
       await syncProcesso.mutateAsync(id);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Sync failed:', err);
+      alert(err.message || 'Falha na sincronização.');
     }
   };
 
@@ -134,7 +146,36 @@ function ProcessosListPage() {
                     onClick={() => navigate({ to: '/processos/$id', params: { id: proc.id.toString() } })}
                   >
                     <TableCell className="font-mono font-medium">{proc.numero}</TableCell>
-                    <TableCell>{proc.cliente?.nome || '-'}</TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-2">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <span className="cursor-pointer hover:text-primary transition-colors font-medium">
+                              {proc.cliente?.nome || '-'}
+                            </span>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            <DropdownMenuItem onClick={() => navigate({ to: '/clientes/$id', params: { id: proc.clienteId.toString() } })}>
+                              <Users className="w-4 h-4 mr-2" /> Ver Detalhes
+                            </DropdownMenuItem>
+                            {(proc.cliente?.celular || proc.cliente?.telefone1 || proc.cliente?.telefone2) && (
+                              <DropdownMenuItem onClick={() => handleWhatsApp(proc.cliente)}>
+                                <MessageSquare className="w-4 h-4 mr-2 text-green-600" /> WhatsApp
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        {(proc.cliente?.celular || proc.cliente?.telefone1 || proc.cliente?.telefone2) && (
+                          <button 
+                            onClick={() => handleWhatsApp(proc.cliente)}
+                            className="text-green-600 hover:text-green-700 transition-colors"
+                            title="WhatsApp"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell><Badge variant="outline">{proc.situacao || 'N/A'}</Badge></TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 text-xs">
@@ -212,7 +253,36 @@ function ProcessosListPage() {
                     onClick={() => navigate({ to: '/processos/admin/$id', params: { id: proc.id.toString() } })}
                   >
                     <TableCell className="font-medium">{proc.numero}</TableCell>
-                    <TableCell>{proc.cliente?.nome || '-'}</TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-2">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <span className="cursor-pointer hover:text-primary transition-colors font-medium">
+                              {proc.cliente?.nome || '-'}
+                            </span>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            <DropdownMenuItem onClick={() => navigate({ to: '/clientes/$id', params: { id: proc.clienteId.toString() } })}>
+                              <Users className="w-4 h-4 mr-2" /> Ver Detalhes
+                            </DropdownMenuItem>
+                            {(proc.cliente?.celular || proc.cliente?.telefone1 || proc.cliente?.telefone2) && (
+                              <DropdownMenuItem onClick={() => handleWhatsApp(proc.cliente)}>
+                                <MessageSquare className="w-4 h-4 mr-2 text-green-600" /> WhatsApp
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        {(proc.cliente?.celular || proc.cliente?.telefone1 || proc.cliente?.telefone2) && (
+                          <button 
+                            onClick={() => handleWhatsApp(proc.cliente)}
+                            className="text-green-600 hover:text-green-700 transition-colors"
+                            title="WhatsApp"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {proc.dataCadastro ? new Date(proc.dataCadastro).toLocaleDateString('pt-BR') : '-'}
                     </TableCell>

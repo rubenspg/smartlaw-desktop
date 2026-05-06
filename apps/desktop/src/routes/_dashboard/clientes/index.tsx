@@ -6,7 +6,8 @@ import {
   Search, 
   Filter, 
   MoreHorizontal,
-  Loader2
+  Loader2,
+  MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +35,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { useClientes } from '@/hooks/use-clientes';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 export const Route = createFileRoute('/_dashboard/clientes/')({
   component: ClientesListPage,
@@ -52,6 +54,14 @@ function ClientesListPage() {
     page, 
     limit 
   });
+
+  const handleWhatsApp = async (cliente: any) => {
+    const numberToUse = cliente.celular || cliente.telefone1 || cliente.telefone2;
+    if (!numberToUse) return;
+    const cleaned = numberToUse.replace(/\D/g, '');
+    const number = cleaned.startsWith('55') ? cleaned : `55${cleaned}`;
+    await openUrl(`https://wa.me/${number}`);
+  };
 
   return (
     <div className="space-y-6">
@@ -136,8 +146,35 @@ function ClientesListPage() {
                   className="cursor-pointer"
                   onClick={() => navigate({ to: '/clientes/$id', params: { id: cliente.id.toString() } })}
                 >
-                  <TableCell>
-                    <div className="font-semibold">{cliente.nome}</div>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-2">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <div className="font-semibold hover:text-primary transition-colors cursor-pointer">
+                            {cliente.nome}
+                          </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem onClick={() => navigate({ to: '/clientes/$id', params: { id: cliente.id.toString() } })}>
+                            <Users className="w-4 h-4 mr-2" /> Ver Detalhes
+                          </DropdownMenuItem>
+                          {(cliente.celular || cliente.telefone1 || cliente.telefone2) && (
+                            <DropdownMenuItem onClick={() => handleWhatsApp(cliente)}>
+                              <MessageSquare className="w-4 h-4 mr-2 text-green-600" /> WhatsApp
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      {(cliente.celular || cliente.telefone1 || cliente.telefone2) && (
+                        <button 
+                          onClick={() => handleWhatsApp(cliente)}
+                          className="p-1 rounded-full hover:bg-green-50 text-green-600 transition-colors"
+                          title="WhatsApp"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                     {cliente.fantasia && (
                       <div className="text-xs text-muted-foreground">{cliente.fantasia}</div>
                     )}
@@ -147,8 +184,17 @@ function ClientesListPage() {
                   </TableCell>
                   <TableCell>
                     <div className="text-xs">{cliente.email || '-'}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {cliente.celular || cliente.telefone1 || '-'}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {cliente.celular || cliente.telefone1 || cliente.telefone2 || '-'}
+                      {(cliente.celular || cliente.telefone1 || cliente.telefone2) && (
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleWhatsApp(cliente); }}
+                          className="text-green-600 hover:text-green-700 transition-colors"
+                          title="Chamar no WhatsApp"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -170,6 +216,11 @@ function ClientesListPage() {
                         <DropdownMenuItem onClick={() => navigate({ to: '/clientes/$id/editar', params: { id: cliente.id.toString() } })}>
                           Editar
                         </DropdownMenuItem>
+                        {(cliente.celular || cliente.telefone1 || cliente.telefone2) && (
+                          <DropdownMenuItem onClick={() => handleWhatsApp(cliente)}>
+                            <MessageSquare className="w-4 h-4 mr-2 text-green-600" /> WhatsApp
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

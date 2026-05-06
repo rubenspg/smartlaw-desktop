@@ -137,7 +137,7 @@ function SettingsPage() {
       console.log('Enviando atualização do escritório...', { nome, logoLength: logo?.length });
       const res = await api.firms.me.$patch({ json: { nome, logo, datajudApiKey } });
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: 'Erro desconhecido' }));
+        const errorData = (await res.json().catch(() => ({ error: 'Erro desconhecido' }))) as any;
         console.error('Falha na resposta do servidor:', errorData);
         throw new Error(errorData.error || 'Falha ao atualizar escritório');
       }

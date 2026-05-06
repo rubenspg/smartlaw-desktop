@@ -232,6 +232,8 @@ export interface Honorario {
   createdAt: string | null;
   updatedAt: string | null;
   cliente: { id: number; nome: string } | null;
+  processoJudicial?: { id: number; numero: string } | null;
+  processoAdmin?: { id: number; numero: string } | null;
 }
 
 export interface HonorarioSummary {

@@ -18,7 +18,8 @@ import {
   CheckCircle2,
   XCircle,
   Pencil,
-  FileText
+  FileText,
+  MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -60,12 +61,13 @@ function ClienteDetailPage() {
   const [novaNota, setNovaNota] = useState('');
 
   const handleWhatsApp = async () => {
-    if (!cliente?.celular) {
-      alert('Cliente não possui celular cadastrado');
+    const numberToUse = cliente?.celular || cliente?.telefone1 || cliente?.telefone2;
+    if (!numberToUse) {
+      alert('Cliente não possui telefone cadastrado');
       return;
     }
 
-    const cleaned = cliente.celular.replace(/\D/g, '');
+    const cleaned = numberToUse.replace(/\D/g, '');
     const number = cleaned.startsWith('55') ? cleaned : `55${cleaned}`;
     await openUrl(`https://wa.me/${number}`);
   };
@@ -163,13 +165,13 @@ function ClienteDetailPage() {
                 </div>
               </div>
 
-              {cliente.celular && (
+              {(cliente.celular || cliente.telefone1 || cliente.telefone2) && (
                 <div className="pt-2">
                   <Button 
                     className="w-full bg-[#16a34a] hover:bg-[#15803d] font-bold text-xs uppercase"
                     onClick={handleWhatsApp}
                   >
-                    <Phone className="w-4 h-4 mr-2" />
+                    <MessageSquare className="w-4 h-4 mr-2" />
                     Chamar no WhatsApp
                   </Button>
                 </div>
@@ -513,7 +515,7 @@ function ClienteFinanceiroTab({ clienteId }: { clienteId: number }) {
                     </td>
                   </tr>
                 ) : (
-                  honorarios?.map((h) => (
+                  honorarios?.map((h: any) => (
                     <tr key={h.id} className="hover:bg-[#f8fafc] transition-colors text-sm">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
