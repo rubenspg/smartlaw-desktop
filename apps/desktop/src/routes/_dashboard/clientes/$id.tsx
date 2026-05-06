@@ -36,6 +36,7 @@ import { useHonorarios, useHonorarioSummary, useCreateHonorario, useUpdateHonora
 import { useRegional } from '@/components/regional-provider';
 import { cn } from '@/lib/utils';
 import type { Honorario, HonorarioInput } from '@smartlaw/shared';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 export const Route = createFileRoute('/_dashboard/clientes/$id')({
   component: ClienteDetailPage,
@@ -57,6 +58,17 @@ function ClienteDetailPage() {
   const deleteCliente = useDeleteCliente();
 
   const [novaNota, setNovaNota] = useState('');
+
+  const handleWhatsApp = async () => {
+    if (!cliente?.celular) {
+      alert('Cliente não possui celular cadastrado');
+      return;
+    }
+
+    const cleaned = cliente.celular.replace(/\D/g, '');
+    const number = cleaned.startsWith('55') ? cleaned : `55${cleaned}`;
+    await openUrl(`https://wa.me/${number}`);
+  };
 
   const handleAddNota = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,6 +162,18 @@ function ClienteDetailPage() {
                   </p>
                 </div>
               </div>
+
+              {cliente.celular && (
+                <div className="pt-2">
+                  <Button 
+                    className="w-full bg-[#16a34a] hover:bg-[#15803d] font-bold text-xs uppercase"
+                    onClick={handleWhatsApp}
+                  >
+                    <Phone className="w-4 h-4 mr-2" />
+                    Chamar no WhatsApp
+                  </Button>
+                </div>
+              )}
             </CardContent>
         </Card>
 

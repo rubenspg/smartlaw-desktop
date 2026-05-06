@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useProcessoJudicial, useSyncProcesso, useDeleteProcessoJudicial } from '@/hooks/use-processos';
 import { cn } from '@/lib/utils';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 export const Route = createFileRoute('/_dashboard/processos/$id')({
   component: ProcessoDetailPage,
@@ -42,6 +43,18 @@ function ProcessoDetailPage() {
   const { data: processo, isLoading, isError } = useProcessoJudicial(procId);
   const syncProcesso = useSyncProcesso();
   const deleteMutation = useDeleteProcessoJudicial();
+
+  const handleWhatsApp = async () => {
+    const celular = processo?.cliente?.celular;
+    if (!celular) {
+      alert('Cliente não possui celular cadastrado');
+      return;
+    }
+
+    const cleaned = celular.replace(/\D/g, '');
+    const number = cleaned.startsWith('55') ? cleaned : `55${cleaned}`;
+    await openUrl(`https://wa.me/${number}`);
+  };
 
   const handleSync = async () => {
     try {
@@ -299,7 +312,10 @@ function ProcessoDetailPage() {
               </div>
               
               <div className="space-y-3">
-                <Button className="w-full bg-[#16a34a] hover:bg-[#15803d] font-bold text-xs uppercase py-6 shadow-sm shadow-green-100">
+                <Button 
+                  className="w-full bg-[#16a34a] hover:bg-[#15803d] font-bold text-xs uppercase py-6 shadow-sm shadow-green-100"
+                  onClick={handleWhatsApp}
+                >
                   <Phone className="w-4 h-4 mr-2" />
                   WhatsApp
                 </Button>
