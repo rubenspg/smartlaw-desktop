@@ -14,15 +14,11 @@ Desktop version of SmartLaw — a Tauri + React frontend backed by a Hono/Node.j
 # 1. Install dependencies
 npm install
 
-# 2. Create server env file
-cp apps/server/.env.example apps/server/.env
-# Edit apps/server/.env — set JWT_SECRET and DATAJUD_API_KEY at minimum
-
-# 3. Start full dev environment (Postgres + API + Desktop window)
+# 2. Start the desktop app pointing to the remote Proxmox API
 ./dev.sh
 ```
 
-Default admin credentials after seed: `admin@smartlaw.local` / `changeme`
+*(Note: Local Postgres and API server are no longer started by default in development. The app points to `https://smartlaw-api.rubenspg.com`.)*
 
 ---
 
