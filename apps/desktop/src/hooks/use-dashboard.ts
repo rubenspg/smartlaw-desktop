@@ -10,9 +10,12 @@ export function useDashboardStats(year?: number) {
         year ? ({ query: { year: year.toString() } } as any) : undefined,
       );
       if (!res.ok) throw new Error('Falha ao buscar estatísticas');
-      return (await res.json()) as DashboardStats;
+      const data = await res.json();
+      console.log('Hook useDashboardStats received:', Object.keys(data));
+      return data as DashboardStats;
     },
-    staleTime: 60_000,
+    staleTime: 0,
+    gcTime: 0,
   });
 }
 

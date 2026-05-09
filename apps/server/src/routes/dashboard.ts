@@ -202,64 +202,71 @@ const dashboard = new Hono<{ Variables: Variables }>()
         ),
     ]);
 
-    const financeiroTotais = financeiroTotaisRow as any;
+    const financeiroTotais = (financeiroTotaisRow || {}) as any;
 
-    return c.json({
+    const financeiro = {
+      mensais: Array.isArray(financeiroMensaisRows) ? financeiroMensaisRows.map((r: any) => ({
+        mes: r.mes || '—',
+        recebido: Number(r.recebido || 0),
+        pendente: Number(r.pendente || 0),
+        atrasado: Number(r.atrasado || 0),
+      })) : [],
+      totalRecebido: Number(financeiroTotais?.total_recebido || 0),
+      totalPendente: Number(financeiroTotais?.total_pendente || 0),
+      totalAtrasado: Number(financeiroTotais?.total_atrasado || 0),
+    };
+
+    const tarefasStats = {
+      total: Number(tarefasTotalRow?.count || 0),
+      atrasadas: Number(tarefasAtrasadasRow?.count || 0),
+      porPrioridade: Array.isArray(tarefasPorPrioridadeRows) ? tarefasPorPrioridadeRows.map((r) => ({
+        prioridade: r.prioridade ?? 'Sem prioridade',
+        total: Number(r.total || 0),
+      })) : [],
+      porStatus: Array.isArray(tarefasPorStatusRows) ? tarefasPorStatusRows.map((r) => ({
+        status: r.status ?? 'Sem status',
+        total: Number(r.total || 0),
+      })) : [],
+    };
+
+    const responseData = {
+      serverTime: new Date().toISOString(),
       totais: {
-        clientes: Number(clientesCount?.count ?? 0),
-        processosJudiciais: Number(judiciaisCount?.count ?? 0),
-        processosAdministrativos: Number(adminCount?.count ?? 0),
+        clientes: Number(clientesCount?.count || 0),
+        processosJudiciais: Number(judiciaisCount?.count || 0),
+        processosAdministrativos: Number(adminCount?.count || 0),
       },
-      aquisicaoClientes: [...aquisicaoRows].map((r: any) => ({
-        mes: r.mes,
-        total: Number(r.total),
-      })),
+      aquisicaoClientes: Array.isArray(aquisicaoRows) ? aquisicaoRows.map((r: any) => ({
+        mes: r.mes || '—',
+        total: Number(r.total || 0),
+      })) : [],
       demografia: {
-        idade: [...idadeRows].map((r: any) => ({
-          faixa: r.faixa,
-          total: Number(r.total),
-        })),
-        cidades: cidadeRows.map((r) => ({
+        idade: Array.isArray(idadeRows) ? idadeRows.map((r: any) => ({
+          faixa: r.faixa || '—',
+          total: Number(r.total || 0),
+        })) : [],
+        cidades: Array.isArray(cidadeRows) ? cidadeRows.map((r) => ({
           cidade: r.cidade ?? '—',
-          total: Number(r.total),
-        })),
-        profissoes: profissaoRows.map((r) => ({
+          total: Number(r.total || 0),
+        })) : [],
+        profissoes: Array.isArray(profissaoRows) ? profissaoRows.map((r) => ({
           profissao: r.profissao ?? '—',
-          total: Number(r.total),
-        })),
+          total: Number(r.total || 0),
+        })) : [],
       },
-      judiciaisPorComarca: comarcaRows.map((r) => ({
+      judiciaisPorComarca: Array.isArray(comarcaRows) ? comarcaRows.map((r) => ({
         comarca: r.comarca ?? '—',
-        total: Number(r.total),
-      })),
-      judiciaisPorSituacao: situacaoRows.map((r) => ({
+        total: Number(r.total || 0),
+      })) : [],
+      judiciaisPorSituacao: Array.isArray(situacaoRows) ? situacaoRows.map((r) => ({
         situacao: r.situacao ?? '—',
-        total: Number(r.total),
-      })),
-      financeiro: {
-        mensais: [...financeiroMensaisRows].map((r: any) => ({
-          mes: r.mes,
-          recebido: Number(r.recebido),
-          pendente: Number(r.pendente),
-          atrasado: Number(r.atrasado),
-        })),
-        totalRecebido: Number(financeiroTotais?.total_recebido ?? 0),
-        totalPendente: Number(financeiroTotais?.total_pendente ?? 0),
-        totalAtrasado: Number(financeiroTotais?.total_atrasado ?? 0),
-      },
-      tarefas: {
-        total: Number(tarefasTotalRow?.count ?? 0),
-        atrasadas: Number(tarefasAtrasadasRow?.count ?? 0),
-        porPrioridade: tarefasPorPrioridadeRows.map((r) => ({
-          prioridade: r.prioridade ?? 'Sem prioridade',
-          total: Number(r.total),
-        })),
-        porStatus: tarefasPorStatusRows.map((r) => ({
-          status: r.status ?? 'Sem status',
-          total: Number(r.total),
-        })),
-      },
-    });
+        total: Number(r.total || 0),
+      })) : [],
+      financeiro,
+      tarefas: tarefasStats,
+    };
+
+    return c.json(responseData);
   });
 
 const dashboardRoutes = dashboard

@@ -65,6 +65,14 @@ function InsightsPage() {
   const { data: stats, isLoading, error } = useDashboardStats(selectedYear);
 
   useEffect(() => {
+    if (stats) {
+      console.log('Frontend received stats:', stats);
+      console.log('financeiro exists:', !!stats.financeiro);
+      console.log('tarefas exists:', !!stats.tarefas);
+    }
+  }, [stats]);
+
+  useEffect(() => {
     if (user?.perfil === 'usuario' || user?.perfil === 'secretaria') {
       navigate({ to: '/' });
     }
@@ -111,8 +119,11 @@ function InsightsPage() {
 
   const formatMonth = (monthStr: unknown) => {
     if (!monthStr || typeof monthStr !== 'string') return String(monthStr ?? '');
-    const [year, month] = monthStr.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1);
+    const parts = monthStr.split('-');
+    if (parts.length < 2) return monthStr;
+    const year = parseInt(parts[0]);
+    const month = parseInt(parts[1]);
+    const date = new Date(year, month - 1);
     return formatDate(date, { month: 'short', year: '2-digit' }).toUpperCase();
   };
 
@@ -147,21 +158,21 @@ function InsightsPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <StatCard
           title="Total Clientes"
-          value={stats?.totais.clientes ?? 0}
+          value={stats?.totais?.clientes || 0}
           icon={Users}
           description="Base total de clientes"
           color="blue"
         />
         <StatCard
           title="Processos Judiciais"
-          value={stats?.totais.processosJudiciais ?? 0}
+          value={stats?.totais?.processosJudiciais || 0}
           icon={FileText}
           description="Ações em curso"
           color="amber"
         />
         <StatCard
           title="Processos Administrativos"
-          value={stats?.totais.processosAdministrativos ?? 0}
+          value={stats?.totais?.processosAdministrativos || 0}
           icon={Clock}
           description="Processos INSS/Outros"
           color="emerald"
@@ -178,7 +189,7 @@ function InsightsPage() {
         <div className="grid gap-4 md:grid-cols-3">
           <StatCard
             title="Recebido"
-            value={stats?.financeiro.totalRecebido ?? 0}
+            value={stats?.financeiro?.totalRecebido || 0}
             icon={DollarSign}
             description={`Honorários pagos em ${selectedYear}`}
             color="emerald"
@@ -186,7 +197,7 @@ function InsightsPage() {
           />
           <StatCard
             title="A Receber"
-            value={stats?.financeiro.totalPendente ?? 0}
+            value={stats?.financeiro?.totalPendente || 0}
             icon={Calendar}
             description="Pendentes com venc. futuro"
             color="amber"
@@ -194,7 +205,7 @@ function InsightsPage() {
           />
           <StatCard
             title="Em Atraso"
-            value={stats?.financeiro.totalAtrasado ?? 0}
+            value={stats?.financeiro?.totalAtrasado || 0}
             icon={AlertCircle}
             description="Pendentes com venc. passado"
             color="red"
@@ -211,9 +222,9 @@ function InsightsPage() {
             <p className="text-xs text-muted-foreground mb-4">Recebido, a receber e em atraso por mês em {selectedYear}</p>
           </div>
           <div className="h-[280px] w-full">
-            {(stats?.financeiro.mensais ?? []).length > 0 ? (
+            {(stats?.financeiro?.mensais ?? []).length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stats?.financeiro.mensais ?? []} barGap={2}>
+                <BarChart data={stats?.financeiro?.mensais ?? []} barGap={2}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                   <XAxis
                     dataKey="mes"
@@ -230,12 +241,12 @@ function InsightsPage() {
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+                    tickFormatter={(v) => `R$${((v || 0) / 1000).toFixed(0)}k`}
                   />
                   <Tooltip
                     labelFormatter={formatMonth}
                     formatter={(value, name) => [
-                      formatCurrency(Number(value)),
+                      formatCurrency(Number(value || 0)),
                       name === 'recebido' ? 'Recebido' : name === 'pendente' ? 'A Receber' : 'Em Atraso',
                     ]}
                     contentStyle={{
@@ -275,14 +286,14 @@ function InsightsPage() {
         <div className="grid gap-4 md:grid-cols-2">
           <StatCard
             title="Tarefas Ativas"
-            value={stats?.tarefas.total ?? 0}
+            value={stats?.tarefas?.total || 0}
             icon={CheckSquare}
             description="Pendentes e em andamento"
             color="blue"
           />
           <StatCard
             title="Em Atraso"
-            value={stats?.tarefas.atrasadas ?? 0}
+            value={stats?.tarefas?.atrasadas || 0}
             icon={AlertCircle}
             description="Com prazo vencido"
             color="red"
@@ -295,11 +306,11 @@ function InsightsPage() {
               Por Prioridade (ativas)
             </h3>
             <div className="flex-1">
-              {(stats?.tarefas.porPrioridade ?? []).length > 0 ? (
+              {(stats?.tarefas?.porPrioridade ?? []).length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={stats?.tarefas.porPrioridade ?? []}
+                      data={stats?.tarefas?.porPrioridade ?? []}
                       cx="50%"
                       cy="50%"
                       innerRadius={55}
@@ -308,7 +319,7 @@ function InsightsPage() {
                       dataKey="total"
                       nameKey="prioridade"
                     >
-                      {(stats?.tarefas.porPrioridade ?? []).map((entry, index) => (
+                      {(stats?.tarefas?.porPrioridade ?? []).map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
                           fill={PRIORITY_COLORS[entry.prioridade] ?? '#94a3b8'}
@@ -344,12 +355,12 @@ function InsightsPage() {
               Por Status
             </h3>
             <BarList
-              rows={(stats?.tarefas.porStatus ?? []).map((r) => ({
+              rows={(stats?.tarefas?.porStatus ?? []).map((r) => ({
                 ...r,
                 label: STATUS_LABEL[r.status] ?? r.status,
               }))}
               labelKey="label"
-              total={(stats?.tarefas.porStatus ?? []).reduce((acc, r) => acc + r.total, 0)}
+              total={(stats?.tarefas?.porStatus ?? []).reduce((acc, r) => acc + (r.total || 0), 0)}
               barColor="bg-primary"
             />
           </div>
@@ -451,7 +462,7 @@ function InsightsPage() {
         <div className="grid gap-6 md:grid-cols-3">
           <DemographicsCard
             title="Distribuição por Idade"
-            data={stats?.demografia.idade ?? []}
+            data={stats.demografia.idade ?? []}
             dataKey="total"
             nameKey="faixa"
             palette={['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#e2e8f0']}
@@ -459,14 +470,14 @@ function InsightsPage() {
           />
           <DemographicsCard
             title="Principais Cidades"
-            data={stats?.demografia.cidades ?? []}
+            data={stats.demografia.cidades ?? []}
             dataKey="total"
             nameKey="cidade"
             palette={['#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0']}
           />
           <DemographicsCard
             title="Principais Profissões"
-            data={stats?.demografia.profissoes ?? []}
+            data={stats.demografia.profissoes ?? []}
             dataKey="total"
             nameKey="profissao"
             palette={['#7c3aed', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe']}
@@ -535,9 +546,9 @@ function InsightsPage() {
             <FileText className="w-5 h-5 text-primary" /> Distribuição por Comarca
           </h2>
           <BarList
-            rows={stats?.judiciaisPorComarca ?? []}
+            rows={stats.judiciaisPorComarca ?? []}
             labelKey="comarca"
-            total={stats?.totais.processosJudiciais ?? 0}
+            total={stats.totais.processosJudiciais || 1}
             barColor="bg-primary"
           />
         </div>
@@ -547,9 +558,9 @@ function InsightsPage() {
             <AlertCircle className="w-5 h-5 text-primary" /> Situação da Carteira Judicial
           </h2>
           <BarList
-            rows={stats?.judiciaisPorSituacao ?? []}
+            rows={stats.judiciaisPorSituacao ?? []}
             labelKey="situacao"
-            total={stats?.totais.processosJudiciais ?? 0}
+            total={stats.totais.processosJudiciais || 1}
             barColor="bg-amber-500"
           />
         </div>
@@ -594,7 +605,7 @@ function StatCard({ title, value, icon: Icon, description, color, currency }: St
       <div>
         <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{title}</h3>
         <div className="text-2xl font-black mt-1 text-foreground group-hover:scale-105 transition-transform truncate">
-          {currency ? formatCurrency(value) : value}
+          {currency ? formatCurrency(value || 0) : (value || 0)}
         </div>
       </div>
       <p className="text-xs text-muted-foreground font-medium">{description}</p>
@@ -616,7 +627,7 @@ function DemographicsCard({ title, data, dataKey, nameKey, palette, donut }: Dem
     <div className="p-6 bg-card rounded-2xl border border-border shadow-sm flex flex-col h-[350px]">
       <h3 className="text-sm font-bold text-muted-foreground uppercase mb-4 tracking-wider">{title}</h3>
       <div className="flex-1">
-        {data.length > 0 ? (
+        {data && data.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -671,25 +682,30 @@ function BarList({
   total: number;
   barColor: string;
 }) {
-  if (rows.length === 0) {
+  if (!rows || rows.length === 0) {
     return <p className="text-xs text-muted-foreground italic">Sem dados registrados.</p>;
   }
+  const safeTotal = total || 1;
   return (
     <div className="space-y-4">
-      {rows.map((r, i) => (
-        <div key={`${r[labelKey]}-${i}`} className="space-y-1">
-          <div className="flex justify-between text-xs font-bold uppercase text-muted-foreground">
-            <span>{r[labelKey]}</span>
-            <span>{r.total}</span>
+      {rows.map((r, i) => {
+        const value = Number(r.total || 0);
+        const percentage = Math.min(100, (value / safeTotal) * 100);
+        return (
+          <div key={`${r[labelKey] || i}-${i}`} className="space-y-1">
+            <div className="flex justify-between text-xs font-bold uppercase text-muted-foreground">
+              <span>{r[labelKey] || '—'}</span>
+              <span>{value}</span>
+            </div>
+            <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+              <div
+                className={cn('h-full transition-all duration-500', barColor)}
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
           </div>
-          <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-            <div
-              className={cn('h-full', barColor)}
-              style={{ width: `${total ? (r.total / total) * 100 : 0}%` }}
-            />
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
