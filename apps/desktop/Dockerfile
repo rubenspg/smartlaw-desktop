@@ -19,8 +19,9 @@ COPY apps/desktop/ ./apps/desktop/
 
 # Build static files
 WORKDIR /app/apps/desktop
-# Set build environment variables if needed
-ENV VITE_API_URL=http://localhost:3001
+# Set build environment variables (defaults to remote Proxmox API)
+ARG VITE_API_URL=https://smartlaw-api.rubenspg.com
+ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 # Serve stage
