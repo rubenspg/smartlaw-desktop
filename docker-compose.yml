@@ -1,4 +1,38 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: smartlaw-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: smartlaw
+      POSTGRES_USER: smartlaw
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-smartlaw-pass}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartlaw"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    container_name: smartlaw-api
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://smartlaw:${DB_PASSWORD:-smartlaw-pass}@postgres:5432/smartlaw
+      JWT_SECRET: ${JWT_SECRET:-super-secret-key}
+      DATAJUD_API_KEY: ${DATAJUD_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   desktop:
     build:
       context: .
@@ -9,3 +43,6 @@ services:
     restart: unless-stopped
     ports:
       - "8080:80"
+
+volumes:
+  pgdata:

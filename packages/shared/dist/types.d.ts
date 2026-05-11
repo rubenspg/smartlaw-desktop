@@ -280,6 +280,14 @@ export interface Honorario {
         id: number;
         nome: string;
     } | null;
+    processoJudicial?: {
+        id: number;
+        numero: string;
+    } | null;
+    processoAdmin?: {
+        id: number;
+        numero: string;
+    } | null;
 }
 export interface HonorarioSummary {
     totalRecebido: number;

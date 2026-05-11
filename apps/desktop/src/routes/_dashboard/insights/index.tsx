@@ -65,14 +65,6 @@ function InsightsPage() {
   const { data: stats, isLoading, error } = useDashboardStats(selectedYear);
 
   useEffect(() => {
-    if (stats) {
-      console.log('Frontend received stats:', stats);
-      console.log('financeiro exists:', !!stats.financeiro);
-      console.log('tarefas exists:', !!stats.tarefas);
-    }
-  }, [stats]);
-
-  useEffect(() => {
     if (user?.perfil === 'usuario' || user?.perfil === 'secretaria') {
       navigate({ to: '/' });
     }
@@ -95,6 +87,8 @@ function InsightsPage() {
       </div>
     );
   }
+
+  if (!stats) return null;
 
   const getFilteredData = () => {
     if (!stats?.aquisicaoClientes) return [];

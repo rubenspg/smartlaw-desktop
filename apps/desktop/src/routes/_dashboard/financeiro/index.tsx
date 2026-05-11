@@ -83,20 +83,17 @@ function FinanceiroPage() {
 
   const isAdmin = user?.perfil === 'admin';
 
-  console.log('DEBUG - Perfil atual:', user?.perfil, 'isAdmin:', isAdmin);
-
   const { data: honorarios, isLoading } = useHonorarios({
     status: status === 'all' ? undefined : status,
     limit: 100,
     month: selectedMonth,
     year: selectedYear,
   });
+
   const { data: summary } = useHonorarioSummary({
     month: selectedMonth,
     year: selectedYear,
   });
-
-  console.log('Financeiro summary:', summary);
 
   const createHonorario = useCreateHonorario();
   const updateHonorario = useUpdateHonorario();

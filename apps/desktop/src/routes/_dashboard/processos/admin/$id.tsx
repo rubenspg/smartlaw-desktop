@@ -108,9 +108,8 @@ function ProcessoAdminDetailPage() {
 
         <div className="lg:col-span-2">
           <Tabs defaultValue="andamentos" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-1">
               <TabsTrigger value="andamentos">Andamentos ({processo.andamentos?.length || 0})</TabsTrigger>
-              <TabsTrigger value="documentos">Documentos</TabsTrigger>
             </TabsList>
             
             <TabsContent value="andamentos" className="space-y-4 mt-6">
@@ -136,20 +135,6 @@ function ProcessoAdminDetailPage() {
                   ))
                 )}
               </div>
-              <div className="flex justify-end pt-4">
-                 <Button variant="outline" size="sm">
-                   <ClipboardList className="w-4 h-4 mr-2" />
-                   Adicionar Andamento Manual
-                 </Button>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="documentos" className="mt-6">
-              <Card>
-                <CardContent className="p-12 text-center text-muted-foreground italic">
-                  Integração com pastas de documentos em breve...
-                </CardContent>
-              </Card>
             </TabsContent>
           </Tabs>
         </div>

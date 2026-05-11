@@ -80,12 +80,6 @@ function SettingsPage() {
   const [notifyDeadlines, setNotifyDeadlines] = useState(true);
   const [syncCalendar, setSyncCalendar] = useState(false);
 
-  // Templates Mock State
-  const [templates] = useState([
-    { id: 1, name: 'Procuração Ad Judicia', type: 'DOCX', lastUsed: '2024-05-01' },
-    { id: 2, name: 'Contrato de Honorários', type: 'PDF', lastUsed: '2024-04-28' },
-  ]);
-
   // User Profile
   const [profileName, setProfileName] = useState(user?.nome || '');
   const [profileEmail, setProfileEmail] = useState(user?.email || '');
@@ -134,11 +128,9 @@ function SettingsPage() {
 
   const updateFirm = useMutation({
     mutationFn: async ({ nome, logo, datajudApiKey }: { nome: string, logo: string | null, datajudApiKey: string }) => {
-      console.log('Enviando atualização do escritório...', { nome, logoLength: logo?.length });
       const res = await api.firms.me.$patch({ json: { nome, logo, datajudApiKey } });
       if (!res.ok) {
         const errorData = (await res.json().catch(() => ({ error: 'Erro desconhecido' }))) as any;
-        console.error('Falha na resposta do servidor:', errorData);
         throw new Error(errorData.error || 'Falha ao atualizar escritório');
       }
       return res.json();
@@ -152,66 +144,6 @@ function SettingsPage() {
       alert(`Erro: ${err.message}`);
     }
   });
-
-  const handleGenerateTemplate = async (templateName: string) => {
-    try {
-      const response = await fetch('/templates/base.docx');
-      if (!response.ok) {
-        throw new Error('O arquivo "base.docx" não foi encontrado na pasta "apps/desktop/public/templates/". Por favor, crie um documento Word com este nome e coloque-o lá para que a geração funcione.');
-      }
-      
-      const content = await response.arrayBuffer();
-      if (content.byteLength === 0) {
-        throw new Error('O arquivo "base.docx" está vazio. Por favor, adicione conteúdo ao template.');
-      }
-
-      let zip;
-      try {
-        zip = new PizZip(content);
-      } catch (e) {
-        throw new Error('O arquivo "base.docx" não é um documento Word válido (formato ZIP corrompido). Certifique-se de salvar um arquivo .docx real.');
-      }
-      
-      const imageModule = new ImageModule({
-        centered: false,
-        getImage: (tagValue: string) => {
-          const base64Data = tagValue.split(',')[1];
-          const binaryString = window.atob(base64Data);
-          const len = binaryString.length;
-          const bytes = new Uint8Array(len);
-          for (let i = 0; i < len; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-          return bytes.buffer;
-        },
-        getSize: () => [120, 120], // Fixed size for logo
-      });
-
-      const doc = new Docxtemplater(zip, {
-        modules: [imageModule],
-        paragraphLoop: true,
-        linebreaks: true,
-      });
-
-      doc.setData({
-        nomeEscritorio: firmName,
-        logo: firmLogo || '', // Tag {%%logo} in DOCX
-        data: new Date().toLocaleDateString('pt-BR'),
-        templateName: templateName
-      });
-
-      doc.render();
-      const out = doc.getZip().generate({
-        type: 'blob',
-        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      });
-
-      saveAs(out, `${templateName.replace(/\s+/g, '_')}_${new Date().getTime()}.docx`);
-    } catch (error: any) {
-      console.error(error);
-      alert(`Erro ao gerar documento: ${error.message}`);
-    }
-  };
   
   const handleSaveGeneral = () => {
     const oldServerUrl = localStorage.getItem('smartlaw_server_url') || 'http://localhost:3001';
@@ -290,9 +222,6 @@ function SettingsPage() {
           </TabsTrigger>
           <TabsTrigger value="escritorio" className="flex items-center gap-2">
             <Building2 className="w-4 h-4" /> {t('settings.firm')}
-          </TabsTrigger>
-          <TabsTrigger value="modelos" className="flex items-center gap-2">
-            <FileCode className="w-4 h-4" /> Modelos
           </TabsTrigger>
           <TabsTrigger value="aparencia" className="flex items-center gap-2">
             <Layout className="w-4 h-4" /> {t('settings.appearance')}
@@ -385,45 +314,6 @@ function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="modelos" className="space-y-4 mt-0">
-          <div className="flex justify-between items-center mb-4">
-            <div className="space-y-1">
-              <h2 className="text-2xl font-semibold tracking-tight">Templates de Documentos</h2>
-              <p className="text-sm text-muted-foreground">Gerencie seus modelos de petições e contratos.</p>
-            </div>
-            <Button variant="secondary" className="gap-2">
-              <Plus className="w-4 h-4" /> Novo Modelo
-            </Button>
-          </div>
-          
-          <div className="grid gap-4">
-            {templates.map(tpl => (
-              <Card 
-                key={tpl.id} 
-                onClick={() => handleGenerateTemplate(tpl.name)}
-                className="hover:border-primary/50 transition-all cursor-pointer group shadow-none hover:shadow-md"
-              >
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                      <FileIcon className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-foreground">{tpl.name}</p>
-                      <p className="text-xs text-muted-foreground">Formato {tpl.type} • Último uso: {tpl.lastUsed}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
           </div>
         </TabsContent>
 

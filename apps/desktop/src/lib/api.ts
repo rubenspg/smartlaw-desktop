@@ -10,8 +10,10 @@ const getServerUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL;
   if (envUrl) return envUrl;
 
-  // Default to remote Proxmox API
-  return 'https://smartlaw-api.rubenspg.com';
+  // Default to local in dev, remote in prod
+  return import.meta.env.DEV 
+    ? 'http://localhost:3001' 
+    : 'https://smartlaw-api.rubenspg.com';
 };
 
 export const api = hc<AppType>(getServerUrl(), {

@@ -18,7 +18,8 @@ import {
   Plus,
   MoreVertical,
   Edit2,
-  Trash2
+  Trash2,
+  Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -205,29 +206,6 @@ function ProcessoDetailPage() {
               <h3 className="text-sm font-black uppercase tracking-widest text-[#2563eb]">Andamentos</h3>
             </div>
 
-            {/* Novo Andamento Form */}
-            <Card className="border-none bg-[#f8fafc]">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2 mb-6">
-                  <Plus className="w-4 h-4 text-[#2563eb]" />
-                  <h4 className="text-sm font-bold text-[#1e293b]">Novo Andamento</h4>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold text-slate-400 uppercase">Data</Label>
-                    <Input type="date" defaultValue={new Date().toISOString().split('T')[0]} className="bg-white border-slate-200" />
-                  </div>
-                  <div className="md:col-span-3 space-y-2">
-                    <Label className="text-[10px] font-bold text-slate-400 uppercase">Histórico</Label>
-                    <Textarea placeholder="Descreva o que ocorreu..." className="bg-white border-slate-200 min-h-[80px]" />
-                  </div>
-                </div>
-                <div className="flex justify-end mt-4">
-                  <Button className="bg-[#2563eb] hover:bg-[#1d4ed8] font-bold text-xs uppercase px-8">Adicionar</Button>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Timeline */}
             <div className="relative pl-8 space-y-8 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#f1f5f9]">
               {processo.andamentos?.length === 0 ? (
@@ -277,9 +255,6 @@ function ProcessoDetailPage() {
                 <Users className="w-5 h-5 text-[#2563eb]" />
                 <CardTitle className="text-lg font-bold text-[#1e293b]">Partes</CardTitle>
               </div>
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-[#2563eb]">
-                <Plus className="w-5 h-5" />
-              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               {processo.partes?.length === 0 ? (
@@ -335,15 +310,5 @@ function ProcessoDetailPage() {
       </div>
     </div>
   );
-}
-
-// ── Supporting Components (Mocked or Missing) ────────────────────────────────
-
-function Label({ children, className }: { children: React.ReactNode, className?: string }) {
-  return <label className={cn("block text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70", className)}>{children}</label>;
-}
-
-function Users({ className }: { className?: string }) {
-  return <UserIcon className={className} />;
 }
 
