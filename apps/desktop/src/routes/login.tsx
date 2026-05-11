@@ -97,7 +97,6 @@ function LoginComponent() {
             <div className="grid gap-2.5">
               <div className="flex items-center justify-between ml-1">
                 <Label htmlFor="password" title="password" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Senha</Label>
-                <button type="button" className="text-[10px] font-bold text-primary hover:underline">Esqueceu a senha?</button>
               </div>
               <Input
                 id="password"
