@@ -141,11 +141,20 @@ export const honorarioSchema = z.object({
   processoAdminId: z.number().optional().nullable(),
   descricao: z.string().min(1, 'Descrição é obrigatória'),
   valor: z.string().min(1, 'Valor é obrigatório').refine(
-    (v) => !isNaN(Number(v)) && Number(v) > 0,
+    (v) => {
+      const cleaned = v.replace('R$', '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
+      const num = Number(cleaned);
+      return !isNaN(num) && num > 0;
+    },
     'Valor deve ser um número positivo',
   ),
   valorPago: z.string().optional().nullable().refine(
-    (v) => v == null || v === '' || (!isNaN(Number(v)) && Number(v) >= 0),
+    (v) => {
+      if (v == null || v === '') return true;
+      const cleaned = v.replace('R$', '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
+      const num = Number(cleaned);
+      return !isNaN(num) && num >= 0;
+    },
     'Valor pago inválido',
   ),
   dataVenc: z.string().min(1, 'Vencimento é obrigatório'),
@@ -189,3 +198,13 @@ export const tarefaSchema = z.object({
 });
 
 export type TarefaInput = z.infer<typeof tarefaSchema>;
+
+export const andamentoSchema = z.object({
+  processoJudicialId: z.number().optional().nullable(),
+  processoAdminId: z.number().optional().nullable(),
+  data: z.string().min(1, 'Data é obrigatória'),
+  historico: z.string().min(1, 'O histórico é obrigatório'),
+  tipo: z.enum(['SISTEMA', 'MANUAL']).default('MANUAL'),
+});
+
+export type AndamentoInput = z.infer<typeof andamentoSchema>;

@@ -3,6 +3,7 @@ import { Language } from "../components/regional-provider";
 export const translations = {
   "pt-BR": {
     "nav.home": "Início",
+    "nav.agenda": "Agenda",
     "nav.clients": "Clientes",
     "nav.processes": "Processos",
     "nav.finance": "Financeiro",
@@ -33,6 +34,7 @@ export const translations = {
   },
   "en-US": {
     "nav.home": "Home",
+    "nav.agenda": "Agenda",
     "nav.clients": "Clients",
     "nav.processes": "Processes",
     "nav.finance": "Finance",
@@ -63,6 +65,7 @@ export const translations = {
   },
   "es-ES": {
     "nav.home": "Inicio",
+    "nav.agenda": "Agenda",
     "nav.clients": "Clientes",
     "nav.processes": "Procesos",
     "nav.finance": "Finanzas",

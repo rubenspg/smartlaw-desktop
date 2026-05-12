@@ -22,6 +22,7 @@ import {
   TrendingUp,
   DollarSign,
   ShieldCheck,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -70,6 +71,7 @@ function DashboardLayout() {
 
   const menuItems = [
     { name: t("nav.home"), to: "/", icon: Home },
+    { name: t("nav.agenda"), to: "/agenda", icon: CalendarDays },
     { name: t("nav.clients"), to: "/clientes", icon: Users },
     { name: t("nav.processes"), to: "/processos", icon: FileText },
     { name: t("nav.finance"), to: "/financeiro", icon: DollarSign },

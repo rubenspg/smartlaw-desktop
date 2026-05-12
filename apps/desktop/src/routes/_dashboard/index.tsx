@@ -164,35 +164,6 @@ function HomeComponent() {
         </div>
       </div>
 
-      <Card className="border border-border/50 shadow-premium bg-linear-to-br from-primary/5 via-transparent to-background overflow-hidden relative group transition-all hover:shadow-premium-lg">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-primary/10 transition-colors" />
-        <CardContent className="p-6">
-          <div className="flex items-start gap-4">
-            <div className="shrink-0 w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center shadow-inner">
-              <Sparkles className="w-5 h-5 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0 space-y-1.5">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black tracking-widest text-primary uppercase">{t('home.ai_summary')}</span>
-                {isLoadingResumoIA && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
-              </div>
-              {isLoadingResumoIA && !resumoIA ? (
-                <p className="text-sm text-muted-foreground italic animate-pulse">Gerando resumo executivo...</p>
-              ) : resumoIA?.texto ? (
-                <p className={cn(
-                  'text-sm leading-relaxed font-semibold',
-                  resumoIA.status === 'ready' ? 'text-foreground/90' : 'text-amber-600 dark:text-amber-400'
-                )}>
-                  {resumoIA.texto}
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">Carregando dados operacionais...</p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Andamentos Recentes */}
         <div className="lg:col-span-2 space-y-4">
@@ -269,27 +240,16 @@ function HomeComponent() {
                               )}
                               {cliente && (
                                 <div className="flex items-center gap-1.5">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <span className="text-xs text-muted-foreground font-medium hover:text-primary transition-colors cursor-pointer">
-                                        · {cliente.nome}
-                                      </span>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="start">
-                                      <DropdownMenuItem onClick={() => navigate({ to: '/clientes/$id', params: { id: cliente.id.toString() } })}>
-                                        <Users className="w-4 h-4 mr-2" /> Ver Detalhes
-                                      </DropdownMenuItem>
-                                      {((cliente as any).celular || (cliente as any).telefone1 || (cliente as any).telefone2) && (
-                                        <DropdownMenuItem onClick={() => handleWhatsApp(cliente)}>
-                                          <MessageSquare className="w-4 h-4 mr-2 text-green-600" /> WhatsApp
-                                        </DropdownMenuItem>
-                                      )}
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
+                                  <span 
+                                    className="text-xs font-bold text-foreground hover:text-primary transition-colors cursor-pointer underline decoration-transparent hover:decoration-primary/30 underline-offset-4"
+                                    onClick={() => navigate({ to: '/clientes/$id', params: { id: cliente.id.toString() } })}
+                                  >
+                                    · {cliente.nome}
+                                  </span>
                                   {((cliente as any).celular || (cliente as any).telefone1 || (cliente as any).telefone2) && (
                                     <button 
                                       onClick={() => handleWhatsApp(cliente)}
-                                      className="text-green-600 hover:text-green-700 transition-colors p-0.5 rounded-md hover:bg-green-50"
+                                      className="text-emerald-600 hover:text-emerald-700 transition-colors p-1 rounded-md hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                                       title="WhatsApp"
                                     >
                                       <MessageSquare className="w-3 h-3" />
@@ -439,19 +399,6 @@ function HomeComponent() {
               </CardContent>
             </Card>
           </div>
-
-          {/* Dica do Dia */}
-          <Card className="border border-primary/20 shadow-premium bg-primary/[0.03] overflow-hidden relative">
-            <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
-            <CardContent className="p-6 space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-primary tracking-widest uppercase bg-primary/10 px-2 py-0.5 rounded-md">{t('home.tip_of_day')}</span>
-              </div>
-              <p className="text-sm text-foreground/80 italic font-semibold leading-relaxed">
-                "Mantenha os cadastros de clientes sempre atualizados para garantir a agilidade nas consultas ao Datajud."
-              </p>
-            </CardContent>
-          </Card>
         </div>
       </div>
 

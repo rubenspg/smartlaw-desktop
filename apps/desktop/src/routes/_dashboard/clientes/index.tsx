@@ -148,30 +148,19 @@ function ClientesListPage() {
                 >
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-2">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <div className="font-semibold hover:text-primary transition-colors cursor-pointer">
-                            {cliente.nome}
-                          </div>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start">
-                          <DropdownMenuItem onClick={() => navigate({ to: '/clientes/$id', params: { id: cliente.id.toString() } })}>
-                            <Users className="w-4 h-4 mr-2" /> Ver Detalhes
-                          </DropdownMenuItem>
-                          {(cliente.celular || cliente.telefone1 || cliente.telefone2) && (
-                            <DropdownMenuItem onClick={() => handleWhatsApp(cliente)}>
-                              <MessageSquare className="w-4 h-4 mr-2 text-green-600" /> WhatsApp
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div 
+                        className="font-bold hover:text-primary transition-colors cursor-pointer underline decoration-transparent hover:decoration-primary/30 underline-offset-4"
+                        onClick={() => navigate({ to: '/clientes/$id', params: { id: cliente.id.toString() } })}
+                      >
+                        {cliente.nome}
+                      </div>
                       {(cliente.celular || cliente.telefone1 || cliente.telefone2) && (
                         <button 
-                          onClick={() => handleWhatsApp(cliente)}
-                          className="p-1 rounded-full hover:bg-green-50 text-green-600 transition-colors"
-                          title="WhatsApp"
+                          onClick={(e) => { e.stopPropagation(); handleWhatsApp(cliente); }}
+                          className="text-emerald-600 hover:text-emerald-700 transition-colors p-1 rounded-md hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                          title="Chamar no WhatsApp"
                         >
-                          <MessageSquare className="w-4 h-4" />
+                          <MessageSquare className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>

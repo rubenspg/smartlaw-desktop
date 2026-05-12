@@ -44,13 +44,7 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
 
     const [summary] = await db
       .select({
-        totalRecebido: sql<number>`COALESCE(SUM(
-          CASE 
-            WHEN ${honorarios.status} = 'PAGO' 
-            THEN ${honorarios.valorPago}
-            ELSE 0 
-          END
-        )::double precision, 0)`,
+        totalRecebido: sql<number>`COALESCE(SUM(${honorarios.valorPago})::double precision, 0)`,
         totalPendente: sql<number>`COALESCE(SUM(
           CASE 
             WHEN ${honorarios.status} = 'PENDENTE' AND ${honorarios.dataVenc} >= ${todayStr} 
@@ -67,7 +61,7 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
         )::double precision, 0)`,
       })
       .from(honorarios)
-      .where(and(...where));
+      .where(and(...where, sql`${honorarios.status} != 'CANCELADO'`));
 
     return c.json(summary as HonorarioSummary);
   })
@@ -184,19 +178,28 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
 
   .post('/', zValidator('json', honorarioSchema), async (c) => {
     const user = c.get('user');
+    console.log(`DEBUG: User ${user.email} (Firm: ${user.firmId}) attempting to create honorario`);
 
     if (user.perfil === 'usuario' || user.perfil === 'secretaria') {
+      console.log(`DEBUG: Access denied for profile ${user.perfil}`);
       return c.json({ error: 'Acesso negado' }, 403);
     }
 
     const data = c.req.valid('json');
+    console.log(`DEBUG: Validated data:`, JSON.stringify(data, null, 2));
 
-    const [newHonorario] = await db
-      .insert(honorarios)
-      .values({ ...data, firmId: user.firmId })
-      .returning();
+    try {
+      const [newHonorario] = await db
+        .insert(honorarios)
+        .values({ ...data, firmId: user.firmId })
+        .returning();
 
-    return c.json(newHonorario, 201);
+      console.log(`DEBUG: Success! New honorario ID: ${newHonorario.id}`);
+      return c.json(newHonorario, 201);
+    } catch (err: any) {
+      console.error(`DEBUG: Error inserting honorario:`, err);
+      return c.json({ error: 'Erro interno ao salvar honorário', details: err.message }, 500);
+    }
   })
 
   .put('/:id', zValidator('json', honorarioSchema), async (c) => {

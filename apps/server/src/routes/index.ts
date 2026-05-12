@@ -5,6 +5,7 @@ import clientesNotas from './clientes-notas';
 import lookups from './lookups';
 import processosJudiciais from './processos-judiciais';
 import processosAdministrativos from './processos-administrativos';
+import andamentos from './andamentos';
 import honorarios from './honorarios';
 import tarefas from './tarefas';
 import dashboard from './dashboard';
@@ -20,6 +21,7 @@ const routes = new Hono<{ Variables: Variables }>()
   .route('/lookups', lookups)
   .route('/processos/judiciais', processosJudiciais)
   .route('/processos/administrativos', processosAdministrativos)
+  .route('/processos/andamentos', andamentos)
   .route('/honorarios', honorarios)
   .route('/tarefas', tarefas)
   .route('/dashboard', dashboard)

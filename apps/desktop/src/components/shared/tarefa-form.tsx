@@ -44,7 +44,7 @@ export function TarefaForm({ initialData, onSubmit, isSubmitting, onCancel }: Ta
       <div className="space-y-2">
         <Label htmlFor="usuarioId">Atribuir para</Label>
         <Select
-          disabled={isLoadingUsuarios || !isManagement}
+          disabled={isLoadingUsuarios}
           value={watch('usuarioId')}
           onValueChange={(val) => setValue('usuarioId', val)}
         >

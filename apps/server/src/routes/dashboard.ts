@@ -14,8 +14,9 @@ const dashboard = new Hono<{ Variables: Variables }>()
     }
 
     const firmFilter = { firmId: user.firmId };
-    const { year: yearParam } = c.req.query();
+    const { year: yearParam, month: monthParam } = c.req.query();
     const year = yearParam ? parseInt(yearParam) : new Date().getFullYear();
+    const month = monthParam ? parseInt(monthParam) : undefined;
 
     const [
       [clientesCount],
@@ -137,29 +138,41 @@ const dashboard = new Hono<{ Variables: Variables }>()
         .orderBy(sql`count(*) desc`),
 
       // Financeiro: receita mensal agrupada pelo ano selecionado
-      db.execute<{ mes: string; recebido: number; pendente: number; atrasado: number }>(sql`
-        SELECT
-          to_char(date_trunc('month', data_venc), 'YYYY-MM') AS mes,
-          COALESCE(SUM(CASE WHEN status = 'PAGO' THEN valor_pago::numeric ELSE 0 END)::double precision, 0) AS recebido,
-          COALESCE(SUM(CASE WHEN status = 'PENDENTE' AND data_venc >= CURRENT_DATE THEN valor::numeric ELSE 0 END)::double precision, 0) AS pendente,
-          COALESCE(SUM(CASE WHEN status = 'PENDENTE' AND data_venc < CURRENT_DATE THEN valor::numeric ELSE 0 END)::double precision, 0) AS atrasado
-        FROM honorarios
-        WHERE firm_id = ${firmFilter.firmId}
-          AND EXTRACT(YEAR FROM data_venc) = ${year}
-        GROUP BY 1
-        ORDER BY 1 ASC
-      `),
+      db
+        .select({
+          mes: sql<string>`to_char(date_trunc('month', ${honorarios.dataVenc}), 'YYYY-MM')`,
+          recebido: sql<number>`COALESCE(SUM(${honorarios.valorPago})::double precision, 0)`,
+          pendente: sql<number>`COALESCE(SUM(CASE WHEN ${honorarios.status} = 'PENDENTE' AND ${honorarios.dataVenc} >= CURRENT_DATE THEN (${honorarios.valor} - COALESCE(${honorarios.valorPago}, 0)) ELSE 0 END)::double precision, 0)`,
+          atrasado: sql<number>`COALESCE(SUM(CASE WHEN ${honorarios.status} = 'PENDENTE' AND ${honorarios.dataVenc} < CURRENT_DATE THEN (${honorarios.valor} - COALESCE(${honorarios.valorPago}, 0)) ELSE 0 END)::double precision, 0)`,
+        })
+        .from(honorarios)
+        .where(
+          and(
+            eq(honorarios.firmId, firmFilter.firmId),
+            sql`EXTRACT(YEAR FROM ${honorarios.dataVenc}) = ${year}`,
+            month && month > 0 ? sql`EXTRACT(MONTH FROM ${honorarios.dataVenc}) = ${month}` : undefined,
+            ne(honorarios.status, 'CANCELADO'),
+          ),
+        )
+        .groupBy(sql`1`)
+        .orderBy(sql`1 ASC`),
 
-      // Financeiro: totais do ano selecionado
-      db.execute<{ total_recebido: number; total_pendente: number; total_atrasado: number }>(sql`
-        SELECT
-          COALESCE(SUM(CASE WHEN status = 'PAGO' THEN valor_pago::numeric ELSE 0 END)::double precision, 0) AS total_recebido,
-          COALESCE(SUM(CASE WHEN status = 'PENDENTE' AND data_venc >= CURRENT_DATE THEN valor::numeric ELSE 0 END)::double precision, 0) AS total_pendente,
-          COALESCE(SUM(CASE WHEN status = 'PENDENTE' AND data_venc < CURRENT_DATE THEN valor::numeric ELSE 0 END)::double precision, 0) AS total_atrasado
-        FROM honorarios
-        WHERE firm_id = ${firmFilter.firmId}
-          AND EXTRACT(YEAR FROM data_venc) = ${year}
-      `),
+      // Financeiro: totais do ano/mês selecionado
+      db
+        .select({
+          total_recebido: sql<number>`COALESCE(SUM(${honorarios.valorPago})::double precision, 0)`,
+          total_pendente: sql<number>`COALESCE(SUM(CASE WHEN ${honorarios.status} = 'PENDENTE' AND ${honorarios.dataVenc} >= CURRENT_DATE THEN (${honorarios.valor} - COALESCE(${honorarios.valorPago}, 0)) ELSE 0 END)::double precision, 0)`,
+          total_atrasado: sql<number>`COALESCE(SUM(CASE WHEN ${honorarios.status} = 'PENDENTE' AND ${honorarios.dataVenc} < CURRENT_DATE THEN (${honorarios.valor} - COALESCE(${honorarios.valorPago}, 0)) ELSE 0 END)::double precision, 0)`,
+        })
+        .from(honorarios)
+        .where(
+          and(
+            eq(honorarios.firmId, firmFilter.firmId),
+            sql`EXTRACT(YEAR FROM ${honorarios.dataVenc}) = ${year}`,
+            month && month > 0 ? sql`EXTRACT(MONTH FROM ${honorarios.dataVenc}) = ${month}` : undefined,
+            ne(honorarios.status, 'CANCELADO'),
+          ),
+        ),
 
       // Tarefas por prioridade (apenas ativas)
       db
@@ -197,7 +210,7 @@ const dashboard = new Hono<{ Variables: Variables }>()
           and(
             eq(tarefas.firmId, firmFilter.firmId),
             ne(tarefas.status, 'CONCLUIDA'),
-            lt(tarefas.dataLimite, new Date()),
+            sql`${tarefas.dataLimite} < NOW()`,
           ),
         ),
     ]);

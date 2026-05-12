@@ -11,9 +11,9 @@ async function seedInsights() {
     return;
   }
 
-  const [mateus] = await db.select().from(profiles).where(eq(profiles.email, 'mateus@smartlaw.local')).limit(1);
-  if (!mateus) {
-    console.error('❌ Usuário Mateus não encontrado.');
+  const [admin] = await db.select().from(profiles).where(eq(profiles.email, 'admin@smartlaw.local')).limit(1);
+  if (!admin) {
+    console.error('❌ Usuário Admin não encontrado. Rode o seed inicial primeiro.');
     return;
   }
 
@@ -67,7 +67,7 @@ async function seedInsights() {
   console.log('  -> Criando 50 lançamentos financeiros...');
   for (let i = 0; i < 50; i++) {
     const cliente = createdClientes[Math.floor(Math.random() * createdClientes.length)];
-    const month = Math.floor(Math.random() * 6); // Jan a Jun
+    const month = Math.floor(Math.random() * 11); // Jan a Dez
     const day = Math.floor(Math.random() * 28) + 1;
     const status = Math.random() > 0.4 ? 'PAGO' : 'PENDENTE';
     const valor = (Math.random() * 5000 + 500).toFixed(2);
@@ -88,7 +88,7 @@ async function seedInsights() {
   }
 
   // 4. Criar Tarefas
-  console.log('  -> Criando 30 tarefas para Mateus...');
+  console.log('  -> Criando 30 tarefas para Admin...');
   for (let i = 0; i < 30; i++) {
     const cliente = createdClientes[Math.floor(Math.random() * createdClientes.length)];
     const dayDiff = Math.floor(Math.random() * 20) - 10; // -10 a +10 dias
@@ -97,7 +97,7 @@ async function seedInsights() {
 
     await db.insert(tarefas).values({
       firmId: firm.id,
-      usuarioId: mateus.id,
+      usuarioId: admin.id,
       clienteId: cliente.id,
       titulo: `Tarefa de Teste ${i}`,
       prioridade: i % 3 === 0 ? 'ALTA' : i % 3 === 1 ? 'MEDIA' : 'BAIXA',

@@ -20,11 +20,7 @@ const tarefasRoutes = new Hono<{ Variables: Variables }>()
       where.push(eq(tarefas.status, status));
     }
 
-    // Se não for admin nem administrativo, só vê as próprias tarefas
-    if (user.perfil !== 'admin' && user.perfil !== 'administrativo') {
-      where.push(eq(tarefas.usuarioId, user.id));
-    } else if (usuarioId) {
-      // Se for admin/administrativo, pode filtrar por um usuário específico se quiser
+    if (usuarioId) {
       where.push(eq(tarefas.usuarioId, usuarioId));
     }
 

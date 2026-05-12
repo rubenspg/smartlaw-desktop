@@ -40,7 +40,6 @@ function LoginComponent() {
       if (res.ok) {
         const data = await res.json();
         login(data.token, data.user);
-        navigate({ to: '/' });
       } else {
         const data = await res.json() as any;
         setError(data.error || 'Login failed');

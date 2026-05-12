@@ -9,8 +9,6 @@ import {
   Calendar,
   User as UserIcon,
   Loader2,
-  DollarSign,
-  CheckSquare,
   ChevronDown,
 } from 'lucide-react';
 import {
@@ -24,9 +22,6 @@ import {
   BarChart,
   Bar,
   Cell,
-  PieChart,
-  Pie,
-  Legend,
 } from 'recharts';
 import { useDashboardStats } from '@/hooks/use-dashboard';
 import { useAuth } from '@/lib/auth';
@@ -39,30 +34,20 @@ export const Route = createFileRoute('/_dashboard/insights/')({
 
 type TimeSlice = 'all' | '1y' | '6m' | '1m';
 
-const PRIORITY_COLORS: Record<string, string> = {
-  ALTA: '#dc2626',
-  MEDIA: '#d97706',
-  BAIXA: '#16a34a',
-  'Sem prioridade': '#94a3b8',
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  PENDENTE: 'Pendente',
-  EM_ANDAMENTO: 'Em andamento',
-  CONCLUIDA: 'Concluída',
-  'Sem status': 'Sem status',
-};
-
 function InsightsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { formatCurrency, formatDate } = useRegional();
+  const { formatDate } = useRegional();
   const currentYear = new Date().getFullYear();
 
-  const [timeSlice, setTimeSlice] = useState<TimeSlice>('all');
+  const [selectedMonth, setSelectedMonth] = useState<number>(0);
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [timeSlice, setTimeSlice] = useState<TimeSlice>('all');
 
-  const { data: stats, isLoading, error } = useDashboardStats(selectedYear);
+  const { data: stats, isLoading, error } = useDashboardStats(
+    selectedYear,
+    selectedMonth > 0 ? selectedMonth : undefined
+  );
 
   useEffect(() => {
     if (user?.perfil === 'usuario' || user?.perfil === 'secretaria') {
@@ -93,7 +78,7 @@ function InsightsPage() {
   const getFilteredData = () => {
     if (!stats?.aquisicaoClientes) return [];
     const data = [...stats.aquisicaoClientes];
-    if (timeSlice === 'all') return data;
+    if (timeSlice === 'all' && selectedMonth === 0) return data;
 
     const now = new Date();
     const months = timeSlice === '1y' ? 12 : timeSlice === '6m' ? 6 : 1;
@@ -124,6 +109,10 @@ function InsightsPage() {
   const filtered = getFilteredData();
   const last12 = getLast12MonthsData();
   const availableYears = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3];
+  const monthsList = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
@@ -134,17 +123,32 @@ function InsightsPage() {
             Análise de desempenho e métricas estratégicas.
           </p>
         </div>
-        <div className="relative">
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="appearance-none pl-4 pr-10 py-2 bg-card border border-input rounded-xl text-sm font-bold text-foreground shadow-sm cursor-pointer hover:border-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20"
-          >
-            {availableYears.map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(Number(e.target.value))}
+              className="appearance-none pl-4 pr-10 py-2 bg-card border border-input rounded-xl text-sm font-bold text-foreground shadow-sm cursor-pointer hover:border-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value={0}>Ano Inteiro</option>
+              {monthsList.map((m, i) => (
+                <option key={m} value={i + 1}>{m}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          </div>
+          <div className="relative">
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="appearance-none pl-4 pr-10 py-2 bg-card border border-input rounded-xl text-sm font-bold text-foreground shadow-sm cursor-pointer hover:border-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              {availableYears.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          </div>
         </div>
       </div>
 
@@ -171,194 +175,6 @@ function InsightsPage() {
           description="Processos INSS/Outros"
           color="emerald"
         />
-      </div>
-
-      {/* Financeiro */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2 text-foreground">
-          <DollarSign className="w-6 h-6 text-primary" />
-          Financeiro — {selectedYear}
-        </h2>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <StatCard
-            title="Recebido"
-            value={stats?.financeiro?.totalRecebido || 0}
-            icon={DollarSign}
-            description={`Honorários pagos em ${selectedYear}`}
-            color="emerald"
-            currency
-          />
-          <StatCard
-            title="A Receber"
-            value={stats?.financeiro?.totalPendente || 0}
-            icon={Calendar}
-            description="Pendentes com venc. futuro"
-            color="amber"
-            currency
-          />
-          <StatCard
-            title="Em Atraso"
-            value={stats?.financeiro?.totalAtrasado || 0}
-            icon={AlertCircle}
-            description="Pendentes com venc. passado"
-            color="red"
-            currency
-          />
-        </div>
-
-        <div className="p-6 bg-card rounded-2xl border border-border shadow-sm">
-          <div>
-            <h3 className="text-lg font-bold flex items-center gap-2 text-foreground mb-1">
-              <TrendingUp className="w-5 h-5 text-primary" />
-              Receita Mensal
-            </h3>
-            <p className="text-xs text-muted-foreground mb-4">Recebido, a receber e em atraso por mês em {selectedYear}</p>
-          </div>
-          <div className="h-[280px] w-full">
-            {(stats?.financeiro?.mensais ?? []).length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stats?.financeiro?.mensais ?? []} barGap={2}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                  <XAxis
-                    dataKey="mes"
-                    tickFormatter={formatMonth}
-                    fontSize={9}
-                    fontWeight="bold"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  />
-                  <YAxis
-                    fontSize={9}
-                    fontWeight="bold"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    tickFormatter={(v) => `R$${((v || 0) / 1000).toFixed(0)}k`}
-                  />
-                  <Tooltip
-                    labelFormatter={formatMonth}
-                    formatter={(value, name) => [
-                      formatCurrency(Number(value || 0)),
-                      name === 'recebido' ? 'Recebido' : name === 'pendente' ? 'A Receber' : 'Em Atraso',
-                    ]}
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      borderRadius: '12px',
-                      border: '1px solid hsl(var(--border))',
-                      fontSize: '11px',
-                      fontWeight: 'bold',
-                      color: 'hsl(var(--card-foreground))',
-                    }}
-                  />
-                  <Legend
-                    formatter={(value) =>
-                      value === 'recebido' ? 'Recebido' : value === 'pendente' ? 'A Receber' : 'Em Atraso'
-                    }
-                    wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '8px' }}
-                  />
-                  <Bar dataKey="recebido" fill="#16a34a" radius={[3, 3, 0, 0]} barSize={18} />
-                  <Bar dataKey="pendente" fill="#d97706" radius={[3, 3, 0, 0]} barSize={18} />
-                  <Bar dataKey="atrasado" fill="#dc2626" radius={[3, 3, 0, 0]} barSize={18} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <EmptyChart label={`Sem lançamentos financeiros em ${selectedYear}.`} />
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Tarefas */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2 text-foreground">
-          <CheckSquare className="w-6 h-6 text-primary" />
-          Tarefas
-        </h2>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <StatCard
-            title="Tarefas Ativas"
-            value={stats?.tarefas?.total || 0}
-            icon={CheckSquare}
-            description="Pendentes e em andamento"
-            color="blue"
-          />
-          <StatCard
-            title="Em Atraso"
-            value={stats?.tarefas?.atrasadas || 0}
-            icon={AlertCircle}
-            description="Com prazo vencido"
-            color="red"
-          />
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="p-6 bg-card rounded-2xl border border-border shadow-sm flex flex-col h-[320px]">
-            <h3 className="text-sm font-bold text-muted-foreground uppercase mb-4 tracking-wider">
-              Por Prioridade (ativas)
-            </h3>
-            <div className="flex-1">
-              {(stats?.tarefas?.porPrioridade ?? []).length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={stats?.tarefas?.porPrioridade ?? []}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={55}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="total"
-                      nameKey="prioridade"
-                    >
-                      {(stats?.tarefas?.porPrioridade ?? []).map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={PRIORITY_COLORS[entry.prioridade] ?? '#94a3b8'}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        borderRadius: '12px',
-                        border: 'none',
-                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                        fontWeight: 'bold',
-                        fontSize: '12px',
-                        color: 'hsl(var(--card-foreground))',
-                      }}
-                    />
-                    <Legend
-                      verticalAlign="bottom"
-                      iconType="circle"
-                      wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <EmptyChart label="Sem tarefas ativas." />
-              )}
-            </div>
-          </div>
-
-          <div className="p-6 bg-card rounded-2xl border border-border shadow-sm">
-            <h3 className="text-sm font-bold text-muted-foreground uppercase mb-4 tracking-wider">
-              Por Status
-            </h3>
-            <BarList
-              rows={(stats?.tarefas?.porStatus ?? []).map((r) => ({
-                ...r,
-                label: STATUS_LABEL[r.status] ?? r.status,
-              }))}
-              labelKey="label"
-              total={(stats?.tarefas?.porStatus ?? []).reduce((acc, r) => acc + (r.total || 0), 0)}
-              barColor="bg-primary"
-            />
-          </div>
-        </div>
       </div>
 
       {/* Aquisição de Clientes */}
@@ -460,7 +276,6 @@ function InsightsPage() {
             dataKey="total"
             nameKey="faixa"
             palette={['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#e2e8f0']}
-            donut
           />
           <DemographicsCard
             title="Principais Cidades"
@@ -546,18 +361,6 @@ function InsightsPage() {
             barColor="bg-primary"
           />
         </div>
-
-        <div className="p-6 bg-card rounded-2xl border border-border shadow-sm md:col-span-2">
-          <h2 className="text-lg font-bold mb-4 flex items-center gap-2 border-b border-border pb-2 text-foreground">
-            <AlertCircle className="w-5 h-5 text-primary" /> Situação da Carteira Judicial
-          </h2>
-          <BarList
-            rows={stats.judiciaisPorSituacao ?? []}
-            labelKey="situacao"
-            total={stats.totais.processosJudiciais || 1}
-            barColor="bg-amber-500"
-          />
-        </div>
       </div>
     </div>
   );
@@ -581,7 +384,6 @@ type StatCardProps = {
 };
 
 function StatCard({ title, value, icon: Icon, description, color, currency }: StatCardProps) {
-  const { formatCurrency } = useRegional();
   const colors: Record<StatCardProps['color'], string> = {
     blue: 'text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-950/30 dark:border-blue-900/30',
     amber: 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-950/30 dark:border-amber-900/30',
@@ -599,7 +401,7 @@ function StatCard({ title, value, icon: Icon, description, color, currency }: St
       <div>
         <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{title}</h3>
         <div className="text-2xl font-black mt-1 text-foreground group-hover:scale-105 transition-transform truncate">
-          {currency ? formatCurrency(value || 0) : (value || 0)}
+          {value || 0}
         </div>
       </div>
       <p className="text-xs text-muted-foreground font-medium">{description}</p>
@@ -613,49 +415,42 @@ type DemographicsCardProps = {
   dataKey: string;
   nameKey: string;
   palette: string[];
-  donut?: boolean;
 };
 
-function DemographicsCard({ title, data, dataKey, nameKey, palette, donut }: DemographicsCardProps) {
+function DemographicsCard({ title, data, dataKey, nameKey, palette }: DemographicsCardProps) {
   return (
     <div className="p-6 bg-card rounded-2xl border border-border shadow-sm flex flex-col h-[350px]">
       <h3 className="text-sm font-bold text-muted-foreground uppercase mb-4 tracking-wider">{title}</h3>
       <div className="flex-1">
         {data && data.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={data}
-                cx="50%"
-                cy="50%"
-                innerRadius={donut ? 60 : 0}
-                outerRadius={donut ? 80 : 85}
-                paddingAngle={donut ? 5 : 0}
-                dataKey={dataKey}
-                nameKey={nameKey}
-                stroke={donut ? undefined : 'none'}
-              >
-                {data.map((_entry, index) => (
-                  <Cell key={`cell-${index}`} fill={palette[index % palette.length]} />
-                ))}
-              </Pie>
+            <BarChart data={data} layout="vertical" margin={{ left: 30, right: 30 }}>
+              <XAxis type="number" hide />
+              <YAxis
+                dataKey={nameKey}
+                type="category"
+                width={80}
+                fontSize={10}
+                fontWeight="bold"
+                axisLine={false}
+                tickLine={false}
+              />
               <Tooltip
+                cursor={{ fill: 'transparent' }}
                 contentStyle={{
                   backgroundColor: 'hsl(var(--card))',
                   borderRadius: '12px',
-                  border: 'none',
-                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                  border: '1px solid hsl(var(--border))',
+                  fontSize: '11px',
                   fontWeight: 'bold',
-                  fontSize: '12px',
-                  color: 'hsl(var(--card-foreground))',
                 }}
               />
-              <Legend
-                verticalAlign="bottom"
-                iconType="circle"
-                wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }}
-              />
-            </PieChart>
+              <Bar dataKey={dataKey} radius={[0, 4, 4, 0]} barSize={20}>
+                {data.map((_entry, index) => (
+                  <Cell key={`cell-${index}`} fill={palette[index % palette.length]} />
+                ))}
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
         ) : (
           <EmptyChart label="Sem dados." />

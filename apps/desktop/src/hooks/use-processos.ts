@@ -1,6 +1,44 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import { ProcessoJudicialInput, ProcessoAdministrativoInput } from '@smartlaw/shared';
+import { ProcessoJudicialInput, ProcessoAdministrativoInput, AndamentoInput } from '@smartlaw/shared';
+
+export function useCreateAndamento() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: AndamentoInput) => {
+      const res = await api.processos.andamentos.$post({
+        json: data as any,
+      });
+      if (!res.ok) throw new Error('Falha ao criar andamento');
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      if (variables.processoJudicialId) {
+        queryClient.invalidateQueries({ queryKey: ['processo-judicial', variables.processoJudicialId] });
+      }
+      if (variables.processoAdminId) {
+        queryClient.invalidateQueries({ queryKey: ['processo-administrativo', variables.processoAdminId] });
+      }
+    },
+  });
+}
+
+export function useDeleteAndamento(processoId: number, tipo: 'judicial' | 'admin') {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await api.processos.andamentos[':id'].$delete({
+        param: { id: id.toString() },
+      });
+      if (!res.ok) throw new Error('Falha ao excluir andamento');
+      return res.json();
+    },
+    onSuccess: () => {
+      const key = tipo === 'judicial' ? 'processo-judicial' : 'processo-administrativo';
+      queryClient.invalidateQueries({ queryKey: [key, processoId] });
+    },
+  });
+}
 
 export function useProcessosJudiciais(filters: { q?: string; page?: number; limit?: number }) {
   return useQuery({

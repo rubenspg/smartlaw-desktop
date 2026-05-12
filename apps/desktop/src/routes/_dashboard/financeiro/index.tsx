@@ -132,7 +132,8 @@ function FinanceiroPage() {
     try {
       await deleteHonorario.mutateAsync(h.id);
     } catch (err: any) {
-      alert(err.message);
+      console.error('Action error:', err);
+      alert(err.message || 'Erro inesperado ao realizar operação');
     }
   };
 
@@ -156,7 +157,8 @@ function FinanceiroPage() {
         },
       });
     } catch (err: any) {
-      alert(err.message);
+      console.error('Action error:', err);
+      alert(err.message || 'Erro inesperado ao realizar operação');
     }
   };
 
@@ -169,7 +171,8 @@ function FinanceiroPage() {
       }
       setDialogOpen(false);
     } catch (err: any) {
-      alert(err.message);
+      console.error('Action error:', err);
+      alert(err.message || 'Erro inesperado ao realizar operação');
     }
   };
 

@@ -52,6 +52,7 @@ export function useCreateHonorario() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['honorarios'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
@@ -72,6 +73,7 @@ export function useUpdateHonorario() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['honorarios'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
@@ -89,6 +91,7 @@ export function useDeleteHonorario() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['honorarios'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
