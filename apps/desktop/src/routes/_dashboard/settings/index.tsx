@@ -87,6 +87,8 @@ function SettingsPage() {
   // User Profile
   const [profileName, setProfileName] = useState(user?.nome || '');
   const [profileEmail, setProfileEmail] = useState(user?.email || '');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   // Firm Settings
   const { data: firm, isLoading: isLoadingFirm } = useQuery({
@@ -163,19 +165,30 @@ function SettingsPage() {
   };
 
   const handleSaveProfile = async () => {
+    if (newPassword && newPassword !== confirmPassword) {
+      alert('As senhas não coincidem!');
+      return;
+    }
+
     try {
       const payload: any = {
         nome: profileName,
         email: profileEmail,
       };
 
-      const res = await api.usuarios[':id'].$patch({
-        param: { id: user?.id || '' },
+      if (newPassword && newPassword.trim() !== "") {
+        payload.senha = newPassword;
+      }
+
+      // Use the new "me" endpoint which doesn't require admin role
+      const res = await (api.usuarios as any).me.$patch({
         json: payload
       });
 
       if (res.ok) {
         alert('Perfil atualizado com sucesso!');
+        setNewPassword('');
+        setConfirmPassword('');
       } else {
         let errorMessage = 'Falha ao atualizar';
         try {
@@ -349,6 +362,41 @@ function SettingsPage() {
                     value={profileEmail}
                     onChange={(e) => setProfileEmail(e.target.value)}
                     className="bg-muted/30"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/50 shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Shield className="w-5 h-5 text-primary" /> Segurança
+              </CardTitle>
+              <CardDescription>
+                Gerencie sua senha e métodos de autenticação.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">Nova Senha</Label>
+                  <Input 
+                    id="new-password" 
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+                  <Input 
+                    id="confirm-password" 
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
                   />
                 </div>
               </div>

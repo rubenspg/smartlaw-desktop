@@ -605,21 +605,24 @@ function UsuarioFormDialog({
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             />
           </div>
-          {!isEditing && (
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-muted-foreground uppercase">
-                Senha Inicial
-              </label>
-              <input
-                type="password"
-                className="w-full p-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-foreground"
-                placeholder="Mínimo 6 caracteres"
-                required
-                value={formData.senha}
-                onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
-              />
-            </div>
-          )}
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-muted-foreground uppercase">
+              {isEditing ? 'Alterar Senha' : 'Senha Inicial'}
+            </label>
+            <input
+              type="password"
+              className="w-full p-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-foreground"
+              placeholder={isEditing ? 'Deixe vazio para manter a atual' : 'Mínimo 6 caracteres'}
+              required={!isEditing}
+              value={formData.senha}
+              onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
+            />
+            {isEditing && (
+              <p className="text-[10px] text-muted-foreground italic">
+                * Preencha apenas se desejar alterar a senha deste usuário.
+              </p>
+            )}
+          </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-muted-foreground uppercase">Cargo / Perfil</label>
             <select

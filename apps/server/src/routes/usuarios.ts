@@ -10,7 +10,46 @@ import { requireAdmin } from '../middleware/admin';
 
 const usuariosRoutes = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
-  .use(requireAdmin)
+  
+  // Allow any authenticated user to update their own profile (name, email, password)
+  .patch('/me', zValidator('json', usuarioUpdateSchema.partial(), (result, c) => {
+    if (!result.success) {
+      return c.json({ error: 'Erro de validação', details: result.error.format() }, 400);
+    }
+  }), async (c) => {
+    const user = c.get('user');
+    const { senha, nome, email } = c.req.valid('json');
+
+    try {
+      const updateData: any = { updatedAt: new Date() };
+      if (nome) updateData.nome = nome;
+      if (email) updateData.email = email;
+      if (senha) {
+        updateData.passwordHash = await bcrypt.hash(senha, 10);
+      }
+
+      const [updated] = await db
+        .update(profiles)
+        .set(updateData)
+        .where(eq(profiles.id, user.id))
+        .returning({
+          id: profiles.id,
+          nome: profiles.nome,
+          email: profiles.email,
+          perfil: profiles.perfil,
+        });
+
+      return c.json(updated);
+    } catch (err: any) {
+      console.error(`[Usuarios] Erro ao atualizar perfil de ${user.id}:`, err);
+      return c.json({ error: 'Erro interno ao atualizar perfil' }, 500);
+    }
+  })
+
+  // Admin-only routes
+  .use(async (c, next) => {
+    return requireAdmin(c, next);
+  })
 
   .get('/', async (c) => {
     const user = c.get('user');
