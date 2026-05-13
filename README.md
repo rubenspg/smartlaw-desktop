@@ -2,6 +2,8 @@
 
 Desktop version of SmartLaw — a Tauri + React frontend backed by a Hono/Node.js API and PostgreSQL.
 
+
+
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) 20+
