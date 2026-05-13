@@ -5,7 +5,6 @@ import {
   UserPlus,
   Trash2,
   Shield,
-  CheckCircle2,
   XCircle,
   Loader2,
   User as UserIcon,
@@ -247,24 +246,6 @@ function AdministrativoPage() {
                           title="Editar usuário"
                         >
                           <Pencil className="w-5 h-5" />
-                        </button>
-
-                        <button
-                          onClick={() => handleToggleStatus(u)}
-                          disabled={u.id === user.id}
-                          className={cn(
-                            'p-2 rounded-lg transition-colors disabled:opacity-30',
-                            u.ativo
-                              ? 'text-green-500 hover:bg-green-500/10'
-                              : 'text-destructive hover:bg-destructive/10',
-                          )}
-                          title={u.ativo ? 'Desativar' : 'Ativar'}
-                        >
-                          {u.ativo ? (
-                            <CheckCircle2 className="w-5 h-5" />
-                          ) : (
-                            <XCircle className="w-5 h-5" />
-                          )}
                         </button>
 
                         <button
@@ -591,11 +572,14 @@ function UsuarioFormDialog({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            const submitData = { ...formData };
-            if (isEditing && !submitData.senha) {
-              delete (submitData as any).senha;
+            const submitData: any = { ...formData };
+            
+            // Na edição, se a senha estiver vazia, removemos do payload para não sobrescrever
+            if (isEditing && (!submitData.senha || submitData.senha.trim() === "")) {
+              delete submitData.senha;
             }
-            onSubmit(submitData as UsuarioInput | UsuarioUpdateInput);
+            
+            onSubmit(submitData);
           }}
           className="p-6 space-y-4"
         >
@@ -621,25 +605,21 @@ function UsuarioFormDialog({
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             />
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-muted-foreground uppercase">
-              {isEditing ? 'Alterar Senha' : 'Senha Inicial'}
-            </label>
-            <input
-              type="password"
-              className="w-full p-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-foreground"
-              placeholder={isEditing ? 'Deixe vazio para manter a atual' : 'Mínimo 6 caracteres'}
-              minLength={6}
-              required={!isEditing}
-              value={formData.senha}
-              onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
-            />
-            {isEditing && (
-              <p className="text-[10px] text-muted-foreground italic">
-                * Preencha apenas se desejar alterar a senha deste usuário.
-              </p>
-            )}
-          </div>
+          {!isEditing && (
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-muted-foreground uppercase">
+                Senha Inicial
+              </label>
+              <input
+                type="password"
+                className="w-full p-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-foreground"
+                placeholder="Mínimo 6 caracteres"
+                required
+                value={formData.senha}
+                onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
+              />
+            </div>
+          )}
           <div className="space-y-1">
             <label className="text-xs font-bold text-muted-foreground uppercase">Cargo / Perfil</label>
             <select

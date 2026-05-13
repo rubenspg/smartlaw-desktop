@@ -37,8 +37,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useTarefas, useCreateTarefa, useUpdateTarefa, useDeleteTarefa, useToggleTarefaStatus } from '@/hooks/use-tarefas';
 import { useAndamentosRecentes, useResumoPendencias, useResumoIA } from '@/hooks/use-dashboard';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Eye } from 'lucide-react';
 import { TarefaForm } from '@/components/shared/tarefa-form';
+import { TarefaDetails } from '@/components/shared/tarefa-details';
 import { Tarefa, TarefaInput } from '@smartlaw/shared';
 import { useRegional } from '@/components/regional-provider';
 import { cn } from '@/lib/utils';
@@ -53,6 +54,8 @@ export const Route = createFileRoute('/_dashboard/')({
 function HomeComponent() {
   const navigate = useNavigate();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [viewingTarefa, setViewingTarefa] = useState<Tarefa | undefined>(undefined);
   const [editingTarefa, setEditingTarefa] = useState<Tarefa | undefined>(undefined);
   const [confirmingTarefa, setConfirmingTarefa] = useState<Tarefa | undefined>(undefined);
 
@@ -79,15 +82,20 @@ function HomeComponent() {
     setIsFormOpen(true);
   };
 
+  const handleView = (tarefa: Tarefa) => {
+    setViewingTarefa(tarefa);
+    setIsDetailsOpen(true);
+  };
+
   const handleEdit = (tarefa: Tarefa) => {
     setEditingTarefa(tarefa);
+    setIsDetailsOpen(false);
     setIsFormOpen(true);
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
-      await deleteTarefa.mutateAsync(id);
-    }
+    await deleteTarefa.mutateAsync(id);
+    setIsDetailsOpen(false);
   };
 
   const handleToggleClick = (tarefa: Tarefa) => {
@@ -322,13 +330,17 @@ function HomeComponent() {
                 ) : (
                   <div className="divide-y divide-border/30">
                     {tarefas?.map((tarefa: Tarefa) => (
-                      <div key={tarefa.id} className={cn(
-                        "p-5 group hover:bg-primary/5 transition-all",
-                        tarefa.status === 'CONCLUIDA' && "opacity-50 grayscale"
-                      )}>
+                      <div 
+                        key={tarefa.id} 
+                        className={cn(
+                          "p-5 group hover:bg-primary/5 transition-all cursor-pointer relative",
+                          tarefa.status === 'CONCLUIDA' && "opacity-50 grayscale"
+                        )}
+                        onClick={() => handleView(tarefa)}
+                      >
                         <div className="flex items-start gap-4">
                           <button
-                            onClick={() => handleToggleClick(tarefa)}
+                            onClick={(e) => { e.stopPropagation(); handleToggleClick(tarefa); }}
                             className={cn(
                               "mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shadow-sm",
                               tarefa.status === 'CONCLUIDA' 
@@ -347,37 +359,53 @@ function HomeComponent() {
                               {tarefa.titulo}
                             </h4>
                             {tarefa.descricao && (
-                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 italic font-medium">
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2 italic font-medium">
                                 {tarefa.descricao}
                               </p>
                             )}
                             
                             <div className="flex flex-wrap items-center gap-3 mt-3">
-                              <Badge className={cn("text-[9px] px-1.5 py-0 border-none font-black tracking-widest uppercase rounded-md shadow-sm", getPriorityColor(tarefa.prioridade))}>
+                              <Badge className={cn("text-[10px] px-1.5 py-0 border-none font-black tracking-widest uppercase rounded-md shadow-sm", getPriorityColor(tarefa.prioridade))}>
                                 {tarefa.prioridade}
                               </Badge>
                               
                               {tarefa.dataLimite && (
-                                <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider">
-                                  <Calendar className="w-3 h-3" />
-                                  {formatDate(tarefa.dataLimite)}
+                                <div className="flex items-center gap-1 text-xs font-bold text-primary uppercase tracking-wider">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  {formatDate(tarefa.dataLimite, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                                 </div>
                               )}
 
-                              <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider">
-                                  <UserIcon className="w-3 h-3" />
+                              <div className="flex items-center gap-1 text-xs font-bold text-muted-foreground/70 uppercase tracking-wider">
+                                  <UserIcon className="w-3.5 h-3.5" />
                                   {tarefa.usuario?.nome.split(' ')[0]}
                               </div>
+
+                              {tarefa.cliente && (
+                                <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wider">
+                                   <Users className="w-3 h-3" />
+                                   {tarefa.cliente.nome.split(' ')[0]}
+                                </div>
+                              )}
                             </div>
                           </div>
 
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-primary/10">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-primary/10"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <MoreVertical className="w-4 h-4 text-muted-foreground" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="rounded-xl shadow-premium-lg border-border/40">
+                              <DropdownMenuItem onClick={() => handleView(tarefa)} className="rounded-lg">
+                                <Eye className="w-3.5 h-3.5 mr-2" />
+                                Visualizar
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEdit(tarefa)} className="rounded-lg">
                                 <Edit2 className="w-3.5 h-3.5 mr-2" />
                                 Editar
@@ -402,25 +430,43 @@ function HomeComponent() {
         </div>
       </div>
 
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="w-full sm:max-w-2xl rounded-3xl p-8 overflow-hidden border-none shadow-2xl">
+          {viewingTarefa && (
+            <TarefaDetails 
+              tarefa={viewingTarefa}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onClose={() => setIsDetailsOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingTarefa ? 'Editar Tarefa' : 'Nova Tarefa'}</DialogTitle>
-            <DialogDescription>
-              {editingTarefa ? 'Atualize os detalhes da tarefa selecionada.' : 'Crie uma nova tarefa e atribua a um colaborador.'}
-            </DialogDescription>
-          </DialogHeader>
-          <TarefaForm
-            initialData={editingTarefa}
-            onSubmit={onSubmit}
-            isSubmitting={createTarefa.isPending || updateTarefa.isPending}
-            onCancel={() => setIsFormOpen(false)}
-          />
+        <DialogContent className="w-full sm:max-w-5xl rounded-3xl p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-primary/5 p-8 border-b border-primary/10">
+            <DialogTitle className="text-3xl font-black uppercase tracking-tight flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+                <Plus className="w-7 h-7 text-primary-foreground" />
+              </div>
+              {editingTarefa ? 'Editar Compromisso' : 'Novo Agendamento'}
+            </DialogTitle>
+          </div>
+          
+          <div className="p-8">
+            <TarefaForm
+              initialData={editingTarefa}
+              onSubmit={onSubmit}
+              isSubmitting={createTarefa.isPending || updateTarefa.isPending}
+              onCancel={() => setIsFormOpen(false)}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={!!confirmingTarefa} onOpenChange={(open) => !open && setConfirmingTarefa(undefined)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="w-full sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Concluir tarefa?</DialogTitle>
             <DialogDescription>

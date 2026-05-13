@@ -69,7 +69,11 @@ function SettingsPage() {
   const queryClient = useQueryClient();
   
   // Connection Settings
-  const [serverUrl, setServerUrl] = useState(localStorage.getItem('smartlaw_server_url') || 'http://localhost:3001');
+  const [serverUrl, setServerUrl] = useState(() => {
+    const saved = localStorage.getItem('smartlaw_server_url');
+    if (saved) return saved;
+    return import.meta.env.VITE_API_URL || 'http://localhost:3001';
+  });
   
   // Regional Settings (Local State for the form)
   const [localLanguage, setLocalLanguage] = useState<Language>(language);
@@ -83,8 +87,6 @@ function SettingsPage() {
   // User Profile
   const [profileName, setProfileName] = useState(user?.nome || '');
   const [profileEmail, setProfileEmail] = useState(user?.email || '');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
 
   // Firm Settings
   const { data: firm, isLoading: isLoadingFirm } = useQuery({
@@ -161,32 +163,33 @@ function SettingsPage() {
   };
 
   const handleSaveProfile = async () => {
-    if (newPassword && newPassword !== confirmPassword) {
-      alert('As senhas não coincidem!');
-      return;
-    }
-
     try {
+      const payload: any = {
+        nome: profileName,
+        email: profileEmail,
+      };
+
       const res = await api.usuarios[':id'].$patch({
         param: { id: user?.id || '' },
-        json: {
-          nome: profileName,
-          email: profileEmail,
-          senha: newPassword || undefined,
-        }
+        json: payload
       });
 
       if (res.ok) {
         alert('Perfil atualizado com sucesso!');
-        setNewPassword('');
-        setConfirmPassword('');
       } else {
-        const err = await res.json() as any;
-        alert(`Erro: ${err.error || 'Falha ao atualizar'}`);
+        let errorMessage = 'Falha ao atualizar';
+        try {
+          const err = await res.json() as any;
+          errorMessage = err.error || errorMessage;
+        } catch (e) {
+          const text = await res.text().catch(() => '');
+          errorMessage = `Erro ${res.status}: ${text || 'Resposta inválida do servidor'}`;
+        }
+        alert(`Erro: ${errorMessage}`);
       }
     } catch (error) {
-      console.error(error);
-      alert('Erro ao conectar com o servidor.');
+      console.error('Erro de conexão:', error);
+      alert('Erro ao conectar com o servidor. Verifique sua internet e a URL do servidor nas configurações.');
     }
   };
 
@@ -352,41 +355,6 @@ function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/50 shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Shield className="w-5 h-5 text-primary" /> Segurança
-              </CardTitle>
-              <CardDescription>
-                Gerencie sua senha e métodos de autenticação.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="new-password">Nova Senha</Label>
-                  <Input 
-                    id="new-password" 
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="••••••••"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
-                  <Input 
-                    id="confirm-password" 
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           <div className="flex justify-end">
             <Button onClick={handleSaveProfile} className="gap-2 px-8">
               <Save className="w-4 h-4" /> Salvar Perfil
@@ -398,24 +366,13 @@ function SettingsPage() {
           <Card className="border-border/50 shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Building2 className="w-5 h-5 text-primary" /> Dados do Escritório
+                <Building2 className="w-5 h-5 text-primary" /> Configurações de Integração
               </CardTitle>
               <CardDescription>
-                Estas informações aparecerão nos relatórios e documentos gerados.
+                Configure as chaves de acesso para busca automática de processos.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="firm-name">Nome do Escritório</Label>
-                <Input 
-                  id="firm-name" 
-                  value={firmName}
-                  onChange={(e) => setFirmName(e.target.value)}
-                  disabled={isLoadingFirm || user?.perfil !== 'admin'}
-                  className="bg-muted/30"
-                />
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="datajud-key">Chave API Datajud (CNJ)</Label>
                 <div className="relative">
@@ -437,43 +394,13 @@ function SettingsPage() {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label>Logo do Escritório</Label>
-                <input 
-                  type="file" 
-                  id="logo-upload" 
-                  className="hidden" 
-                  accept="image/*"
-                  onChange={handleLogoChange}
-                  disabled={isLoadingFirm || user?.perfil !== 'admin'}
-                />
-                <div 
-                  onClick={() => document.getElementById('logo-upload')?.click()}
-                  className="border-2 border-dashed rounded-xl p-8 text-center border-border/50 hover:border-primary/50 transition-colors cursor-pointer bg-muted/10 relative overflow-hidden flex flex-col items-center justify-center min-h-[200px]"
-                >
-                  {firmLogo ? (
-                    <div className="relative group w-full h-full flex items-center justify-center">
-                      <img src={firmLogo} alt="Logo do Escritório" className="max-h-40 object-contain" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
-                        <p className="text-white text-xs font-bold">Clique para alterar</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <Building2 className="w-10 h-10 mx-auto text-muted-foreground mb-4 opacity-50" />
-                      <p className="text-sm font-medium text-foreground">Clique para selecionar uma imagem</p>
-                      <p className="text-xs text-muted-foreground mt-2">PNG, JPG até 2MB (Recomendado 400x400px)</p>
-                    </>
-                  )}
-                </div>
-              </div>
               <Button 
                 onClick={() => updateFirm.mutate({ nome: firmName, logo: firmLogo, datajudApiKey })} 
                 disabled={updateFirm.isPending || user?.perfil !== 'admin'}
                 className="gap-2 px-8"
               >
                 {updateFirm.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Salvar Dados Corporativos
+                Salvar Chave API
               </Button>
             </CardContent>
           </Card>

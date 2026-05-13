@@ -221,7 +221,7 @@ function DashboardLayout() {
 
         {/* Page Content */}
         <div className="p-8 flex-1 bg-background/50 animate-fade-in-up">
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-[1600px] mx-auto">
             <Outlet />
           </div>
         </div>
