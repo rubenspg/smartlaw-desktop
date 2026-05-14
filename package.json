@@ -1,5 +1,6 @@
 {
   "name": "smartlaw-desktop",
+  "version": "0.2.0",
   "private": true,
   "packageManager": "npm@10.9.2",
   "workspaces": [
