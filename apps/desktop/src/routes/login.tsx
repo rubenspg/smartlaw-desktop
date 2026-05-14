@@ -7,7 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Loader2, Scale } from 'lucide-react';
+import { AlertCircle, Loader2, Scale, Settings } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 export const Route = createFileRoute('/login')({
   component: LoginComponent,
@@ -18,6 +27,9 @@ function LoginComponent() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [serverUrl, setServerUrl] = useState(localStorage.getItem('smartlaw_server_url') || import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : 'https://smartlaw-api.rubenspg.com'));
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  
   const { login, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -52,6 +64,12 @@ function LoginComponent() {
     }
   };
 
+  const handleSaveConfig = () => {
+    localStorage.setItem('smartlaw_server_url', serverUrl.trim());
+    setIsConfigOpen(false);
+    window.location.reload(); // Reload to apply the new server URL to the api instance
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-background relative overflow-hidden p-4">
       {/* Background Decorative Elements */}
@@ -60,7 +78,47 @@ function LoginComponent() {
         <div className="absolute -bottom-[10%] -left-[5%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[100px]" />
       </div>
 
-      <Card className="w-full max-w-md shadow-premium-lg border-border/40 bg-card/80 backdrop-blur-xl z-10 animate-fade-in-up">
+      <Card className="w-full max-w-md shadow-premium-lg border-border/40 bg-card/80 backdrop-blur-xl z-10 animate-fade-in-up relative">
+        <div className="absolute top-4 right-4 z-20">
+          <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10 hover:text-primary transition-colors h-8 w-8">
+                <Settings className="w-4 h-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Configurações do Servidor</DialogTitle>
+                <DialogDescription>
+                  Configure o endereço do servidor API para o aplicativo.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="server-url">URL do Servidor</Label>
+                  <Input
+                    id="server-url"
+                    value={serverUrl}
+                    onChange={(e) => setServerUrl(e.target.value)}
+                    placeholder="https://api.exemplo.com"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold tracking-wider">
+                    Atual: {localStorage.getItem('smartlaw_server_url') || 'Padrão'}
+                  </p>
+                </div>
+              </div>
+              <DialogFooter className="sm:justify-end">
+                <Button type="button" variant="outline" onClick={() => setIsConfigOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="button" onClick={handleSaveConfig}>
+                  Salvar e Reiniciar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+
         <CardHeader className="space-y-4 text-center pb-8">
           <div className="mx-auto w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-premium ring-4 ring-primary/10">
             <Scale className="w-7 h-7 text-primary-foreground" />

@@ -444,17 +444,17 @@ function HomeComponent() {
       </Dialog>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="w-full sm:max-w-5xl rounded-3xl p-0 overflow-hidden border-none shadow-2xl">
-          <div className="bg-primary/5 p-8 border-b border-primary/10">
-            <DialogTitle className="text-3xl font-black uppercase tracking-tight flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-                <Plus className="w-7 h-7 text-primary-foreground" />
+        <DialogContent className="w-full max-w-[95vw] md:max-w-4xl rounded-3xl p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-primary/5 p-6 md:p-8 border-b border-primary/10">
+            <DialogTitle className="text-2xl md:text-3xl font-black uppercase tracking-tight flex items-center gap-4">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+                <Plus className="w-6 h-6 md:w-7 md:h-7 text-primary-foreground" />
               </div>
               {editingTarefa ? 'Editar Compromisso' : 'Novo Agendamento'}
             </DialogTitle>
           </div>
           
-          <div className="p-8">
+          <div className="p-6 md:p-8 max-h-[70vh] overflow-y-auto">
             <TarefaForm
               initialData={editingTarefa}
               onSubmit={onSubmit}
