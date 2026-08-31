@@ -79,11 +79,21 @@ ok "JWT_SECRET present (${#JWT_SECRET} chars, not the default)"
 DB_PASSWORD="$(grep -E '^DB_PASSWORD=' .env | cut -d= -f2- || true)"
 DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD:-smartlaw-pass}@localhost:5432/${DB_NAME}"
 
-if ! $SKIP_PULL && [[ -n "$(git status --porcelain)" ]]; then
+if $SKIP_PULL; then
+  # Deploying the tree as-is is the point of --skip-pull, so a dirty tree is
+  # allowed here — but say so rather than implying it was checked.
+  if [[ -n "$(git status --porcelain)" ]]; then
+    printf '  \033[0;33m!\033[0m working tree has uncommitted changes (allowed by --skip-pull):\n'
+    git status --short | sed 's/^/      /'
+  else
+    ok "working tree clean"
+  fi
+elif [[ -n "$(git status --porcelain)" ]]; then
   git status --short
   die "Working tree is dirty. Commit, stash, or use --skip-pull."
+else
+  ok "working tree clean"
 fi
-ok "working tree clean"
 
 docker exec "$DB_CONTAINER" pg_isready -U "$DB_USER" >/dev/null 2>&1 \
   || die "Postgres is not accepting connections"
