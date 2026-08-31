@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "generate:routes": "tsr generate",
+    "pretypecheck": "npm run generate:routes",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "preview": "vite preview",
     "tauri": "tauri"
   },
@@ -35,6 +39,7 @@
   },
   "devDependencies": {
     "@tanstack/react-query-devtools": "^5.99.0",
+    "@tanstack/router-cli": "^1.167.33",
     "@tanstack/router-devtools": "^1.166.13",
     "@tanstack/router-plugin": "^1.167.22",
     "@tauri-apps/api": "^2.10.1",
