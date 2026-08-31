@@ -3,30 +3,19 @@ import { db } from '../db';
 import { honorarios, clientes, processosJudiciais, processosAdministrativos } from '../db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { authMiddleware, Variables } from '../middleware/auth';
+import { PERFIS_FINANCEIRO, requirePerfil } from '../middleware/perfil';
 import { honorarioSchema, type HonorarioSummary } from '@smartlaw/shared';
 import { zValidator } from '@hono/zod-validator';
 import { parseIdParam } from '../utils';
 
+// Todo o módulo financeiro é restrito aos mesmos perfis.
 const honorariosRoutes = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
+  .use(requirePerfil(...PERFIS_FINANCEIRO))
 
   .get('/summary', async (c) => {
     const user = c.get('user');
-
-    if (user.perfil === 'usuario' || user.perfil === 'secretaria') {
-      return c.json({ error: 'Acesso negado' }, 403);
-    }
-
     const { month, year, clienteId } = c.req.query();
-    
-    // Only admins/administrativo can see the financial summary (totals)
-    if (user.perfil !== 'admin' && user.perfil !== 'administrativo') {
-      return c.json({
-        totalRecebido: 0,
-        totalPendente: 0,
-        totalAtrasado: 0,
-      } as HonorarioSummary);
-    }
 
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
@@ -68,11 +57,6 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
 
   .get('/', async (c) => {
     const user = c.get('user');
-
-    if (user.perfil === 'usuario' || user.perfil === 'secretaria') {
-      return c.json({ error: 'Acesso negado' }, 403);
-    }
-
     const { status, page = '1', limit = '10', month, year, clienteId } = c.req.query();
 
     const pageNum = Math.max(1, parseInt(page) || 1);
@@ -178,15 +162,7 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
 
   .post('/', zValidator('json', honorarioSchema), async (c) => {
     const user = c.get('user');
-    console.log(`DEBUG: User ${user.email} (Firm: ${user.firmId}) attempting to create honorario`);
-
-    if (user.perfil === 'usuario' || user.perfil === 'secretaria') {
-      console.log(`DEBUG: Access denied for profile ${user.perfil}`);
-      return c.json({ error: 'Acesso negado' }, 403);
-    }
-
     const data = c.req.valid('json');
-    console.log(`DEBUG: Validated data:`, JSON.stringify(data, null, 2));
 
     try {
       const [newHonorario] = await db
@@ -194,21 +170,15 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
         .values({ ...data, firmId: user.firmId })
         .returning();
 
-      console.log(`DEBUG: Success! New honorario ID: ${newHonorario.id}`);
       return c.json(newHonorario, 201);
     } catch (err: any) {
-      console.error(`DEBUG: Error inserting honorario:`, err);
-      return c.json({ error: 'Erro interno ao salvar honorário', details: err.message }, 500);
+      console.error('[Honorarios] Erro ao inserir honorário:', err);
+      return c.json({ error: 'Erro interno ao salvar honorário' }, 500);
     }
   })
 
   .put('/:id', zValidator('json', honorarioSchema), async (c) => {
     const user = c.get('user');
-
-    if (user.perfil === 'usuario' || user.perfil === 'secretaria') {
-      return c.json({ error: 'Acesso negado' }, 403);
-    }
-
     const id = parseIdParam(c.req.param('id'));
     if (id === null) return c.json({ error: 'ID inválido' }, 400);
     const data = c.req.valid('json');
@@ -225,11 +195,6 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
 
   .delete('/:id', async (c) => {
     const user = c.get('user');
-
-    if (user.perfil === 'usuario' || user.perfil === 'secretaria') {
-      return c.json({ error: 'Acesso negado' }, 403);
-    }
-
     const id = parseIdParam(c.req.param('id'));
     if (id === null) return c.json({ error: 'ID inválido' }, 400);
 

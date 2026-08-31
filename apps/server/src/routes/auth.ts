@@ -5,6 +5,7 @@ import { db } from '../db';
 import { profiles } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { loginSchema } from '@smartlaw/shared';
+import { env } from '../env';
 import { authMiddleware, UserPayload, Variables } from '../middleware/auth';
 
 const auth = new Hono<{ Variables: Variables }>()
@@ -26,13 +27,14 @@ const auth = new Hono<{ Variables: Variables }>()
 
     const [user] = await db.select().from(profiles).where(eq(profiles.email, email)).limit(1);
 
-    if (!user || !user.ativo) {
-      return c.json({ error: 'User not found or inactive' }, 401);
-    }
+    // Resposta idêntica para usuário inexistente, inativo e senha errada:
+    // diferenciar permitiria enumerar e-mails válidos.
+    const isValid = user?.ativo
+      ? await bcrypt.compare(password, user.passwordHash)
+      : false;
 
-    const isValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isValid) {
-      return c.json({ error: 'Invalid credentials' }, 401);
+    if (!user || !user.ativo || !isValid) {
+      return c.json({ error: 'Credenciais inválidas' }, 401);
     }
 
     const payload: UserPayload = {
@@ -45,14 +47,35 @@ const auth = new Hono<{ Variables: Variables }>()
       exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7, // 7 days
     };
 
-    const token = await sign(payload, process.env.JWT_SECRET!, 'HS256');
+    const token = await sign(payload, env.JWT_SECRET, 'HS256');
     const { exp: _exp, ...userResponse } = payload;
 
     return c.json({ token, user: userResponse });
   })
+  // Lê do banco em vez de confiar nas claims do token: o JWT vive 7 dias, então
+  // desativar ou rebaixar um usuário não teria efeito até a expiração.
   .get('/me', authMiddleware, async (c) => {
-    const user = c.get('user');
-    return c.json({ user });
+    const claims = c.get('user');
+
+    const [profile] = await db
+      .select({
+        id: profiles.id,
+        email: profiles.email,
+        nome: profiles.nome,
+        perfil: profiles.perfil,
+        firmId: profiles.firmId,
+        ativo: profiles.ativo,
+      })
+      .from(profiles)
+      .where(eq(profiles.id, claims.id))
+      .limit(1);
+
+    if (!profile || !profile.ativo) {
+      return c.json({ error: 'Conta inativa ou inexistente' }, 401);
+    }
+
+    const { ativo: _ativo, ...user } = profile;
+    return c.json({ user: { ...user, perfil: user.perfil || 'usuario' } });
   });
 
 export default auth;

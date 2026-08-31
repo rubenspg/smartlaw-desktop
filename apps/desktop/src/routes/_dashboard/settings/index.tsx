@@ -104,11 +104,13 @@ function SettingsPage() {
   const [firmLogo, setFirmLogo] = useState<string | null>(null);
   const [datajudApiKey, setDatajudApiKey] = useState('');
 
+  // A chave do Datajud nunca volta do servidor — só a informação de que existe.
+  const hasDatajudKey = Boolean(firm && 'hasDatajudKey' in firm && firm.hasDatajudKey);
+
   useEffect(() => {
     if (firm && 'nome' in firm) {
       setFirmName(firm.nome);
       setFirmLogo(firm.logo || null);
-      setDatajudApiKey((firm as any).datajudApiKey || '');
     }
   }, [firm]);
 
@@ -431,7 +433,7 @@ function SettingsPage() {
                     onChange={(e) => setDatajudApiKey(e.target.value)}
                     disabled={isLoadingFirm || user?.perfil !== 'admin'}
                     className="bg-muted/30 pr-10"
-                    placeholder="APIKey ..."
+                    placeholder={hasDatajudKey ? '•••••••• (chave configurada)' : 'APIKey ...'}
                   />
                   <div className="absolute right-3 top-2.5 text-muted-foreground">
                     <Lock className="w-4 h-4" />
@@ -439,6 +441,7 @@ function SettingsPage() {
                 </div>
                 <p className="text-[10px] text-muted-foreground italic">
                   Esta chave é usada para buscar processos automaticamente no tribunal.
+                  {hasDatajudKey && ' Deixe em branco para manter a chave atual.'}
                 </p>
               </div>
 

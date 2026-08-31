@@ -1,6 +1,7 @@
 import { Context, Next } from 'hono';
 import { verify } from 'hono/jwt';
 import { JWTPayload } from 'hono/utils/jwt/types';
+import { env } from '../env';
 
 export interface UserPayload extends JWTPayload {
   id: string;
@@ -22,7 +23,7 @@ export const authMiddleware = async (c: Context<{ Variables: Variables }>, next:
 
   const token = authHeader.split(' ')[1];
   try {
-    const payload = await verify(token, process.env.JWT_SECRET!, 'HS256');
+    const payload = await verify(token, env.JWT_SECRET, 'HS256');
     c.set('user', payload as unknown as UserPayload);
     await next();
   } catch (err) {
