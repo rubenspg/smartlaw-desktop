@@ -80,18 +80,16 @@ function DashboardLayout() {
     { name: t("nav.settings"), to: "/settings", icon: Settings },
   ];
 
-  const filteredMenuItems = menuItems.filter((item) => {
-    if (user?.perfil === "usuario") {
-      return !["/financeiro", "/insights", "/administrativo"].includes(item.to);
-    }
-    if (user?.perfil === "secretaria") {
-      return !["/financeiro", "/insights", "/administrativo"].includes(item.to);
-    }
-    if (user?.perfil === "administrativo") {
-      return !["/administrativo"].includes(item.to);
-    }
-    return true;
-  });
+  // Rotas ocultas por perfil. O servidor é quem de fato barra o acesso —
+  // isto apenas evita mostrar um link que resultaria em 403.
+  const ROTAS_OCULTAS: Record<string, string[]> = {
+    usuario: ["/financeiro", "/insights", "/administrativo"],
+    secretaria: ["/financeiro", "/insights", "/administrativo"],
+    administrativo: ["/administrativo"],
+  };
+
+  const ocultas = ROTAS_OCULTAS[user?.perfil ?? ""] ?? [];
+  const filteredMenuItems = menuItems.filter((item) => !ocultas.includes(item.to));
 
   return (
     <div className="min-h-screen bg-background flex text-foreground selection:bg-primary/20">
