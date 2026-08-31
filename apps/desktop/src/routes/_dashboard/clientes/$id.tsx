@@ -13,7 +13,6 @@ import {
   Loader2,
   Trash,
   Calendar as CalendarIcon,
-  FileText,
   MessageSquare,
   History,
   Info,

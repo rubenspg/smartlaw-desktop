@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate, Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { 
-  FileText, 
   Plus, 
   Search, 
   RefreshCw,
@@ -11,8 +10,7 @@ import {
   CheckCircle2,
   Gavel,
   ClipboardList,
-  MessageSquare,
-  Users
+  MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,7 +30,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProcessosJudiciais, useProcessosAdministrativos, useSyncProcesso } from '@/hooks/use-processos';
 import { cn } from '@/lib/utils';
 import { openUrl } from '@tauri-apps/plugin-opener';

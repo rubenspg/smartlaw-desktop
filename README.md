@@ -14,11 +14,29 @@ Desktop version of SmartLaw — a Tauri + React frontend backed by a Hono/Node.j
 # 1. Install dependencies
 npm install
 
-# 2. Start the desktop app pointing to the remote Proxmox API
+# 2. Start the full local stack: Docker Postgres + API server + desktop app
 ./dev.sh
 ```
 
-*(Note: Local Postgres and API server are no longer started by default in development. The app points to `https://smartlaw-api.rubenspg.com`.)*
+`./dev.sh` accepts:
+
+| Flag | Behaviour |
+|---|---|
+| *(none)* | Starts Docker Postgres, the API server on `:3001`, and the desktop app |
+| `--remote` | Starts only the desktop app, pointed at `https://smartlaw-api.rubenspg.com` |
+| `--no-desktop` | Starts only Docker Postgres and the API server |
+
+## Quality checks
+
+```bash
+npm run lint        # ESLint across all workspaces
+npm run typecheck   # tsc --noEmit in every workspace (via turbo)
+npm run format      # Prettier
+```
+
+Both `lint` and `typecheck` run in CI on every pull request. The desktop
+typecheck regenerates `routeTree.gen.ts` first (`pretypecheck` → `tsr generate`),
+so it works on a clean clone without starting the dev server.
 
 ---
 
@@ -28,12 +46,20 @@ npm install
 
 | Variable | Description | Local default |
 |---|---|---|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://smartlaw:smartlaw-pass@localhost:5432/smartlaw` |
-| `JWT_SECRET` | Secret for signing JWTs (min 32 chars) | *(must set)* |
-| `DATAJUD_API_KEY` | CNJ Datajud API key | *(optional in dev)* |
-| `API_URL` | Base URL the server listens on | `http://localhost:3001` |
+| `DATABASE_URL` | PostgreSQL connection string | *(required — server exits if unset)* |
+| `JWT_SECRET` | Secret for signing JWTs | *(required — min 32 chars, server exits otherwise)* |
+| `PORT` | Port the API server listens on | `3001` |
+| `DATAJUD_API_KEY` | Fallback CNJ Datajud API key, used when the firm has none configured | *(optional in dev)* |
+| `LMSTUDIO_URL` | LM Studio endpoint backing `GET /dashboard/resumo-ia` | `http://localhost:1234` |
+| `LMSTUDIO_MODEL` | Model name requested from LM Studio | `google/gemma-4-e4b` |
 | `NODE_ENV` | `development` or `production` | `development` |
 | `CSV_DATA_DIR` | Absolute path to CSV lookup data for `db:seed` | Resolved from relative path |
+
+`DATABASE_URL` and `JWT_SECRET` are validated on startup — the process exits
+with a message rather than booting with a missing or weak secret.
+
+The AI summary endpoint degrades gracefully: if LM Studio is unreachable it
+returns a `status: 'unavailable'` payload instead of failing the dashboard.
 
 ### `apps/desktop/.env` — Frontend (Vite)
 

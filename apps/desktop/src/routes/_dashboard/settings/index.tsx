@@ -11,18 +11,8 @@ import {
   Save,
   Lock,
   Loader2,
-  FileCode,
-  BellRing,
-  CalendarDays,
-  Bot,
-  Plus,
-  FileText as FileIcon,
-  Trash2,
-  DollarSign,
   Shield,
   Languages,
-  Clock,
-  Coins,
   Info,
   ChevronLeft
 } from 'lucide-react';

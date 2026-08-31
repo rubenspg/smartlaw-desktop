@@ -1,21 +1,14 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useState, useMemo } from 'react';
+import { createFileRoute } from '@tanstack/react-router';
+import { useState } from 'react';
 import { 
   ChevronLeft, 
   ChevronRight, 
   Plus, 
-  Calendar as CalendarIcon, 
   Clock, 
   User as UserIcon,
-  CheckCircle2,
-  AlertCircle,
-  MoreVertical,
   Filter,
   Loader2,
-  CalendarDays,
-  CalendarRange,
-  Columns,
-  Eye
+  CalendarDays
 } from 'lucide-react';
 import { 
   format, 
@@ -27,16 +20,13 @@ import {
   endOfWeek, 
   isSameMonth, 
   isSameDay, 
-  addDays, 
   eachDayOfInterval,
   isToday,
   parseISO,
   startOfDay,
   setHours,
-  isSameHour,
   addWeeks,
   subWeeks,
-  differenceInMinutes,
   eachHourOfInterval
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -47,7 +37,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { TarefaForm } from '@/components/shared/tarefa-form';
 import { TarefaDetails } from '@/components/shared/tarefa-details';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

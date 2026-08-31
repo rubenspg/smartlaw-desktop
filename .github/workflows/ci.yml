@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Uma execução por branch: um novo push cancela a anterior.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, typecheck and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # O typecheck do desktop depende de routeTree.gen.ts, que é gerado pelo
+      # hook pretypecheck (tsr generate) — por isso funciona em clone limpo.
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build server
+        run: npm run build -w apps/server
+
+      - name: Build desktop bundle
+        run: npm run build -w apps/desktop

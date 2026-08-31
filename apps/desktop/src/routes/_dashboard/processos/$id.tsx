@@ -3,20 +3,14 @@ import { useState } from 'react';
 import { 
   ArrowLeft, 
   RefreshCw, 
-  FileText, 
-  User as UserIcon, 
   Scale, 
   Calendar as CalendarIcon,
-  CheckCircle2,
-  AlertCircle,
   Clock,
-  ExternalLink,
   Loader2,
   Info,
   Phone,
   MessageSquare,
   Plus,
-  MoreVertical,
   Edit2,
   Trash2,
   Users,
@@ -30,10 +24,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { useProcessoJudicial, useSyncProcesso, useDeleteProcessoJudicial, useCreateAndamento, useDeleteAndamento } from '@/hooks/use-processos';
 import { cn } from '@/lib/utils';

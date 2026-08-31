@@ -17,7 +17,9 @@ export class DatajudService {
 
     const tribunalSet = parts[3];
     const justiceType = parts[2];
-    let alias = 'api_publica_trf4';
+    // Sem valor inicial: todo caminho abaixo atribui ou lança. O antigo default
+    // 'api_publica_trf4' sugeria um fallback que nunca era usado.
+    let alias: string;
 
     if (justiceType === '4') {
       alias = `api_publica_trf${parseInt(tribunalSet)}`;

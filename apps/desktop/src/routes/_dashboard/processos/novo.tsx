@@ -6,8 +6,6 @@ import {
   Loader2, 
   Check, 
   AlertCircle,
-  FileText,
-  User as UserIcon,
   Plus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';

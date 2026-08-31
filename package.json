@@ -13,12 +13,24 @@
     "build:desktop": "npm run tauri build -w apps/desktop",
     "tauri": "tauri",
     "build": "turbo build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "turbo typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "migrate": "./scripts/migrate.sh",
     "migrate:dry-run": "./scripts/migrate.sh --dry-run",
     "migrate:profiles": "npx tsx scripts/migrate-profiles.ts",
     "dev": "./dev.sh"
   },
   "devDependencies": {
-    "turbo": "latest"
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.9.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-unused-imports": "^4.4.1",
+    "globals": "^17.11.0",
+    "prettier": "^3.9.6",
+    "turbo": "latest",
+    "typescript-eslint": "^8.69.0"
   }
 }

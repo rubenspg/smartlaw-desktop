@@ -59,12 +59,11 @@ export const profiles = pgTable('profiles', {
   perfil: text('perfil').$type<'admin' | 'usuario' | 'administrativo' | 'secretaria'>().default('usuario'),
   ativo: boolean('ativo').default(true),
   firmId: uuid('firm_id').references(() => firms.id).notNull(),
-  // Colunas criadas pela migration 0004 para um fluxo de "esqueci minha senha"
-  // que nunca foi concluído. Nenhum código as lê hoje. Estão declaradas aqui
-  // apenas para o schema refletir o banco real — removê-las exige uma migration
-  // destrutiva própria, não um efeito colateral de outra mudança. Ver #31.
-  resetToken: text('reset_token'),
-  resetTokenExpires: timestamp('reset_token_expires', { withTimezone: true }),
+  // NÃO declarar reset_token / reset_token_expires aqui. A migration 0004 as
+  // criou, mas seu .sql sumiu do repositório (#31), então bancos existentes
+  // divergem: alguns têm as colunas, outros não. Declará-las faz todo
+  // `select()` sobre profiles quebrar onde elas não existem. Nenhum código as
+  // usa. Ver #31.
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 }, (t) => [

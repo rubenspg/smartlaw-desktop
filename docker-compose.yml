@@ -27,8 +27,10 @@ services:
       - "3001:3001"
     environment:
       DATABASE_URL: postgresql://smartlaw:${DB_PASSWORD:-smartlaw-pass}@postgres:5432/smartlaw
-      # Sem valor padrão: o servidor recusa subir sem um segredo real (min. 32 chars).
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set (min 32 characters)}
+      # Sem valor padrão de propósito: repassa vazio se não estiver definido e o
+      # servidor recusa subir (ver apps/server/src/env.ts). Não usar `:?` aqui —
+      # isso quebraria `docker compose up postgres`, que nem lê esta variável.
+      JWT_SECRET: ${JWT_SECRET}
       DATAJUD_API_KEY: ${DATAJUD_API_KEY}
     depends_on:
       postgres:
