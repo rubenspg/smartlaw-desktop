@@ -1,0 +1,24 @@
+CREATE INDEX "andamentos_firm_id_idx" ON "andamentos" USING btree ("firm_id");--> statement-breakpoint
+CREATE INDEX "andamentos_processo_judicial_id_idx" ON "andamentos" USING btree ("processo_judicial_id");--> statement-breakpoint
+CREATE INDEX "andamentos_processo_admin_id_idx" ON "andamentos" USING btree ("processo_admin_id");--> statement-breakpoint
+CREATE INDEX "andamentos_firm_id_inclusao_idx" ON "andamentos" USING btree ("firm_id","inclusao");--> statement-breakpoint
+CREATE INDEX "audit_logs_firm_id_created_at_idx" ON "audit_logs" USING btree ("firm_id","created_at");--> statement-breakpoint
+CREATE INDEX "clientes_firm_id_idx" ON "clientes" USING btree ("firm_id");--> statement-breakpoint
+CREATE INDEX "clientes_firm_id_nome_idx" ON "clientes" USING btree ("firm_id","nome");--> statement-breakpoint
+CREATE INDEX "clientes_notas_firm_id_idx" ON "clientes_notas" USING btree ("firm_id");--> statement-breakpoint
+CREATE INDEX "clientes_notas_cliente_id_idx" ON "clientes_notas" USING btree ("cliente_id");--> statement-breakpoint
+CREATE INDEX "honorarios_firm_id_idx" ON "honorarios" USING btree ("firm_id");--> statement-breakpoint
+CREATE INDEX "honorarios_cliente_id_idx" ON "honorarios" USING btree ("cliente_id");--> statement-breakpoint
+CREATE INDEX "honorarios_firm_id_data_venc_idx" ON "honorarios" USING btree ("firm_id","data_venc");--> statement-breakpoint
+CREATE INDEX "partes_firm_id_idx" ON "partes" USING btree ("firm_id");--> statement-breakpoint
+CREATE INDEX "partes_processo_judicial_id_idx" ON "partes" USING btree ("processo_judicial_id");--> statement-breakpoint
+CREATE INDEX "processos_administrativos_firm_id_idx" ON "processos_administrativos" USING btree ("firm_id");--> statement-breakpoint
+CREATE INDEX "processos_administrativos_firm_id_cliente_id_idx" ON "processos_administrativos" USING btree ("firm_id","cliente_id");--> statement-breakpoint
+CREATE INDEX "processos_administrativos_cliente_id_idx" ON "processos_administrativos" USING btree ("cliente_id");--> statement-breakpoint
+CREATE INDEX "processos_judiciais_firm_id_idx" ON "processos_judiciais" USING btree ("firm_id");--> statement-breakpoint
+CREATE INDEX "processos_judiciais_firm_id_cliente_id_idx" ON "processos_judiciais" USING btree ("firm_id","cliente_id");--> statement-breakpoint
+CREATE INDEX "processos_judiciais_cliente_id_idx" ON "processos_judiciais" USING btree ("cliente_id");--> statement-breakpoint
+CREATE INDEX "profiles_firm_id_idx" ON "profiles" USING btree ("firm_id");--> statement-breakpoint
+CREATE INDEX "tarefas_firm_id_idx" ON "tarefas" USING btree ("firm_id");--> statement-breakpoint
+CREATE INDEX "tarefas_firm_id_status_idx" ON "tarefas" USING btree ("firm_id","status");--> statement-breakpoint
+CREATE INDEX "tarefas_usuario_id_idx" ON "tarefas" USING btree ("usuario_id");
