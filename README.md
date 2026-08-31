@@ -38,6 +38,33 @@ Both `lint` and `typecheck` run in CI on every pull request. The desktop
 typecheck regenerates `routeTree.gen.ts` first (`pretypecheck` → `tsr generate`),
 so it works on a clean clone without starting the dev server.
 
+## Deploying to production
+
+Production runs on Proxmox LXC 103. Deploy with the committed script — do not run
+the steps by hand:
+
+```bash
+ssh -i ~/.ssh/id_ed25519_homelab root@192.168.50.38 \
+  'pct exec 103 -- bash -lc "cd /root/smartlaw-desktop && ./scripts/deploy-prod.sh --yes"'
+```
+
+| Flag | Effect |
+|---|---|
+| *(none)* | Interactive — prompts before applying migrations |
+| `--yes` | Non-interactive |
+| `--dry-run` | Prints every step, changes nothing |
+| `--skip-pull` | Deploy the current checkout without pulling |
+
+The script runs preflight → backup → pull → deps → migrate → build → restart →
+health check, and aborts on the first failure. It refuses to run without a `.env`
+containing a `JWT_SECRET` of at least 32 characters, and refuses to migrate
+without a gzip-verified backup.
+
+**The LXC host has no Node installed**, so `npm` and `drizzle-kit` run inside
+throwaway `node:20-alpine` containers with the repo bind-mounted. Note that
+`npx drizzle-kit` does *not* work there — it cannot resolve the workspace's
+`drizzle-orm`. The script invokes `node node_modules/drizzle-kit/bin.cjs` instead.
+
 ---
 
 ## Environment configuration
