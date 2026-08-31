@@ -98,11 +98,4 @@ export function RegionalProvider({
   );
 }
 
-export const useRegional = () => {
-  const context = useContext(RegionalProviderContext);
-
-  if (context === undefined)
-    throw new Error("useRegional must be used within a RegionalProvider");
-
-  return context;
-};
+export const useRegional = () => useContext(RegionalProviderContext);

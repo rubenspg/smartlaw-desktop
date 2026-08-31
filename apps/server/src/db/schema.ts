@@ -1,5 +1,9 @@
-import { pgTable, text, timestamp, uuid, boolean, bigint, date, decimal, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, boolean, bigint, date, decimal, jsonb, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+
+// Toda tabela de negócio é filtrada por firm_id em praticamente todas as
+// consultas. O Postgres indexa PRIMARY KEY e UNIQUE, mas não REFERENCES —
+// sem os índices abaixo cada consulta multi-tenant vira sequential scan.
 
 // Lookup Tables
 export const especiesProcesso = pgTable('especies_processo', {
@@ -55,9 +59,17 @@ export const profiles = pgTable('profiles', {
   perfil: text('perfil').$type<'admin' | 'usuario' | 'administrativo' | 'secretaria'>().default('usuario'),
   ativo: boolean('ativo').default(true),
   firmId: uuid('firm_id').references(() => firms.id).notNull(),
+  // Colunas criadas pela migration 0004 para um fluxo de "esqueci minha senha"
+  // que nunca foi concluído. Nenhum código as lê hoje. Estão declaradas aqui
+  // apenas para o schema refletir o banco real — removê-las exige uma migration
+  // destrutiva própria, não um efeito colateral de outra mudança. Ver #31.
+  resetToken: text('reset_token'),
+  resetTokenExpires: timestamp('reset_token_expires', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
+}, (t) => [
+  index('profiles_firm_id_idx').on(t.firmId),
+]);
 
 export const clientes = pgTable('clientes', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
@@ -93,7 +105,11 @@ export const clientes = pgTable('clientes', {
   dataCadastro: timestamp('data_cadastro', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
+}, (t) => [
+  index('clientes_firm_id_idx').on(t.firmId),
+  // Listagem padrão: filtra por firma e ordena por nome.
+  index('clientes_firm_id_nome_idx').on(t.firmId, t.nome),
+]);
 
 export const processosJudiciais = pgTable('processos_judiciais', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
@@ -118,10 +134,14 @@ export const processosJudiciais = pgTable('processos_judiciais', {
   lastSync: timestamp('last_sync', { withTimezone: true }),
   syncStatus: text('sync_status'),
   datajudRaw: jsonb('datajud_raw'),
-  
+
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
+}, (t) => [
+  index('processos_judiciais_firm_id_idx').on(t.firmId),
+  index('processos_judiciais_firm_id_cliente_id_idx').on(t.firmId, t.clienteId),
+  index('processos_judiciais_cliente_id_idx').on(t.clienteId),
+]);
 
 export const processosAdministrativos = pgTable('processos_administrativos', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
@@ -134,10 +154,14 @@ export const processosAdministrativos = pgTable('processos_administrativos', {
   decisao: text('decisao'),
   pasta: text('pasta'),
   especieId: text('especie_id').references(() => especiesProcesso.codigo),
-  
+
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
+}, (t) => [
+  index('processos_administrativos_firm_id_idx').on(t.firmId),
+  index('processos_administrativos_firm_id_cliente_id_idx').on(t.firmId, t.clienteId),
+  index('processos_administrativos_cliente_id_idx').on(t.clienteId),
+]);
 
 export const andamentos = pgTable('andamentos', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
@@ -153,7 +177,13 @@ export const andamentos = pgTable('andamentos', {
   externalId: text('external_id').unique(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
+}, (t) => [
+  index('andamentos_firm_id_idx').on(t.firmId),
+  index('andamentos_processo_judicial_id_idx').on(t.processoJudicialId),
+  index('andamentos_processo_admin_id_idx').on(t.processoAdminId),
+  // Feed "andamentos recentes" do dashboard.
+  index('andamentos_firm_id_inclusao_idx').on(t.firmId, t.inclusao),
+]);
 
 export const partes = pgTable('partes', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
@@ -162,7 +192,10 @@ export const partes = pgTable('partes', {
   posicaoId: text('posicao_id').references(() => posicoesParte.codigo),
   nome: text('nome').notNull(),
   firmId: uuid('firm_id').references(() => firms.id).notNull(),
-});
+}, (t) => [
+  index('partes_firm_id_idx').on(t.firmId),
+  index('partes_processo_judicial_id_idx').on(t.processoJudicialId),
+]);
 
 export const honorarios = pgTable('honorarios', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
@@ -180,7 +213,12 @@ export const honorarios = pgTable('honorarios', {
   observacoes: text('observacoes'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
+}, (t) => [
+  index('honorarios_firm_id_idx').on(t.firmId),
+  index('honorarios_cliente_id_idx').on(t.clienteId),
+  // Listagens do financeiro filtram por firma e competência de vencimento.
+  index('honorarios_firm_id_data_venc_idx').on(t.firmId, t.dataVenc),
+]);
 
 export const tarefas = pgTable('tarefas', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
@@ -196,7 +234,11 @@ export const tarefas = pgTable('tarefas', {
   status: text('status').default('PENDENTE'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
+}, (t) => [
+  index('tarefas_firm_id_idx').on(t.firmId),
+  index('tarefas_firm_id_status_idx').on(t.firmId, t.status),
+  index('tarefas_usuario_id_idx').on(t.usuarioId),
+]);
 
 export const clientesNotas = pgTable('clientes_notas', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
@@ -206,7 +248,10 @@ export const clientesNotas = pgTable('clientes_notas', {
   firmId: uuid('firm_id').references(() => firms.id).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
+}, (t) => [
+  index('clientes_notas_firm_id_idx').on(t.firmId),
+  index('clientes_notas_cliente_id_idx').on(t.clienteId),
+]);
 
 export const auditLogs = pgTable('audit_logs', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
@@ -218,7 +263,10 @@ export const auditLogs = pgTable('audit_logs', {
   userId: uuid('user_id').references(() => profiles.id),
   firmId: uuid('firm_id').references(() => firms.id).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-});
+}, (t) => [
+  // A tela de auditoria lista por firma em ordem cronológica decrescente.
+  index('audit_logs_firm_id_created_at_idx').on(t.firmId, t.createdAt),
+]);
 
 // Relations
 export const processosJudiciaisRelations = relations(processosJudiciais, ({ one, many }) => ({

@@ -2,16 +2,25 @@ import { Hono } from 'hono';
 import { db } from '../db';
 import { firms } from '../db/schema';
 import { eq } from 'drizzle-orm';
+import { zValidator } from '@hono/zod-validator';
+import { firmUpdateSchema } from '@smartlaw/shared';
 import { authMiddleware, Variables } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 
 const firmsRoutes = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
-  
+
+  // A chave do Datajud nunca é devolvida ao cliente — apenas se existe ou não.
   .get('/me', async (c) => {
     const user = c.get('user');
     const [firm] = await db
-      .select()
+      .select({
+        id: firms.id,
+        nome: firms.nome,
+        logo: firms.logo,
+        createdAt: firms.createdAt,
+        datajudApiKey: firms.datajudApiKey,
+      })
       .from(firms)
       .where(eq(firms.id, user.firmId))
       .limit(1);
@@ -20,40 +29,35 @@ const firmsRoutes = new Hono<{ Variables: Variables }>()
       return c.json({ error: 'Firma não encontrada' }, 404);
     }
 
-    return c.json(firm);
+    const { datajudApiKey, ...safeFirm } = firm;
+    return c.json({ ...safeFirm, hasDatajudKey: Boolean(datajudApiKey) });
   })
 
-  .patch('/me', requireAdmin, async (c) => {
+  .patch('/me', requireAdmin, zValidator('json', firmUpdateSchema), async (c) => {
     const user = c.get('user');
-    const data = await c.req.json();
-    console.log('Update firm request for user:', user.id, 'firm:', user.firmId);
-    console.log('Payload keys:', Object.keys(data));
-    if (data.logo) {
-      console.log('Logo size:', data.logo.length, 'chars');
+    const { nome, logo, datajudApiKey } = c.req.valid('json');
+
+    const [updated] = await db
+      .update(firms)
+      .set({
+        nome,
+        logo,
+        // Campo em branco mantém a chave existente; só grava quando há valor novo.
+        datajudApiKey: datajudApiKey?.trim() ? datajudApiKey.trim() : undefined,
+      })
+      .where(eq(firms.id, user.firmId))
+      .returning({
+        id: firms.id,
+        nome: firms.nome,
+        logo: firms.logo,
+        createdAt: firms.createdAt,
+      });
+
+    if (!updated) {
+      return c.json({ error: 'Firma não encontrada' }, 404);
     }
 
-    try {
-      const [updated] = await db
-        .update(firms)
-        .set({
-          nome: data.nome,
-          logo: data.logo,
-          datajudApiKey: data.datajudApiKey,
-        })
-        .where(eq(firms.id, user.firmId))
-        .returning();
-
-      if (!updated) {
-        console.error('Firm not found for update:', user.firmId);
-        return c.json({ error: 'Firma não encontrada' }, 404);
-      }
-
-      console.log('Firm updated successfully');
-      return c.json(updated);
-    } catch (err: any) {
-      console.error('Error updating firm:', err);
-      return c.json({ error: err.message }, 500);
-    }
+    return c.json(updated);
   });
 
 export default firmsRoutes;

@@ -46,10 +46,8 @@ const usuariosRoutes = new Hono<{ Variables: Variables }>()
     }
   })
 
-  // Admin-only routes
-  .use(async (c, next) => {
-    return requireAdmin(c, next);
-  })
+  // Daqui para baixo, somente admin.
+  .use(requireAdmin)
 
   .get('/', async (c) => {
     const user = c.get('user');
@@ -79,8 +77,6 @@ const usuariosRoutes = new Hono<{ Variables: Variables }>()
   }), async (c) => {
     const user = c.get('user');
     const { nome, email, senha, perfil } = c.req.valid('json');
-
-    console.log('[Usuarios] Tentando criar novo usuário:', { nome, email, perfil });
 
     try {
       const [existing] = await db
@@ -116,11 +112,10 @@ const usuariosRoutes = new Hono<{ Variables: Variables }>()
           updatedAt: profiles.updatedAt,
         });
 
-      console.log('[Usuarios] Usuário criado com sucesso:', created.id);
       return c.json(created, 201);
     } catch (err: any) {
       console.error('[Usuarios] Erro ao inserir usuário no banco:', err);
-      return c.json({ error: 'Erro ao salvar usuário no banco', details: err.message }, 500);
+      return c.json({ error: 'Erro ao salvar usuário no banco' }, 500);
     }
   })
 
@@ -133,8 +128,6 @@ const usuariosRoutes = new Hono<{ Variables: Variables }>()
     const user = c.get('user');
     const id = c.req.param('id');
     const { senha, ...data } = c.req.valid('json');
-
-    console.log(`[Usuarios] Tentando atualizar usuário ${id}:`, { ...data, hasPassword: !!senha });
 
     if (id === user.id && data.perfil && data.perfil !== 'admin') {
       return c.json({ error: 'Você não pode rebaixar seu próprio perfil' }, 400);
@@ -166,11 +159,9 @@ const usuariosRoutes = new Hono<{ Variables: Variables }>()
         });
 
       if (!updated) {
-        console.error(`[Usuarios] Usuário ${id} não encontrado ou não pertence à firma ${user.firmId}`);
         return c.json({ error: 'Usuário não encontrado' }, 404);
       }
 
-      console.log(`[Usuarios] Usuário ${id} atualizado com sucesso:`, updated.perfil);
       return c.json(updated);
     } catch (err: any) {
       console.error(`[Usuarios] Erro ao atualizar usuário ${id}:`, err);

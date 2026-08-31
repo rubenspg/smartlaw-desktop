@@ -3,15 +3,15 @@ import { db } from '../db';
 import { clientes, processosJudiciais, processosAdministrativos, andamentos, tarefas, honorarios } from '../db/schema';
 import { and, desc, eq, isNotNull, isNull, ne, lt, gte, lte, sql, or } from 'drizzle-orm';
 import { authMiddleware, Variables } from '../middleware/auth';
+import { PERFIS_FINANCEIRO, Perfil, requirePerfil } from '../middleware/perfil';
 
 const dashboard = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
-  .get('/', async (c) => {
+  .get('/', requirePerfil('admin', 'administrativo', 'secretaria'), async (c) => {
     const user = c.get('user');
-
-    if (user.perfil === 'usuario') {
-      return c.json({ error: 'Acesso negado' }, 403);
-    }
+    // Números financeiros só para os perfis do módulo financeiro — os demais
+    // recebem o restante do dashboard sem o bloco `financeiro`.
+    const podeVerFinanceiro = PERFIS_FINANCEIRO.includes(user.perfil as Perfil);
 
     const firmFilter = { firmId: user.firmId };
     const { year: yearParam, month: monthParam } = c.req.query();
@@ -275,7 +275,7 @@ const dashboard = new Hono<{ Variables: Variables }>()
         situacao: r.situacao ?? '—',
         total: Number(r.total || 0),
       })) : [],
-      financeiro,
+      ...(podeVerFinanceiro ? { financeiro } : {}),
       tarefas: tarefasStats,
     };
 

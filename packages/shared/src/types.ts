@@ -165,7 +165,8 @@ export interface DashboardStats {
   };
   judiciaisPorComarca: Array<{ comarca: string; total: number }>;
   judiciaisPorSituacao: Array<{ situacao: string; total: number }>;
-  financeiro: {
+  /** Ausente para perfis sem acesso ao módulo financeiro (ex.: secretaria). */
+  financeiro?: {
     mensais: Array<{ mes: string; recebido: number; pendente: number; atrasado: number }>;
     totalRecebido: number;
     totalPendente: number;

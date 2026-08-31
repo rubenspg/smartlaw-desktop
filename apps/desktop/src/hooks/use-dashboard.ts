@@ -43,7 +43,7 @@ export function useResumoPendencias() {
 
 export type ResumoIAStatus = 'idle' | 'loading' | 'ready' | 'unavailable' | 'error';
 
-export function useResumoIA(_pendencias?: ResumoPendencias) {
+export function useResumoIA() {
   return useQuery({
     queryKey: ['dashboard', 'resumo-ia'],
     staleTime: 5 * 60_000,

@@ -166,6 +166,19 @@ export const honorarioSchema = z.object({
 
 export type HonorarioInput = z.infer<typeof honorarioSchema>;
 
+// O logo trafega como data URI base64; o limite do cliente é 2MB de arquivo,
+// que em base64 cresce ~1,37x. 4M caracteres cobre isso com folga.
+const LOGO_MAX_CHARS = 4_000_000;
+
+export const firmUpdateSchema = z.object({
+  nome: z.string().min(1, 'Nome do escritório é obrigatório').optional(),
+  logo: z.string().max(LOGO_MAX_CHARS, 'Logo excede o tamanho máximo').nullable().optional(),
+  // Ausente ou vazio significa "manter a chave atual" — nunca sobrescrever com vazio.
+  datajudApiKey: z.string().optional(),
+});
+
+export type FirmUpdateInput = z.infer<typeof firmUpdateSchema>;
+
 export const usuarioSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),
   email: z.string().email('E-mail inválido'),

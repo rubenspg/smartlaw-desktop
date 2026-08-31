@@ -27,7 +27,8 @@ services:
       - "3001:3001"
     environment:
       DATABASE_URL: postgresql://smartlaw:${DB_PASSWORD:-smartlaw-pass}@postgres:5432/smartlaw
-      JWT_SECRET: ${JWT_SECRET:-super-secret-key}
+      # Sem valor padrão: o servidor recusa subir sem um segredo real (min. 32 chars).
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set (min 32 characters)}
       DATAJUD_API_KEY: ${DATAJUD_API_KEY}
     depends_on:
       postgres:

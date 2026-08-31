@@ -1,8 +1,0 @@
-
-> server@1.0.0 dev
-> tsx watch src/index.ts
-
-◇ injected env (5) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
-Server is running on http://localhost:3001
-<-- GET /health
---> GET /health [32m200[0m 3ms

@@ -63,7 +63,7 @@ function HomeComponent() {
   const { data: tarefas, isLoading: isLoadingTarefas } = useTarefas();
   const { data: andamentosRecentes, isLoading: isLoadingAndamentos, refetch: refetchAndamentos } = useAndamentosRecentes();
   const { data: pendencias } = useResumoPendencias();
-  const { data: resumoIA, isFetching: isLoadingResumoIA } = useResumoIA(pendencias);
+  const { data: resumoIA, isFetching: isLoadingResumoIA } = useResumoIA();
   const createTarefa = useCreateTarefa();
   const updateTarefa = useUpdateTarefa(editingTarefa?.id || 0);
   const toggleStatus = useToggleTarefaStatus();
