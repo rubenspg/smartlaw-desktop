@@ -9,6 +9,7 @@ node_modules/
 # Build output
 apps/desktop/dist/
 apps/server/dist/
+packages/shared/dist/
 
 # Tauri build artifacts (Rust target dir is large — hundreds of MB)
 apps/desktop/src-tauri/target/
