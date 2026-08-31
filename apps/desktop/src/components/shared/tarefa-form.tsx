@@ -8,31 +8,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Loader2, 
-  Search, 
   Calendar as CalendarIcon, 
-  Clock, 
-  Check, 
-  ChevronsUpDown
+  Clock
 } from 'lucide-react';
 import { useUsuarios } from '@/hooks/use-lookups';
-import { useClientes } from '@/hooks/use-clientes';
 import { useAuth } from '@/lib/auth';
 import { useState, useEffect } from 'react';
-import { format, parseISO, isValid } from 'date-fns';
-import { cn } from '@/lib/utils';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+import { format, isValid } from 'date-fns';
+
+
+
+
 
 interface TarefaFormProps {
   initialData?: Tarefa;

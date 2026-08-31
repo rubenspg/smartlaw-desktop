@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { db } from '../db';
-import { tarefas, profiles, clientes } from '../db/schema';
+import { tarefas } from '../db/schema';
 import { eq, and, desc, or, ne, gte } from 'drizzle-orm';
 import { tarefaSchema } from '@smartlaw/shared';
 import { authMiddleware, Variables } from '../middleware/auth';

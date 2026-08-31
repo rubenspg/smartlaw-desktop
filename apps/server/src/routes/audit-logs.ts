@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { db } from '../db';
 import { auditLogs, profiles } from '../db/schema';
-import { and, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, desc, eq, ilike, or } from 'drizzle-orm';
 import { authMiddleware, Variables } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 

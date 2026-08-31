@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { 
   Dialog, 
   DialogContent, 
@@ -37,7 +37,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useTarefas, useCreateTarefa, useUpdateTarefa, useDeleteTarefa, useToggleTarefaStatus } from '@/hooks/use-tarefas';
 import { useAndamentosRecentes, useResumoPendencias, useResumoIA } from '@/hooks/use-dashboard';
-import { Sparkles, Eye } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { TarefaForm } from '@/components/shared/tarefa-form';
 import { TarefaDetails } from '@/components/shared/tarefa-details';
 import { Tarefa, TarefaInput } from '@smartlaw/shared';

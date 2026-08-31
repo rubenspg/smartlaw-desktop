@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useState, useEffect } from 'react';
 import { User } from '@smartlaw/shared';
 import { api } from './api';
 
@@ -18,56 +18,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('smartlaw_token'));
   const [isLoading, setIsLoading] = useState(true);
 
+  const login = useCallback((newToken: string, newUser: User) => {
+    localStorage.setItem('smartlaw_token', newToken);
+    setToken(newToken);
+    setUser(newUser);
+  }, []);
+
+  // Declarado antes do efeito que o utiliza: como `const`, referenciá-lo
+  // acima da declaração dependia da ordem de execução em runtime.
+  const logout = useCallback(() => {
+    localStorage.removeItem('smartlaw_token');
+    setToken(null);
+    setUser(null);
+  }, []);
+
   useEffect(() => {
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const checkAuth = async () => {
-      if (!token) {
-        console.log('No token found, skipping auth check');
-        setIsLoading(false);
-        return;
-      }
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
       try {
-        console.log('Checking auth with token...');
         const res = await api.auth.me.$get({}, { init: { signal: controller.signal } });
-        clearTimeout(timeoutId);
-        
+
         if (res.ok) {
           const data = await res.json();
-          console.log('Auth check successful:', data.user.email);
           setUser(data.user);
         } else {
-          console.warn('Auth check failed with status:', res.status);
+          // 401 significa token inválido ou conta desativada — encerra a sessão.
           logout();
         }
       } catch (err) {
-        console.error('Auth check error:', err);
-        // On network error or timeout, we should probably still stop loading
-        // but maybe not logout immediately if it's just a transient network issue
-        if (err instanceof Error && err.name === 'AbortError') {
-           console.error('Auth check timed out');
+        // Falha de rede ou timeout não derruba a sessão: pode ser transitório.
+        if (!(err instanceof Error && err.name === 'AbortError')) {
+          console.error('Auth check error:', err);
         }
       } finally {
+        clearTimeout(timeoutId);
         setIsLoading(false);
       }
     };
 
     checkAuth();
-  }, [token]);
 
-  const login = (newToken: string, newUser: User) => {
-    localStorage.setItem('smartlaw_token', newToken);
-    setToken(newToken);
-    setUser(newUser);
-  };
-
-  const logout = () => {
-    localStorage.removeItem('smartlaw_token');
-    setToken(null);
-    setUser(null);
-  };
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [token, logout]);
 
   return (
     <AuthContext.Provider

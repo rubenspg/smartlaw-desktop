@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import type { Honorario, HonorarioInput, HonorarioSummary } from '@smartlaw/shared';
+import type { HonorarioInput, HonorarioSummary } from '@smartlaw/shared';
 
 export function useHonorarios(filters: { status?: string; page?: number; limit?: number; month?: number; year?: number; clienteId?: number }) {
   return useQuery({

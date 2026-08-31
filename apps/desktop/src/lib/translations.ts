@@ -1,4 +1,3 @@
-import { Language } from "../components/regional-provider";
 
 export const translations = {
   "pt-BR": {

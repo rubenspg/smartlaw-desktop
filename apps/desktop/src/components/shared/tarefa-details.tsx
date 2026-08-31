@@ -5,10 +5,8 @@ import {
   User as UserIcon, 
   Users, 
   AlignLeft, 
-  Calendar, 
-  AlertCircle,
+  Calendar,
   Edit2,
-  CheckCircle2,
   Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
