@@ -1,0 +1,52 @@
+- generic [ref=f20e2]:
+  - generic [ref=f20e4]:
+    - complementary [ref=f20e5]:
+      - generic [ref=f20e6]: SmartLaw
+      - navigation [ref=f20e13]:
+        - link "Início" [ref=f20e14] [cursor=pointer]:
+          - /url: /
+        - link "Agenda" [ref=f20e20] [cursor=pointer]:
+          - /url: /agenda
+        - link "Clientes" [ref=f20e24] [cursor=pointer]:
+          - /url: /clientes
+        - link "Processos" [ref=f20e31] [cursor=pointer]:
+          - /url: /processos
+        - link "Financeiro" [ref=f20e36] [cursor=pointer]:
+          - /url: /financeiro
+        - link "Insights" [ref=f20e40] [cursor=pointer]:
+          - /url: /insights
+        - link "Administrativo" [ref=f20e45] [cursor=pointer]:
+          - /url: /administrativo
+        - link "Configurações" [ref=f20e50] [cursor=pointer]:
+          - /url: /settings
+      - button "A Sair" [ref=f20e56]:
+        - generic [ref=f20e57]: A
+        - generic [ref=f20e58]: Sair
+    - main [ref=f20e59]:
+      - generic [ref=f20e60]:
+        - generic [ref=f20e61]:
+          - button [ref=f20e62]
+          - heading "Início" [level=2] [ref=f20e67]
+        - generic [ref=f20e68]:
+          - generic [ref=f20e69]:
+            - paragraph [ref=f20e70]: Admin
+            - paragraph [ref=f20e71]: admin
+          - button "Sair" [ref=f20e73]
+      - generic [ref=f20e79]:
+        - generic [ref=f20e80]:
+          - generic [ref=f20e81]:
+            - heading "Início" [level=1] [ref=f20e82]
+            - paragraph [ref=f20e83]: Bem-vindo de volta. Veja o que há de novo hoje.
+          - button "Nova Tarefa" [ref=f20e85]
+        - generic [ref=f20e86]:
+          - generic [ref=f20e88]:
+            - heading "Andamentos Recentes" [level=3] [ref=f20e92]
+            - button "Atualizar" [ref=f20e93]
+          - generic [ref=f20e105]:
+            - heading "Tarefas" [level=3] [ref=f20e112]
+            - paragraph [ref=f20e118]: Carregando...
+  - generic:
+    - contentinfo:
+      - button "Open TanStack Router Devtools" [ref=f20e119] [cursor=pointer]:
+        - generic [ref=f20e191]: "-"
+        - generic [ref=f20e192]: TanStack Router
