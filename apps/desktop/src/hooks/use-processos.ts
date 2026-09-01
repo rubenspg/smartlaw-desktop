@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import { errorMessage } from '../lib/api-helpers';
+import { errorMessage, invalidateDashboard } from '../lib/api-helpers';
 import { ProcessoJudicialInput, ProcessoAdministrativoInput, AndamentoInput } from '@smartlaw/shared';
 
 export function useCreateAndamento() {
@@ -20,6 +20,8 @@ export function useCreateAndamento() {
       if (variables.processoAdminId) {
         queryClient.invalidateQueries({ queryKey: ['processo-administrativo', variables.processoAdminId] });
       }
+      // Andamentos drive the dashboard's recent-activity feed.
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -37,6 +39,7 @@ export function useDeleteAndamento(processoId: number, tipo: 'judicial' | 'admin
     onSuccess: () => {
       const key = tipo === 'judicial' ? 'processo-judicial' : 'processo-administrativo';
       queryClient.invalidateQueries({ queryKey: [key, processoId] });
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -143,6 +146,7 @@ export function useCreateProcessoAdministrativo() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['processos-administrativos'] });
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -161,6 +165,7 @@ export function useUpdateProcessoAdministrativo(id: number) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['processos-administrativos'] });
       queryClient.invalidateQueries({ queryKey: ['processo-administrativo', id] });
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -177,6 +182,7 @@ export function useDeleteProcessoAdministrativo() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['processos-administrativos'] });
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -205,6 +211,7 @@ export function useCreateProcessoJudicial() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['processos-judiciais'] });
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -223,6 +230,7 @@ export function useUpdateProcessoJudicial(id: number) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['processos-judiciais'] });
       queryClient.invalidateQueries({ queryKey: ['processo-judicial', id] });
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -239,6 +247,7 @@ export function useDeleteProcessoJudicial() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['processos-judiciais'] });
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -256,6 +265,7 @@ export function useSyncProcesso() {
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['processos-judiciais'] });
       queryClient.invalidateQueries({ queryKey: ['processo-judicial', id] });
+      invalidateDashboard(queryClient);
     },
   });
 }

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import { errorMessage } from '../lib/api-helpers';
+import { errorMessage, invalidateDashboard } from '../lib/api-helpers';
 import { TarefaInput } from '@smartlaw/shared';
 
 export function useTarefas(filters: { status?: string; usuarioId?: string } = {}) {
@@ -45,6 +45,7 @@ export function useCreateTarefa() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tarefas'] });
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -63,6 +64,7 @@ export function useUpdateTarefa(id: number) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tarefas'] });
       queryClient.invalidateQueries({ queryKey: ['tarefa', id] });
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -81,6 +83,7 @@ export function useToggleTarefaStatus() {
     onSuccess: (_data, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['tarefas'] });
       queryClient.invalidateQueries({ queryKey: ['tarefa', id] });
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -97,6 +100,7 @@ export function useDeleteTarefa() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tarefas'] });
+      invalidateDashboard(queryClient);
     },
   });
 }

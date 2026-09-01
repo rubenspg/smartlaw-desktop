@@ -4,8 +4,20 @@
 // server returns `{ error: string }` by convention. Narrowing that in one place
 // keeps the `error` cast out of every hook.
 
+import type { QueryClient } from '@tanstack/react-query';
+
 interface ErrorBody {
   error?: string;
+}
+
+/**
+ * Invalidate every dashboard query. Call from any mutation that changes a
+ * counted entity (cliente, processo, tarefa, andamento) so the home figures,
+ * pendências and recent-activity feed refresh immediately instead of waiting
+ * for their staleTime.
+ */
+export function invalidateDashboard(queryClient: QueryClient) {
+  queryClient.invalidateQueries({ queryKey: ['dashboard'] });
 }
 
 /** A minimal view of the fetch Response fields these helpers use. */
