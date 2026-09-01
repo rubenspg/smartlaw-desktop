@@ -12,7 +12,6 @@ import {
   Lock,
   Loader2,
   Shield,
-  Languages,
   Info,
   ChevronLeft
 } from 'lucide-react';
@@ -23,18 +22,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
+
+
 import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '@/components/theme-provider';
-import { useRegional, type Language, type Currency } from '@/components/regional-provider';
+import { useRegional } from '@/components/regional-provider';
 
 export const Route = createFileRoute('/_dashboard/settings/')({
   component: SettingsPage,
@@ -44,26 +38,15 @@ function SettingsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
-  const { 
-    language, 
-    currency, 
-    setLanguage: setGlobalLanguage, 
-    setCurrency: setGlobalCurrency,
-    t
-  } = useRegional();
+  const { t } = useRegional();
   const queryClient = useQueryClient();
-  
+
   // Connection Settings
   const [serverUrl, setServerUrl] = useState(() => {
     const saved = localStorage.getItem('smartlaw_server_url');
     if (saved) return saved;
     return import.meta.env.VITE_API_URL || 'http://localhost:3001';
   });
-  
-  // Regional Settings (Local State for the form)
-  const [localLanguage, setLocalLanguage] = useState<Language>(language);
-  const [localCurrency, setLocalCurrency] = useState<Currency>(currency);
-  const [timezone, setTimezone] = useState(localStorage.getItem('smartlaw_timezone') || 'America/Sao_Paulo');
 
   // Automation Settings
   const [notifyDeadlines, setNotifyDeadlines] = useState(true);
@@ -138,14 +121,11 @@ function SettingsPage() {
   
   const handleSaveGeneral = () => {
     const oldServerUrl = localStorage.getItem('smartlaw_server_url') || 'http://localhost:3001';
-    
+
     localStorage.setItem('smartlaw_server_url', serverUrl);
-    setGlobalLanguage(localLanguage);
-    setGlobalCurrency(localCurrency);
-    localStorage.setItem('smartlaw_timezone', timezone);
-    
+
     alert('Configurações gerais salvas!');
-    
+
     if (serverUrl !== oldServerUrl) {
       window.location.reload();
     }
@@ -233,58 +213,6 @@ function SettingsPage() {
 
         <TabsContent value="geral" className="space-y-6 mt-0">
           <div className="grid gap-6 md:grid-cols-2">
-            <Card className="border-border/50 shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Languages className="w-5 h-5 text-primary" /> {t('settings.regional')}
-                </CardTitle>
-                <CardDescription>
-                  Configure idioma e preferências de exibição regional.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>{t('settings.language')}</Label>
-                  <Select value={localLanguage} onValueChange={(val: Language) => setLocalLanguage(val)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o idioma" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
-                      <SelectItem value="en-US">English (US)</SelectItem>
-                      <SelectItem value="es-ES">Español</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('settings.currency')}</Label>
-                  <Select value={localCurrency} onValueChange={(val: Currency) => setLocalCurrency(val)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a moeda" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="BRL">Real (R$)</SelectItem>
-                      <SelectItem value="USD">Dólar ($)</SelectItem>
-                      <SelectItem value="EUR">Euro (€)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('settings.timezone')}</Label>
-                  <Select value={timezone} onValueChange={setTimezone}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o fuso" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="America/Sao_Paulo">Brasília (GMT-3)</SelectItem>
-                      <SelectItem value="America/New_York">New York (GMT-5)</SelectItem>
-                      <SelectItem value="Europe/London">London (GMT+0)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
             <Card className="border-border/50 shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
