@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { errorMessage } from '../lib/api-helpers';
-import type { Usuario, UsuarioInput, UsuarioUpdateInput } from '@smartlaw/shared';
+import type { UsuarioInput, UsuarioUpdateInput } from '@smartlaw/shared';
+import type { Usuario } from '../lib/entities';
 
 export function useUsuarios() {
   return useQuery({

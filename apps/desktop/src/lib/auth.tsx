@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useState, useEffect } from 'react';
-import { User } from '@smartlaw/shared';
+import { User } from './entities';
 import { api } from './api';
 
 export interface AuthContextType {

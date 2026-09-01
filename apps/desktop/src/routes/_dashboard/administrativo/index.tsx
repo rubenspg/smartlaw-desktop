@@ -17,7 +17,8 @@ import {
   Database,
   Pencil,
 } from 'lucide-react';
-import type { UsuarioInput, AuditLog, Usuario, UsuarioUpdateInput } from '@smartlaw/shared';
+import type { UsuarioInput, UsuarioUpdateInput } from '@smartlaw/shared';
+import type { AuditLog, Usuario } from '@/lib/entities';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 import {

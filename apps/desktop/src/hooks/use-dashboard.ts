@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import type { AndamentoRecente, DashboardStats } from '@smartlaw/shared';
+import type { AndamentoRecente, DashboardStats } from '../lib/entities';
 
 export function useDashboardStats(year?: number, month?: number) {
   return useQuery({

@@ -15,7 +15,8 @@ import {
   ChevronsUpDown,
   Check,
 } from 'lucide-react';
-import type { Honorario, HonorarioInput } from '@smartlaw/shared';
+import type { HonorarioInput } from '@smartlaw/shared';
+import type { Honorario } from '@/lib/entities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
