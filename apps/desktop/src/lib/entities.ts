@@ -26,6 +26,10 @@ export type ProcessoAdministrativo = InferResponseType<
 
 export type Honorario = InferResponseType<(typeof api.honorarios)[':id']['$get'], 200>;
 
+// The list endpoint returns a narrower row than the detail endpoint (no
+// created/updated timestamps); the financeiro screen works with these.
+export type HonorarioListItem = InferResponseType<typeof api.honorarios.$get, 200>['data'][number];
+
 // HonorarioSummary stays in @smartlaw/shared — the server produces it too.
 
 export type DashboardStats = InferResponseType<typeof api.dashboard.$get, 200>;

@@ -2,23 +2,14 @@ import { useState, useEffect } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
   Plus,
-  Search,
   Loader2,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
   Receipt,
-  Filter,
-  Pencil,
-  Trash2,
   X,
   ChevronsUpDown,
-  Check,
 } from 'lucide-react';
 import type { HonorarioInput } from '@smartlaw/shared';
-import type { Honorario } from '@/lib/entities';
+import type { HonorarioListItem } from '@/lib/entities';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -26,16 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
-} from '@/components/ui/table';
+
+
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Command,
@@ -57,6 +40,8 @@ import { useAuth } from '@/lib/auth';
 import { useRegional } from '@/components/regional-provider';
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { HonorariosSummaryCards } from '@/components/financeiro/honorarios-summary-cards';
+import { HonorariosTable } from '@/components/financeiro/honorarios-table';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/financeiro/')({
@@ -84,7 +69,7 @@ function FinanceiroPage() {
   const [status, setStatus] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Honorario | null>(null);
+  const [editing, setEditing] = useState<HonorarioListItem | null>(null);
 
   const isAdmin = user?.perfil === 'admin';
 
@@ -128,12 +113,12 @@ function FinanceiroPage() {
     setDialogOpen(true);
   };
 
-  const openEdit = (h: Honorario) => {
+  const openEdit = (h: HonorarioListItem) => {
     setEditing(h);
     setDialogOpen(true);
   };
 
-  const handleDelete = async (h: Honorario) => {
+  const handleDelete = async (h: HonorarioListItem) => {
     if (!(await confirm({ description: `Excluir o lançamento "${h.descricao}"?`, destructive: true, confirmText: 'Excluir' }))) return;
     try {
       await deleteHonorario.mutateAsync(h.id);
@@ -143,7 +128,7 @@ function FinanceiroPage() {
     }
   };
 
-  const handleQuitar = async (h: Honorario) => {
+  const handleQuitar = async (h: HonorarioListItem) => {
     if (!(await confirm({ description: `Marcar o lançamento "${h.descricao}" como PAGO?`, confirmText: 'Marcar como pago' }))) return;
     try {
       await updateHonorario.mutateAsync({
@@ -236,215 +221,24 @@ function FinanceiroPage() {
       </div>
 
       {isAdmin && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="border-none shadow-sm bg-emerald-50 dark:bg-emerald-950/20">
-            <CardContent className="p-8">
-              <div className="flex items-center justify-between mb-6">
-                <span className="text-[11px] font-black text-emerald-800 dark:text-emerald-400 uppercase tracking-widest">
-                  TOTAL RECEBIDO
-                </span>
-                <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-800 dark:text-emerald-400" />
-                </div>
-              </div>
-              <div className="text-4xl font-black text-emerald-800 dark:text-emerald-400 tracking-tight">
-                {formatCurrency(totalRecebido)}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-none shadow-sm bg-amber-50 dark:bg-amber-950/20">
-            <CardContent className="p-8">
-              <div className="flex items-center justify-between mb-6">
-                <span className="text-[11px] font-black text-amber-800 dark:text-amber-400 uppercase tracking-widest">
-                  PENDENTE
-                </span>
-                <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-amber-800 dark:text-amber-400" />
-                </div>
-              </div>
-              <div className="text-4xl font-black text-amber-800 dark:text-amber-400 tracking-tight">
-                {formatCurrency(totalPendente)}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-none shadow-sm bg-red-50 dark:bg-red-950/20">
-            <CardContent className="p-8">
-              <div className="flex items-center justify-between mb-6">
-                <span className="text-[11px] font-black text-red-800 dark:text-red-400 uppercase tracking-widest">
-                  ATRASADO
-                </span>
-                <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
-                  <AlertCircle className="w-5 h-5 text-red-800 dark:text-red-400" />
-                </div>
-              </div>
-              <div className="text-4xl font-black text-red-800 dark:text-red-400 tracking-tight">
-                {formatCurrency(totalAtrasado)}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <HonorariosSummaryCards
+          totalRecebido={totalRecebido}
+          totalPendente={totalPendente}
+          totalAtrasado={totalAtrasado}
+        />
       )}
 
-      <Card className="border-none shadow-sm bg-card">
-        <div className="p-6 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center">
-              <Receipt className="w-5 h-5 text-primary" />
-            </div>
-            <h2 className="text-xl font-black text-foreground uppercase tracking-tight">
-              Lançamentos
-            </h2>
-          </div>
-
-          <div className="flex flex-col md:flex-row items-center gap-3 flex-1 max-w-2xl justify-end">
-            <div className="relative w-full max-w-sm group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-              <Input
-                placeholder="Buscar cliente ou descrição..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 h-11 bg-muted/50 border-input focus:border-primary focus:ring-primary/10 rounded-lg"
-              />
-            </div>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-[180px] h-11 bg-muted/50 border-input font-medium text-muted-foreground">
-                <SelectValue placeholder="Todos Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos Status</SelectItem>
-                <SelectItem value="PENDENTE">Pendente</SelectItem>
-                <SelectItem value="PAGO">Pago</SelectItem>
-                <SelectItem value="CANCELADO">Cancelado</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="relative overflow-x-auto">
-          <Table>
-            <TableHeader className="bg-muted/50">
-              <TableRow className="hover:bg-transparent border-b border-border">
-                <TableHead className="py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest px-6">
-                  CLIENTE / DESCRIÇÃO
-                </TableHead>
-                <TableHead className="py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                  VENCIMENTO
-                </TableHead>
-                <TableHead className="py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-center">
-                  VALOR TOTAL
-                </TableHead>
-                <TableHead className="py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-center">
-                  SALDO PAGO
-                </TableHead>
-                <TableHead className="py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-center">
-                  STATUS
-                </TableHead>
-                <TableHead className="py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-right px-6">
-                  AÇÕES
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-64 text-center">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary opacity-20" />
-                  </TableCell>
-                </TableRow>
-              ) : filtered?.length === 0 ? (
-                <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={6} className="h-64 text-center py-12">
-                    <div className="flex flex-col items-center justify-center space-y-4">
-                      <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center">
-                        <Filter className="w-8 h-8 text-muted-foreground/30" />
-                      </div>
-                      <p className="text-muted-foreground font-medium italic">
-                        Nenhum lançamento financeiro encontrado.
-                      </p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filtered?.map((h: any) => (
-                  <TableRow
-                    key={h.id}
-                    className="group hover:bg-muted/50 transition-colors border-b border-border"
-                  >
-                    <TableCell className="px-6 py-5">
-                      <div className="font-bold text-foreground">{h.cliente?.nome || '-'}</div>
-                      <div className="text-xs text-muted-foreground font-medium mt-0.5 truncate max-w-[200px]">
-                        {h.descricao}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div
-                        className={cn(
-                          'font-bold',
-                          h.status === 'PENDENTE' && h.dataVenc < today
-                            ? 'text-destructive'
-                            : 'text-muted-foreground',
-                        )}
-                      >
-                        {formatDate(h.dataVenc + 'T00:00:00')}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="font-black text-foreground">{formatCurrency(h.valor)}</div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="font-bold text-emerald-600 dark:text-emerald-400">
-                        {formatCurrency(h.valorPago || 0)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge
-                        className={cn(
-                          'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border-none shadow-sm',
-                          h.status === 'PAGO' && 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400',
-                          h.status === 'PENDENTE' && h.dataVenc >= today && 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400',
-                          h.status === 'PENDENTE' && h.dataVenc < today && 'bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-400',
-                          h.status === 'CANCELADO' && 'bg-muted text-muted-foreground',
-                        )}
-                      >
-                        {h.status === 'PENDENTE' && h.dataVenc < today ? 'ATRASADO' : h.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right px-6">
-                      <div className="flex items-center justify-end gap-1">
-                        {h.status !== 'PAGO' && (
-                          <button
-                            onClick={() => handleQuitar(h)}
-                            className="p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40 transition-all"
-                            title="Quitar"
-                          >
-                            <Check className="w-4 h-4 stroke-[3px]" />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => openEdit(h)}
-                          className="p-2 rounded-lg text-muted-foreground hover:bg-blue-50 hover:text-primary dark:hover:bg-blue-950/30 transition-all"
-                          title="Editar"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(h)}
-                          className="p-2 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-destructive dark:hover:bg-red-950/30 transition-all"
-                          title="Excluir"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
+      <HonorariosTable
+        rows={filtered}
+        isLoading={isLoading}
+        search={search}
+        onSearchChange={setSearch}
+        status={status}
+        onStatusChange={setStatus}
+        onEdit={openEdit}
+        onQuitar={handleQuitar}
+        onDelete={handleDelete}
+      />
 
       {dialogOpen && (
         <HonorarioDialog
@@ -464,7 +258,7 @@ function HonorarioDialog({
   onSubmit,
   isSubmitting,
 }: {
-  honorario: Honorario | null;
+  honorario: HonorarioListItem | null;
   onClose: () => void;
   onSubmit: (data: HonorarioInput) => void;
   isSubmitting: boolean;

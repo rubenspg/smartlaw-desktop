@@ -3,19 +3,12 @@ import { useState, useEffect } from 'react';
 import {
   Users,
   UserPlus,
-  Trash2,
-  Shield,
   XCircle,
   Loader2,
-  User as UserIcon,
   ShieldCheck,
   ShieldAlert,
-  Search,
   History,
-  Eye,
-  Calendar,
   Database,
-  Pencil,
 } from 'lucide-react';
 import type { UsuarioInput, UsuarioUpdateInput } from '@smartlaw/shared';
 import type { AuditLog, Usuario } from '@/lib/entities';
@@ -30,6 +23,8 @@ import {
 import { useAuditLogs } from '@/hooks/use-audit-logs';
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { UsuariosTab } from '@/components/administrativo/usuarios-tab';
+import { AuditoriaTable } from '@/components/administrativo/auditoria-table';
 
 export const Route = createFileRoute('/_dashboard/administrativo/')({
   component: AdministrativoPage,
@@ -54,8 +49,6 @@ function AdministrativoPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingUsuario, setEditingUsuario] = useState<Usuario | null>(null);
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [logSearchTerm, setLogSearchTerm] = useState('');
 
   const { data: usuarios, isLoading: loadingUsers } = useUsuarios();
   const { data: auditLogs, isLoading: loadingLogs, refetch: refetchLogs } = useAuditLogs({
@@ -85,27 +78,6 @@ function AdministrativoPage() {
       </div>
     );
   }
-
-  const filteredUsuarios = (usuarios ?? []).filter(
-    (u) =>
-      u.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
-
-  const filteredLogs = (auditLogs ?? []).filter(
-    (log) =>
-      log.tableName?.toLowerCase().includes(logSearchTerm.toLowerCase()) ||
-      log.action?.toLowerCase().includes(logSearchTerm.toLowerCase()) ||
-      log.usuario?.nome?.toLowerCase().includes(logSearchTerm.toLowerCase()),
-  );
-
-  const handleToggleStatus = async (u: Usuario) => {
-    try {
-      await updateUsuario.mutateAsync({ id: u.id, data: { ativo: !u.ativo } });
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
 
   const handleDelete = async (id: string) => {
     if (!(await confirm({ description: 'Tem certeza que deseja remover permanentemente este usuário?', destructive: true, confirmText: 'Remover' }))) return;
@@ -161,263 +133,20 @@ function AdministrativoPage() {
       </div>
 
       {activeTab === 'usuarios' ? (
-        <div className="grid gap-6 lg:grid-cols-3 animate-in fade-in duration-300">
-          <div className="lg:col-span-2 space-y-4">
-            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-border bg-muted/30 flex items-center gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder="Buscar usuário por nome ou e-mail..."
-                    className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="divide-y divide-border">
-                {loadingUsers ? (
-                  <div className="p-12 text-center">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-                  </div>
-                ) : filteredUsuarios.length === 0 ? (
-                  <div className="p-12 text-center text-muted-foreground italic">
-                    Nenhum usuário encontrado.
-                  </div>
-                ) : (
-                  filteredUsuarios.map((u) => (
-                    <div
-                      key={u.id}
-                      className={cn(
-                        'p-4 flex items-center justify-between hover:bg-muted/20 transition-colors',
-                        !u.ativo && 'opacity-60',
-                      )}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={cn(
-                            'w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg',
-                            u.perfil === 'admin'
-                              ? 'bg-primary/10 text-primary border-2 border-primary/20'
-                              : u.perfil === 'administrativo'
-                                ? 'bg-amber-500/10 text-amber-500 border-2 border-amber-500/20'
-                                : 'bg-muted text-muted-foreground',
-                          )}
-                        >
-                          {u.nome.substring(0, 2).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-bold text-foreground">{u.nome}</p>
-                            {u.id === user.id && (
-                              <span className="text-[10px] bg-green-500/10 text-green-500 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                                Você
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3 mt-0.5">
-                            <span
-                              className={cn(
-                                'text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1',
-                                u.perfil === 'admin'
-                                  ? 'bg-primary/10 text-primary'
-                                  : u.perfil === 'administrativo'
-                                    ? 'bg-amber-500/10 text-amber-500'
-                                    : 'bg-green-500/10 text-green-500',
-                              )}
-                            >
-                              {u.perfil === 'admin' ? (
-                                <ShieldCheck className="w-3 h-3" />
-                              ) : u.perfil === 'administrativo' ? (
-                                <Shield className="w-3 h-3" />
-                              ) : (
-                                <UserIcon className="w-3 h-3" />
-                              )}
-                              {u.perfil}
-                            </span>
-                            <span className="text-xs text-muted-foreground truncate max-w-[180px]">
-                              {u.email}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setEditingUsuario(u)}
-                          className="p-2 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
-                          title="Editar usuário"
-                        >
-                          <Pencil className="w-5 h-5" />
-                        </button>
-
-                        <button
-                          onClick={() => handleDelete(u.id)}
-                          disabled={u.id === user.id}
-                          className="p-2 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-30"
-                          title="Remover usuário"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="p-6 bg-primary/5 rounded-2xl border border-primary/10 space-y-4">
-              <h3 className="font-bold text-primary flex items-center gap-2">
-                <Shield className="w-5 h-5" /> Regras de Perfis
-              </h3>
-              <div className="space-y-3">
-                <div className="text-xs">
-                  <p className="font-bold text-primary uppercase tracking-widest mb-1 text-[9px]">
-                    Administrador
-                  </p>
-                  <p className="text-muted-foreground">
-                    Acesso total ao sistema: financeiro, configurações e gestão de usuários.
-                  </p>
-                </div>
-                <div className="text-xs">
-                  <p className="font-bold text-amber-500 uppercase tracking-widest mb-1 text-[9px]">
-                    Administrativo
-                  </p>
-                  <p className="text-muted-foreground">
-                    Gestão de clientes, processos, tarefas e financeiro operacional. Sem gestão de usuários.
-                  </p>
-                </div>
-                <div className="text-xs">
-                  <p className="font-bold text-blue-500 uppercase tracking-widest mb-1 text-[9px]">
-                    Secretaria
-                  </p>
-                  <p className="text-muted-foreground">
-                    Acesso operacional: Clientes e Processos. Sem financeiro e sem gestão de usuários.
-                  </p>
-                </div>
-                <div className="text-xs">
-                  <p className="font-bold text-green-500 uppercase tracking-widest mb-1 text-[9px]">
-                    Usuário
-                  </p>
-                  <p className="text-muted-foreground">
-                    Acesso limitado a processos e tarefas atribuídas.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <UsuariosTab
+          usuarios={usuarios}
+          isLoading={loadingUsers}
+          currentUserId={user!.id}
+          onEdit={setEditingUsuario}
+          onDelete={handleDelete}
+        />
       ) : (
-        <div className="space-y-4 animate-in fade-in duration-300">
-          <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Filtrar por tabela, ação ou usuário..."
-                  className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
-                  value={logSearchTerm}
-                  onChange={(e) => setLogSearchTerm(e.target.value)}
-                />
-              </div>
-              <button
-                onClick={() => refetchLogs()}
-                className="p-2 hover:bg-muted/50 rounded-lg transition-colors"
-                title="Atualizar logs"
-              >
-                <History
-                  className={cn('w-5 h-5 text-muted-foreground', loadingLogs && 'animate-spin')}
-                />
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-muted/30 text-[10px] font-black uppercase tracking-wider text-muted-foreground border-b border-border">
-                    <th className="px-4 py-3">Data / Hora</th>
-                    <th className="px-4 py-3">Usuário</th>
-                    <th className="px-4 py-3">Ação</th>
-                    <th className="px-4 py-3">Tabela</th>
-                    <th className="px-4 py-3">ID Registro</th>
-                    <th className="px-4 py-3 text-right">Dados</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {loadingLogs ? (
-                    <tr>
-                      <td colSpan={6} className="px-4 py-12 text-center">
-                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-                      </td>
-                    </tr>
-                  ) : filteredLogs.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground italic">
-                        Nenhum log de auditoria registrado.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredLogs.map((log) => (
-                      <tr
-                        key={log.id}
-                        className="hover:bg-muted/20 transition-colors text-xs"
-                      >
-                        <td className="px-4 py-3 font-medium whitespace-nowrap text-foreground">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-3 h-3 text-muted-foreground" />
-                            {log.createdAt
-                              ? new Date(log.createdAt).toLocaleString('pt-BR')
-                              : '—'}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2 text-foreground">
-                            <UserIcon className="w-3 h-3 text-muted-foreground" />
-                            <span className="truncate max-w-[140px]">
-                              {log.usuario?.nome ?? 'Sistema / Automático'}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={cn(
-                              'font-black px-2 py-0.5 rounded text-[9px] uppercase',
-                              log.action === 'INSERT' && 'bg-green-500/20 text-green-500',
-                              log.action === 'UPDATE' && 'bg-blue-500/20 text-blue-500',
-                              log.action === 'DELETE' && 'bg-destructive/20 text-destructive',
-                            )}
-                          >
-                            {log.action}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground uppercase">
-                          {log.tableName}
-                        </td>
-                        <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground">
-                          {log.recordId}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <button
-                            onClick={() => setSelectedLog(log)}
-                            className="p-1.5 hover:bg-primary/10 text-primary rounded-lg transition-all"
-                            title="Ver detalhes"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+        <AuditoriaTable
+          logs={auditLogs}
+          isLoading={loadingLogs}
+          onRefresh={() => refetchLogs()}
+          onSelect={setSelectedLog}
+        />
       )}
 
       {selectedLog && (
