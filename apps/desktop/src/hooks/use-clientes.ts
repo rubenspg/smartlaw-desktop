@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import { errorMessage } from '../lib/api-helpers';
+import { errorMessage, invalidateDashboard } from '../lib/api-helpers';
 import { ClienteInput } from '@smartlaw/shared';
 
 export function useClientes(filters: { q?: string; situacao?: string; page?: number; limit?: number }) {
@@ -47,6 +47,7 @@ export function useCreateCliente() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientes'] });
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -65,6 +66,7 @@ export function useUpdateCliente(id: number) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientes'] });
       queryClient.invalidateQueries({ queryKey: ['cliente', id] });
+      invalidateDashboard(queryClient);
     },
   });
 }
@@ -81,6 +83,7 @@ export function useDeleteCliente() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientes'] });
+      invalidateDashboard(queryClient);
     },
   });
 }

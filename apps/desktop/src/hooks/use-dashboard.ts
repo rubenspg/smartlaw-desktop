@@ -37,7 +37,10 @@ export function useResumoPendencias() {
       if (!res.ok) throw new Error('Falha ao buscar resumo de pendências');
       return (await res.json()) as ResumoPendencias;
     },
-    staleTime: 5 * 60_000,
+    staleTime: 60_000,
+    // Safety net so the counts self-heal even if a mutation forgets to
+    // invalidate ['dashboard']; mutations still invalidate for immediacy.
+    refetchInterval: 60_000,
   });
 }
 
