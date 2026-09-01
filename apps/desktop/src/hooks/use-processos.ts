@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { errorMessage } from '../lib/api-helpers';
 import { ProcessoJudicialInput, ProcessoAdministrativoInput, AndamentoInput } from '@smartlaw/shared';
 
 export function useCreateAndamento() {
@@ -7,7 +8,7 @@ export function useCreateAndamento() {
   return useMutation({
     mutationFn: async (data: AndamentoInput) => {
       const res = await api.processos.andamentos.$post({
-        json: data as any,
+        json: data,
       });
       if (!res.ok) throw new Error('Falha ao criar andamento');
       return res.json();
@@ -135,7 +136,7 @@ export function useCreateProcessoAdministrativo() {
   return useMutation({
     mutationFn: async (data: ProcessoAdministrativoInput) => {
       const res = await api.processos.administrativos.$post({
-        json: data as any,
+        json: data,
       });
       if (!res.ok) throw new Error('Falha ao criar processo administrativo');
       return res.json();
@@ -152,7 +153,7 @@ export function useUpdateProcessoAdministrativo(id: number) {
     mutationFn: async (data: ProcessoAdministrativoInput) => {
       const res = await api.processos.administrativos[':id'].$put({
         param: { id: id.toString() },
-        json: data as any,
+        json: data,
       });
       if (!res.ok) throw new Error('Falha ao atualizar processo administrativo');
       return res.json();
@@ -186,10 +187,7 @@ export function useDatajudSearch() {
       const res = await api.processos.judiciais.datajud.search.$post({
         json: { numero },
       });
-      if (!res.ok) {
-        const error = await res.json() as any;
-        throw new Error(error.error || 'Falha na busca do Datajud');
-      }
+      if (!res.ok) throw new Error(await errorMessage(res, 'Falha na busca do Datajud'));
       return res.json();
     },
   });
@@ -200,7 +198,7 @@ export function useCreateProcessoJudicial() {
   return useMutation({
     mutationFn: async (data: ProcessoJudicialInput) => {
       const res = await api.processos.judiciais.$post({
-        json: data as any,
+        json: data,
       });
       if (!res.ok) throw new Error('Falha ao criar processo judicial');
       return res.json();
@@ -217,7 +215,7 @@ export function useUpdateProcessoJudicial(id: number) {
     mutationFn: async (data: ProcessoJudicialInput) => {
       const res = await api.processos.judiciais[':id'].$put({
         param: { id: id.toString() },
-        json: data as any,
+        json: data,
       });
       if (!res.ok) throw new Error('Falha ao atualizar processo judicial');
       return res.json();
@@ -252,10 +250,7 @@ export function useSyncProcesso() {
       const res = await api.processos.judiciais[':id'].sync.$post({
         param: { id: id.toString() },
       });
-      if (!res.ok) {
-        const error = await res.json() as any;
-        throw new Error(error.error || 'Falha na sincronização');
-      }
+      if (!res.ok) throw new Error(await errorMessage(res, 'Falha na sincronização'));
       return res.json();
     },
     onSuccess: (_, id) => {

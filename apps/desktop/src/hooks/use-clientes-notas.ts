@@ -21,7 +21,7 @@ export function useCreateClienteNota() {
   return useMutation({
     mutationFn: async (data: ClienteNotaInput) => {
       const res = await api.clientes.notas.$post({
-        json: data as any,
+        json: data,
       });
       if (!res.ok) throw new Error('Falha ao criar nota');
       return res.json();

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { errorMessage } from '../lib/api-helpers';
 import { TarefaInput } from '@smartlaw/shared';
 
 export function useTarefas(filters: { status?: string; usuarioId?: string } = {}) {
@@ -37,12 +38,9 @@ export function useCreateTarefa() {
   return useMutation({
     mutationFn: async (data: TarefaInput) => {
       const res = await api.tarefas.$post({
-        json: data as any,
+        json: data,
       });
-      if (!res.ok) {
-        const errData = await res.json() as any;
-        throw new Error(errData.error || 'Falha ao criar tarefa');
-      }
+      if (!res.ok) throw new Error(await errorMessage(res, 'Falha ao criar tarefa'));
       return res.json();
     },
     onSuccess: () => {
@@ -57,12 +55,9 @@ export function useUpdateTarefa(id: number) {
     mutationFn: async (data: TarefaInput) => {
       const res = await api.tarefas[':id'].$put({
         param: { id: id.toString() },
-        json: data as any,
+        json: data,
       });
-      if (!res.ok) {
-        const errData = await res.json() as any;
-        throw new Error(errData.error || 'Falha ao atualizar tarefa');
-      }
+      if (!res.ok) throw new Error(await errorMessage(res, 'Falha ao atualizar tarefa'));
       return res.json();
     },
     onSuccess: () => {
@@ -78,12 +73,9 @@ export function useToggleTarefaStatus() {
     mutationFn: async ({ id, data }: { id: number; data: TarefaInput }) => {
       const res = await api.tarefas[':id'].$put({
         param: { id: id.toString() },
-        json: data as any,
+        json: data,
       });
-      if (!res.ok) {
-        const errData = await res.json() as any;
-        throw new Error(errData.error || 'Falha ao atualizar tarefa');
-      }
+      if (!res.ok) throw new Error(await errorMessage(res, 'Falha ao atualizar tarefa'));
       return res.json();
     },
     onSuccess: (_data, { id }) => {
@@ -100,10 +92,7 @@ export function useDeleteTarefa() {
       const res = await api.tarefas[':id'].$delete({
         param: { id: id.toString() },
       });
-      if (!res.ok) {
-        const errData = await res.json() as any;
-        throw new Error(errData.error || 'Falha ao excluir tarefa');
-      }
+      if (!res.ok) throw new Error(await errorMessage(res, 'Falha ao excluir tarefa'));
       return res.json();
     },
     onSuccess: () => {

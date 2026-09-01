@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import type { HonorarioInput, HonorarioSummary } from '@smartlaw/shared';
+import { errorMessage } from '../lib/api-helpers';
+import type { Honorario, HonorarioInput, HonorarioSummary } from '@smartlaw/shared';
 
 export function useHonorarios(filters: { status?: string; page?: number; limit?: number; month?: number; year?: number; clienteId?: number }) {
   return useQuery({
@@ -17,7 +18,7 @@ export function useHonorarios(filters: { status?: string; page?: number; limit?:
         },
       });
       if (!res.ok) throw new Error('Falha ao buscar honorários');
-      return (await res.json()) as any;
+      return (await res.json()) as Honorario[];
     },
   });
 }
@@ -43,11 +44,8 @@ export function useCreateHonorario() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: HonorarioInput) => {
-      const res = await api.honorarios.$post({ json: data as any });
-      if (!res.ok) {
-        const err = (await res.json()) as any;
-        throw new Error(err.error || 'Falha ao criar honorário');
-      }
+      const res = await api.honorarios.$post({ json: data });
+      if (!res.ok) throw new Error(await errorMessage(res, 'Falha ao criar honorário'));
       return res.json();
     },
     onSuccess: () => {
@@ -63,12 +61,9 @@ export function useUpdateHonorario() {
     mutationFn: async ({ id, data }: { id: number; data: HonorarioInput }) => {
       const res = await api.honorarios[':id'].$put({
         param: { id: id.toString() },
-        json: data as any,
+        json: data,
       });
-      if (!res.ok) {
-        const err = (await res.json()) as any;
-        throw new Error(err.error || 'Falha ao atualizar honorário');
-      }
+      if (!res.ok) throw new Error(await errorMessage(res, 'Falha ao atualizar honorário'));
       return res.json();
     },
     onSuccess: () => {
@@ -83,10 +78,7 @@ export function useDeleteHonorario() {
   return useMutation({
     mutationFn: async (id: number) => {
       const res = await api.honorarios[':id'].$delete({ param: { id: id.toString() } });
-      if (!res.ok) {
-        const err = (await res.json()) as any;
-        throw new Error(err.error || 'Falha ao excluir honorário');
-      }
+      if (!res.ok) throw new Error(await errorMessage(res, 'Falha ao excluir honorário'));
       return res.json();
     },
     onSuccess: () => {
