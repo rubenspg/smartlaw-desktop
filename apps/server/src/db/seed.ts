@@ -1,6 +1,7 @@
 import { db } from './index';
 import { firms, profiles, especiesProcesso, tiposAcao, ritosProcessuais, localizacoesProcesso, posicoesParte, municipios } from './schema';
 import bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
 import { parse } from 'csv-parse/sync';
 import fs from 'fs';
 import path from 'path';
@@ -65,8 +66,16 @@ async function seed() {
 
   console.log(`✅ Firm created: ${firm.nome} (${firm.id})`);
 
-  // 2. Create default admin
-  const passwordHash = await bcrypt.hash('changeme', 10);
+  // 2. Create default admin.
+  // Nunca use uma senha padrão fixa: contas admin de produção já ficaram
+  // acessíveis com a senha pública do repositório. Lê de SEED_ADMIN_PASSWORD;
+  // sem isso, gera uma aleatória e a imprime uma única vez.
+  const adminPassword =
+    process.env.SEED_ADMIN_PASSWORD || randomBytes(12).toString('base64url');
+  const passwordHash = await bcrypt.hash(adminPassword, 10);
+  if (!process.env.SEED_ADMIN_PASSWORD) {
+    console.log(`⚠️  Senha de admin gerada (anote agora, não será mostrada de novo): ${adminPassword}`);
+  }
   const [admin] = await db.insert(profiles).values({
     ...(process.env.NODE_ENV !== 'production' ? { id: '00000000-0000-0000-0000-000000000000' } : {}),
     nome: 'Admin',
@@ -76,10 +85,12 @@ async function seed() {
     firmId: firm.id,
   }).onConflictDoUpdate({
     target: profiles.email,
-    set: { nome: 'Admin', passwordHash, perfil: 'admin', firmId: firm.id }
+    // Não redefinir passwordHash aqui: re-seedar não deve sobrescrever a senha
+    // de um admin já existente (foi assim que a senha padrão persistiu em prod).
+    set: { nome: 'Admin', perfil: 'admin', firmId: firm.id }
   }).returning();
 
-  console.log(`✅ Admin created: ${admin.email}`);
+  console.log(`✅ Admin ready: ${admin.email}`);
 
   // 3. Seed municipios
   console.log('  Seeding municipios...');
