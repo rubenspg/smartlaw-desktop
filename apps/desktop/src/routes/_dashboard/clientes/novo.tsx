@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ClienteForm } from '@/components/shared/cliente-form';
 import { useCreateCliente } from '@/hooks/use-clientes';
+import { useToast } from '@/components/ui/toast';
 import { ClienteInput } from '@smartlaw/shared';
 
 export const Route = createFileRoute('/_dashboard/clientes/novo')({
@@ -12,6 +13,7 @@ export const Route = createFileRoute('/_dashboard/clientes/novo')({
 function NewClientePage() {
   const navigate = useNavigate();
   const createCliente = useCreateCliente();
+  const toast = useToast();
 
   const handleSubmit = async (data: ClienteInput) => {
     try {
@@ -19,7 +21,7 @@ function NewClientePage() {
       navigate({ to: '/clientes/$id', params: { id: result.id.toString() } });
     } catch (err: any) {
       console.error('Failed to create cliente:', err);
-      alert(err.message || 'Erro ao cadastrar cliente. Por favor, tente novamente.');
+      toast.error(err.message || 'Erro ao cadastrar cliente. Por favor, tente novamente.');
     }
   };
 

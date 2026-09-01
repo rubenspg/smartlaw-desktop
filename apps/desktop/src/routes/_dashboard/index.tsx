@@ -43,6 +43,7 @@ import { TarefaDetails } from '@/components/shared/tarefa-details';
 import { TarefaInput } from '@smartlaw/shared';
 import { Tarefa } from '@/lib/entities';
 import { useRegional } from '@/components/regional-provider';
+import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { openUrl } from '@tauri-apps/plugin-opener';
 
@@ -61,6 +62,7 @@ function HomeComponent() {
   const [confirmingTarefa, setConfirmingTarefa] = useState<Tarefa | undefined>(undefined);
 
   const { formatDate, t } = useRegional();
+  const toast = useToast();
   const { data: tarefas, isLoading: isLoadingTarefas } = useTarefas();
   const { data: andamentosRecentes, isLoading: isLoadingAndamentos, refetch: refetchAndamentos } = useAndamentosRecentes();
   const { data: pendencias } = useResumoPendencias();
@@ -142,7 +144,7 @@ function HomeComponent() {
       }
       setIsFormOpen(false);
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 

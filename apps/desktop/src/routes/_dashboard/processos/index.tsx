@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProcessosJudiciais, useProcessosAdministrativos, useSyncProcesso } from '@/hooks/use-processos';
+import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { openUrl } from '@tauri-apps/plugin-opener';
 
@@ -51,6 +52,7 @@ function ProcessosListPage() {
   const judiciais = judiciaisResult?.data;
   const administrativos = administrativosResult?.data;
   const syncProcesso = useSyncProcesso();
+  const toast = useToast();
 
   const handleWhatsApp = async (cliente: any) => {
     const numberToUse = cliente.celular || cliente.telefone1 || cliente.telefone2;
@@ -66,7 +68,7 @@ function ProcessosListPage() {
       await syncProcesso.mutateAsync(id);
     } catch (err: any) {
       console.error('Sync failed:', err);
-      alert(err.message || 'Falha na sincronização.');
+      toast.error(err.message || 'Falha na sincronização.');
     }
   };
 

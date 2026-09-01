@@ -28,6 +28,8 @@ import {
   useDeleteUsuario,
 } from '@/hooks/use-usuarios';
 import { useAuditLogs } from '@/hooks/use-audit-logs';
+import { useToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 export const Route = createFileRoute('/_dashboard/administrativo/')({
   component: AdministrativoPage,
@@ -38,6 +40,8 @@ type Tab = 'usuarios' | 'auditoria';
 function AdministrativoPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
+  const confirm = useConfirm();
   const isAdmin = user?.perfil === 'admin';
 
   useEffect(() => {
@@ -99,16 +103,16 @@ function AdministrativoPage() {
     try {
       await updateUsuario.mutateAsync({ id: u.id, data: { ativo: !u.ativo } });
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja remover permanentemente este usuário?')) return;
+    if (!(await confirm({ description: 'Tem certeza que deseja remover permanentemente este usuário?', destructive: true, confirmText: 'Remover' }))) return;
     try {
       await deleteUsuario.mutateAsync(id);
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -428,7 +432,7 @@ function AdministrativoPage() {
               await createUsuario.mutateAsync(data as UsuarioInput);
               setShowAddForm(false);
             } catch (err: any) {
-              alert(err.message);
+              toast.error(err.message);
             }
           }}
           isSubmitting={createUsuario.isPending}
@@ -447,7 +451,7 @@ function AdministrativoPage() {
               });
               setEditingUsuario(null);
             } catch (err: any) {
-              alert(err.message);
+              toast.error(err.message);
             }
           }}
           isSubmitting={updateUsuario.isPending}

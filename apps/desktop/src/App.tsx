@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './lib/auth';
 import { ThemeProvider } from './components/theme-provider';
 import { RegionalProvider } from './components/regional-provider';
+import { ToastProvider } from './components/ui/toast';
+import { ConfirmDialogProvider } from './components/ui/confirm-dialog';
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen';
@@ -43,9 +45,13 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="smartlaw_theme">
         <RegionalProvider>
-          <AuthProvider>
-            <InnerApp />
-          </AuthProvider>
+          <ToastProvider>
+            <ConfirmDialogProvider>
+              <AuthProvider>
+                <InnerApp />
+              </AuthProvider>
+            </ConfirmDialogProvider>
+          </ToastProvider>
         </RegionalProvider>
       </ThemeProvider>
     </QueryClientProvider>

@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { type Tarefa } from '@/lib/entities';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 
 interface TarefaDetailsProps {
@@ -23,6 +24,7 @@ interface TarefaDetailsProps {
 }
 
 export function TarefaDetails({ tarefa, onEdit, onDelete, onClose }: TarefaDetailsProps) {
+  const confirm = useConfirm();
   const getPriorityColor = (p: string | null) => {
     switch (p) {
       case 'ALTA': return 'bg-red-500/10 text-red-600 border-red-200';
@@ -133,7 +135,11 @@ export function TarefaDetails({ tarefa, onEdit, onDelete, onClose }: TarefaDetai
         </Button>
         <Button 
           variant="outline" 
-          onClick={() => confirm('Deseja excluir este compromisso?') && onDelete(tarefa.id)}
+          onClick={async () => {
+            if (await confirm({ description: 'Deseja excluir este compromisso?', destructive: true, confirmText: 'Excluir' })) {
+              onDelete(tarefa.id);
+            }
+          }}
           className="rounded-xl h-11 px-4 text-destructive hover:bg-destructive/10 hover:text-destructive border-border/60"
         >
           <Trash2 className="w-4 h-4" />
