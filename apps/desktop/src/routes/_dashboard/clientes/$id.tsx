@@ -50,8 +50,10 @@ function ClienteDetailPage() {
 
   const { data: cliente, isLoading, isError } = useCliente(clienteId);
   const { data: notas, isLoading: isLoadingNotas } = useClientesNotas(clienteId);
-  const { data: processosJudiciais, isLoading: isLoadingJudiciais } = useProcessosJudiciaisByCliente(clienteId);
-  const { data: processosAdministrativos, isLoading: isLoadingAdm } = useProcessosAdministrativosByCliente(clienteId);
+  const { data: judiciaisResult, isLoading: isLoadingJudiciais } = useProcessosJudiciaisByCliente(clienteId);
+  const { data: administrativosResult, isLoading: isLoadingAdm } = useProcessosAdministrativosByCliente(clienteId);
+  const processosJudiciais = judiciaisResult?.data;
+  const processosAdministrativos = administrativosResult?.data;
   
   const createNota = useCreateClienteNota();
   const deleteNota = useDeleteClienteNota(clienteId);
