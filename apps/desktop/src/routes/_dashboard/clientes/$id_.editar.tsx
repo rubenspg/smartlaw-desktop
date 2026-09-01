@@ -3,6 +3,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ClienteForm } from '@/components/shared/cliente-form';
 import { useCliente, useUpdateCliente } from '@/hooks/use-clientes';
+import { useToast } from '@/components/ui/toast';
 import { ClienteInput } from '@smartlaw/shared';
 
 export const Route = createFileRoute('/_dashboard/clientes/$id_/editar')({
@@ -16,6 +17,7 @@ function EditClientePage() {
 
   const { data: cliente, isLoading, isError } = useCliente(clienteId);
   const updateCliente = useUpdateCliente(clienteId);
+  const toast = useToast();
 
   const handleSubmit = async (data: ClienteInput) => {
     try {
@@ -23,7 +25,7 @@ function EditClientePage() {
       navigate({ to: '/clientes/$id', params: { id } });
     } catch (err: any) {
       console.error('Failed to update cliente:', err);
-      alert(err.message || 'Erro ao atualizar cliente. Por favor, tente novamente.');
+      toast.error(err.message || 'Erro ao atualizar cliente. Por favor, tente novamente.');
     }
   };
 

@@ -55,6 +55,8 @@ import {
 import { useClientes } from '@/hooks/use-clientes';
 import { useAuth } from '@/lib/auth';
 import { useRegional } from '@/components/regional-provider';
+import { useToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/financeiro/')({
@@ -67,6 +69,8 @@ function FinanceiroPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { formatCurrency, formatDate } = useRegional();
+  const toast = useToast();
+  const confirm = useConfirm();
 
   useEffect(() => {
     if (user?.perfil === 'usuario' || user?.perfil === 'secretaria') {
@@ -130,17 +134,17 @@ function FinanceiroPage() {
   };
 
   const handleDelete = async (h: Honorario) => {
-    if (!confirm(`Excluir o lançamento "${h.descricao}"?`)) return;
+    if (!(await confirm({ description: `Excluir o lançamento "${h.descricao}"?`, destructive: true, confirmText: 'Excluir' }))) return;
     try {
       await deleteHonorario.mutateAsync(h.id);
     } catch (err: any) {
       console.error('Action error:', err);
-      alert(err.message || 'Erro inesperado ao realizar operação');
+      toast.error(err.message || 'Erro inesperado ao realizar operação');
     }
   };
 
   const handleQuitar = async (h: Honorario) => {
-    if (!confirm(`Marcar o lançamento "${h.descricao}" como PAGO?`)) return;
+    if (!(await confirm({ description: `Marcar o lançamento "${h.descricao}" como PAGO?`, confirmText: 'Marcar como pago' }))) return;
     try {
       await updateHonorario.mutateAsync({
         id: h.id,
@@ -160,7 +164,7 @@ function FinanceiroPage() {
       });
     } catch (err: any) {
       console.error('Action error:', err);
-      alert(err.message || 'Erro inesperado ao realizar operação');
+      toast.error(err.message || 'Erro inesperado ao realizar operação');
     }
   };
 
@@ -174,7 +178,7 @@ function FinanceiroPage() {
       setDialogOpen(false);
     } catch (err: any) {
       console.error('Action error:', err);
-      alert(err.message || 'Erro inesperado ao realizar operação');
+      toast.error(err.message || 'Erro inesperado ao realizar operação');
     }
   };
 

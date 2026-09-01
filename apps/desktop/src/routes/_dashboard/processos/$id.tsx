@@ -29,6 +29,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useProcessoJudicial, useSyncProcesso, useDeleteProcessoJudicial, useCreateAndamento, useDeleteAndamento } from '@/hooks/use-processos';
 import { cn } from '@/lib/utils';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { useToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 export const Route = createFileRoute('/_dashboard/processos/$id')({
   component: ProcessoDetailPage,
@@ -44,6 +46,8 @@ function ProcessoDetailPage() {
   const deleteMutation = useDeleteProcessoJudicial();
   const createAndamento = useCreateAndamento();
   const deleteAndamento = useDeleteAndamento(procId, 'judicial');
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const [novoAndamento, setNovoAndamento] = useState('');
 
@@ -60,14 +64,14 @@ function ProcessoDetailPage() {
       });
       setNovoAndamento('');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
   const handleWhatsApp = async () => {
     const celular = processo?.cliente?.celular;
     if (!celular) {
-      alert('Cliente não possui celular cadastrado');
+      toast.error('Cliente não possui celular cadastrado');
       return;
     }
 
@@ -85,7 +89,7 @@ function ProcessoDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (confirm('Tem certeza que deseja excluir este processo?')) {
+    if (await confirm({ description: 'Tem certeza que deseja excluir este processo?', destructive: true, confirmText: 'Excluir' })) {
       try {
         await deleteMutation.mutateAsync(procId);
         navigate({ to: '/processos' });
@@ -307,7 +311,11 @@ function ProcessoDetailPage() {
                               variant="ghost" 
                               size="icon" 
                               className="h-7 w-7 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
-                              onClick={() => confirm('Excluir este andamento?') && deleteAndamento.mutate(andamento.id)}
+                              onClick={async () => {
+                                if (await confirm({ description: 'Excluir este andamento?', destructive: true, confirmText: 'Excluir' })) {
+                                  deleteAndamento.mutate(andamento.id);
+                                }
+                              }}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>

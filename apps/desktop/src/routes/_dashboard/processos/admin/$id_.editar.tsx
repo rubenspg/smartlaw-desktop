@@ -3,6 +3,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProcessoAdminForm } from '@/components/shared/processo-admin-form';
 import { useProcessoAdministrativo, useUpdateProcessoAdministrativo } from '@/hooks/use-processos';
+import { useToast } from '@/components/ui/toast';
 import { ProcessoAdministrativoInput } from '@smartlaw/shared';
 
 export const Route = createFileRoute('/_dashboard/processos/admin/$id_/editar')({
@@ -16,6 +17,7 @@ function EditProcessoAdminPage() {
 
   const { data: processo, isLoading, isError } = useProcessoAdministrativo(procId);
   const updateProcesso = useUpdateProcessoAdministrativo(procId);
+  const toast = useToast();
 
   const handleSubmit = async (data: ProcessoAdministrativoInput) => {
     try {
@@ -23,7 +25,7 @@ function EditProcessoAdminPage() {
       navigate({ to: '/processos' }); // Redirect to list for now
     } catch (err) {
       console.error('Failed to update processo:', err);
-      alert('Erro ao atualizar processo. Por favor, tente novamente.');
+      toast.error('Erro ao atualizar processo. Por favor, tente novamente.');
     }
   };
 

@@ -35,6 +35,8 @@ import { useCliente, useDeleteCliente } from '@/hooks/use-clientes';
 import { useClientesNotas, useCreateClienteNota, useDeleteClienteNota } from '@/hooks/use-clientes-notas';
 import { useProcessosJudiciaisByCliente, useProcessosAdministrativosByCliente } from '@/hooks/use-processos';
 import { useRegional } from '@/components/regional-provider';
+import { useToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 import { openUrl } from '@tauri-apps/plugin-opener';
 
@@ -58,13 +60,15 @@ function ClienteDetailPage() {
   const createNota = useCreateClienteNota();
   const deleteNota = useDeleteClienteNota(clienteId);
   const deleteCliente = useDeleteCliente();
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const [novaNota, setNovaNota] = useState('');
 
   const handleWhatsApp = async () => {
     const numberToUse = cliente?.celular || cliente?.telefone1 || cliente?.telefone2;
     if (!numberToUse) {
-      alert('Cliente não possui telefone cadastrado');
+      toast.error('Cliente não possui telefone cadastrado');
       return;
     }
 
@@ -85,13 +89,13 @@ function ClienteDetailPage() {
   };
 
   const handleDeleteCliente = async () => {
-    if (confirm('Tem certeza que deseja excluir este cliente?')) {
+    if (await confirm({ description: 'Tem certeza que deseja excluir este cliente?', destructive: true, confirmText: 'Excluir' })) {
       try {
         await deleteCliente.mutateAsync(clienteId);
         navigate({ to: '/clientes' });
       } catch (err: any) {
         console.error('Failed to delete cliente:', err);
-        alert(err.message || 'Erro ao excluir cliente.');
+        toast.error(err.message || 'Erro ao excluir cliente.');
       }
     }
   };
@@ -280,7 +284,11 @@ function ClienteDetailPage() {
                             variant="ghost" 
                             size="icon" 
                             className="h-7 w-7 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
-                            onClick={() => confirm('Excluir esta nota?') && deleteNota.mutate(nota.id)}
+                            onClick={async () => {
+                              if (await confirm({ description: 'Excluir esta nota?', destructive: true, confirmText: 'Excluir' })) {
+                                deleteNota.mutate(nota.id);
+                              }
+                            }}
                           >
                             <Trash className="w-3.5 h-3.5" />
                           </Button>

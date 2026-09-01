@@ -22,6 +22,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useProcessoAdministrativo, useDeleteProcessoAdministrativo, useCreateAndamento, useDeleteAndamento } from '@/hooks/use-processos';
+import { useToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_dashboard/processos/admin/$id')({
@@ -37,6 +39,8 @@ function ProcessoAdminDetailPage() {
   const deleteProcesso = useDeleteProcessoAdministrativo();
   const createAndamento = useCreateAndamento();
   const deleteAndamento = useDeleteAndamento(procId, 'admin');
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const [novoAndamento, setNovoAndamento] = useState('');
 
@@ -53,12 +57,12 @@ function ProcessoAdminDetailPage() {
       });
       setNovoAndamento('');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
   const handleDelete = async () => {
-    if (confirm('Tem certeza que deseja excluir este processo administrativo?')) {
+    if (await confirm({ description: 'Tem certeza que deseja excluir este processo administrativo?', destructive: true, confirmText: 'Excluir' })) {
       await deleteProcesso.mutateAsync(procId);
       navigate({ to: '/processos' });
     }
@@ -231,7 +235,11 @@ function ProcessoAdminDetailPage() {
                           variant="ghost" 
                           size="icon" 
                           className="h-7 w-7 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => confirm('Excluir este andamento?') && deleteAndamento.mutate(andamento.id)}
+                          onClick={async () => {
+                            if (await confirm({ description: 'Excluir este andamento?', destructive: true, confirmText: 'Excluir' })) {
+                              deleteAndamento.mutate(andamento.id);
+                            }
+                          }}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>

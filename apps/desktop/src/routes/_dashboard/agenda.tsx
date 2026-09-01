@@ -42,6 +42,8 @@ import { TarefaForm } from '@/components/shared/tarefa-form';
 import { TarefaDetails } from '@/components/shared/tarefa-details';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { type TarefaInput } from '@smartlaw/shared';
+import { useToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { type Tarefa } from '@/lib/entities';
 import { Separator } from '@/components/ui/separator';
 
@@ -73,6 +75,8 @@ function AgendaPage() {
   const updateTarefa = useUpdateTarefa(editingTarefa?.id || 0);
   const toggleStatus = useToggleTarefaStatus();
   const deleteTarefa = useDeleteTarefa();
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const handlePrev = () => {
     if (viewMode === 'month') setCurrentDate(subMonths(currentDate, 1));
@@ -121,7 +125,7 @@ function AgendaPage() {
       }
       setIsFormOpen(false);
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -524,7 +528,11 @@ function AgendaPage() {
                   variant="ghost" 
                   size="sm" 
                   className="text-destructive hover:bg-destructive/10 font-bold uppercase text-[10px] tracking-widest rounded-xl px-6"
-                  onClick={() => confirm('Excluir este compromisso permanentemente?') && deleteTarefa.mutate(editingTarefa.id)}
+                  onClick={async () => {
+                    if (await confirm({ description: 'Excluir este compromisso permanentemente?', destructive: true, confirmText: 'Excluir' })) {
+                      deleteTarefa.mutate(editingTarefa.id);
+                    }
+                  }}
                 >
                    Apagar permanentemente
                 </Button>

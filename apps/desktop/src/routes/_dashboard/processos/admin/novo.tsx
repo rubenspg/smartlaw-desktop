@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProcessoAdminForm } from '@/components/shared/processo-admin-form';
 import { useCreateProcessoAdministrativo } from '@/hooks/use-processos';
+import { useToast } from '@/components/ui/toast';
 import { ProcessoAdministrativoInput } from '@smartlaw/shared';
 
 export const Route = createFileRoute('/_dashboard/processos/admin/novo')({
@@ -12,6 +13,7 @@ export const Route = createFileRoute('/_dashboard/processos/admin/novo')({
 function NewProcessoAdminPage() {
   const navigate = useNavigate();
   const createProcesso = useCreateProcessoAdministrativo();
+  const toast = useToast();
 
   const handleSubmit = async (data: ProcessoAdministrativoInput) => {
     try {
@@ -19,7 +21,7 @@ function NewProcessoAdminPage() {
       navigate({ to: '/processos' }); // Redirect to list for now
     } catch (err) {
       console.error('Failed to create processo:', err);
-      alert('Erro ao cadastrar processo. Por favor, tente novamente.');
+      toast.error('Erro ao cadastrar processo. Por favor, tente novamente.');
     }
   };
 

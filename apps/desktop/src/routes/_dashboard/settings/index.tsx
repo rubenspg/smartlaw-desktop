@@ -29,6 +29,7 @@ import { api } from '@/lib/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '@/components/theme-provider';
 import { useRegional } from '@/components/regional-provider';
+import { useToast } from '@/components/ui/toast';
 
 export const Route = createFileRoute('/_dashboard/settings/')({
   component: SettingsPage,
@@ -39,6 +40,7 @@ function SettingsPage() {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const { t } = useRegional();
+  const toast = useToast();
   const queryClient = useQueryClient();
 
   // Connection Settings
@@ -86,7 +88,7 @@ function SettingsPage() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        alert('A imagem é muito grande! O limite é 2MB.');
+        toast.error('A imagem é muito grande! O limite é 2MB.');
         return;
       }
       const reader = new FileReader();
@@ -94,7 +96,7 @@ function SettingsPage() {
         setFirmLogo(reader.result as string);
       };
       reader.onerror = () => {
-        alert('Erro ao ler o arquivo da imagem.');
+        toast.error('Erro ao ler o arquivo da imagem.');
       };
       reader.readAsDataURL(file);
     }
@@ -111,11 +113,11 @@ function SettingsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['firm'] });
-      alert('Dados do escritório atualizados com sucesso!');
+      toast.success('Dados do escritório atualizados com sucesso!');
     },
     onError: (err: any) => {
       console.error('Erro na mutação updateFirm:', err);
-      alert(`Erro: ${err.message}`);
+      toast.error(`Erro: ${err.message}`);
     }
   });
   
@@ -124,7 +126,7 @@ function SettingsPage() {
 
     localStorage.setItem('smartlaw_server_url', serverUrl);
 
-    alert('Configurações gerais salvas!');
+    toast.success('Configurações gerais salvas!');
 
     if (serverUrl !== oldServerUrl) {
       window.location.reload();
@@ -133,7 +135,7 @@ function SettingsPage() {
 
   const handleSaveProfile = async () => {
     if (newPassword && newPassword !== confirmPassword) {
-      alert('As senhas não coincidem!');
+      toast.error('As senhas não coincidem!');
       return;
     }
 
@@ -153,7 +155,7 @@ function SettingsPage() {
       });
 
       if (res.ok) {
-        alert('Perfil atualizado com sucesso!');
+        toast.success('Perfil atualizado com sucesso!');
         setNewPassword('');
         setConfirmPassword('');
       } else {
@@ -165,11 +167,11 @@ function SettingsPage() {
           const text = await res.text().catch(() => '');
           errorMessage = `Erro ${res.status}: ${text || 'Resposta inválida do servidor'}`;
         }
-        alert(`Erro: ${errorMessage}`);
+        toast.error(`Erro: ${errorMessage}`);
       }
     } catch (error) {
       console.error('Erro de conexão:', error);
-      alert('Erro ao conectar com o servidor. Verifique sua internet e a URL do servidor nas configurações.');
+      toast.error('Erro ao conectar com o servidor. Verifique sua internet e a URL do servidor nas configurações.');
     }
   };
 
