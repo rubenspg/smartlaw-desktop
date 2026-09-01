@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { errorMessage } from '../lib/api-helpers';
 import { ClienteInput } from '@smartlaw/shared';
 
 export function useClientes(filters: { q?: string; situacao?: string; page?: number; limit?: number }) {
@@ -39,12 +40,9 @@ export function useCreateCliente() {
   return useMutation({
     mutationFn: async (data: ClienteInput) => {
       const res = await api.clientes.$post({
-        json: data as any,
+        json: data,
       });
-      if (!res.ok) {
-        const errData = await res.json() as any;
-        throw new Error(errData.error || 'Falha ao criar cliente');
-      }
+      if (!res.ok) throw new Error(await errorMessage(res, 'Falha ao criar cliente'));
       return res.json();
     },
     onSuccess: () => {
@@ -59,12 +57,9 @@ export function useUpdateCliente(id: number) {
     mutationFn: async (data: ClienteInput) => {
       const res = await api.clientes[':id'].$put({
         param: { id: id.toString() },
-        json: data as any,
+        json: data,
       });
-      if (!res.ok) {
-        const errData = await res.json() as any;
-        throw new Error(errData.error || 'Falha ao atualizar cliente');
-      }
+      if (!res.ok) throw new Error(await errorMessage(res, 'Falha ao atualizar cliente'));
       return res.json();
     },
     onSuccess: () => {
@@ -81,10 +76,7 @@ export function useDeleteCliente() {
       const res = await api.clientes[':id'].$delete({
         param: { id: id.toString() },
       });
-      if (!res.ok) {
-        const errData = await res.json() as any;
-        throw new Error(errData.error || 'Falha ao excluir cliente');
-      }
+      if (!res.ok) throw new Error(await errorMessage(res, 'Falha ao excluir cliente'));
       return res.json();
     },
     onSuccess: () => {

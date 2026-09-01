@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { errorMessage } from '../lib/api-helpers';
 import type { Usuario, UsuarioInput, UsuarioUpdateInput } from '@smartlaw/shared';
 
 export function useUsuarios() {
@@ -17,11 +18,8 @@ export function useCreateUsuario() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: UsuarioInput) => {
-      const res = await api.usuarios.$post({ json: data as any });
-      if (!res.ok) {
-        const err = (await res.json()) as any;
-        throw new Error(err.error || 'Falha ao criar usuário');
-      }
+      const res = await api.usuarios.$post({ json: data });
+      if (!res.ok) throw new Error(await errorMessage(res, 'Falha ao criar usuário'));
       return (await res.json()) as Usuario;
     },
     onSuccess: () => {
@@ -36,12 +34,9 @@ export function useUpdateUsuario() {
     mutationFn: async ({ id, data }: { id: string; data: UsuarioUpdateInput }) => {
       const res = await api.usuarios[':id'].$patch({
         param: { id },
-        json: data as any,
+        json: data,
       });
-      if (!res.ok) {
-        const err = (await res.json()) as any;
-        throw new Error(err.error || 'Falha ao atualizar usuário');
-      }
+      if (!res.ok) throw new Error(await errorMessage(res, 'Falha ao atualizar usuário'));
       return (await res.json()) as Usuario;
     },
     onSuccess: () => {
@@ -55,10 +50,7 @@ export function useDeleteUsuario() {
   return useMutation({
     mutationFn: async (id: string) => {
       const res = await api.usuarios[':id'].$delete({ param: { id } });
-      if (!res.ok) {
-        const err = (await res.json()) as any;
-        throw new Error(err.error || 'Falha ao remover usuário');
-      }
+      if (!res.ok) throw new Error(await errorMessage(res, 'Falha ao remover usuário'));
       return res.json();
     },
     onSuccess: () => {
