@@ -2,6 +2,7 @@ import { db } from '../apps/server/src/db';
 import { firms, profiles, clientes, processosJudiciais, tarefas, andamentos } from '../apps/server/src/db/schema';
 import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
 
 async function fullSeed() {
   console.log('🚀 Gerando massa de dados completa...');
@@ -12,7 +13,11 @@ async function fullSeed() {
     return;
   }
 
-  const passwordHash = await bcrypt.hash('changeme', 10);
+  // Massa de dados de desenvolvimento (contas .local). Ainda assim, sem senha
+  // padrão fixa: lê de SEED_ADMIN_PASSWORD ou gera uma aleatória.
+  const seedPassword =
+    process.env.SEED_ADMIN_PASSWORD || randomBytes(12).toString('base64url');
+  const passwordHash = await bcrypt.hash(seedPassword, 10);
 
   // 1. Criar Usuários
   const usersToCreate = [
@@ -31,7 +36,10 @@ async function fullSeed() {
       ativo: true,
     }).onConflictDoNothing();
   }
-  console.log('✅ Usuários criados (Senha padrão: changeme)');
+  console.log('✅ Usuários criados');
+  if (!process.env.SEED_ADMIN_PASSWORD) {
+    console.log(`⚠️  Senha gerada para os usuários de seed (anote agora): ${seedPassword}`);
+  }
 
   // 2. Criar Vários Clientes
   const nomesClientes = [
@@ -105,7 +113,7 @@ async function fullSeed() {
   console.log('✅ 5 Tarefas criadas para o Mateus');
 
   console.log('\n✨ Massa de dados pronta!');
-  console.log('LOGINS DISPONÍVEIS (Senha: changeme):');
+  console.log('LOGINS DISPONÍVEIS (senha definida acima):');
   console.log('- mateus@smartlaw.local (Advogado)');
   console.log('- rubens@smartlaw.local (Admin)');
   console.log('- apoio@smartlaw.local (Administrativo)');
