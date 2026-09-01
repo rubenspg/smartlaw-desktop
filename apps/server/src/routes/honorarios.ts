@@ -6,7 +6,7 @@ import { authMiddleware, Variables } from '../middleware/auth';
 import { PERFIS_FINANCEIRO, requirePerfil } from '../middleware/perfil';
 import { honorarioSchema, type HonorarioSummary } from '@smartlaw/shared';
 import { zValidator } from '@hono/zod-validator';
-import { parseIdParam } from '../utils';
+import { parseIdParam, parsePageParams, paginated } from '../utils';
 
 // Todo o módulo financeiro é restrito aos mesmos perfis.
 const honorariosRoutes = new Hono<{ Variables: Variables }>()
@@ -57,11 +57,8 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
 
   .get('/', async (c) => {
     const user = c.get('user');
-    const { status, page = '1', limit = '10', month, year, clienteId } = c.req.query();
-
-    const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.max(1, parseInt(limit) || 10);
-    const offset = (pageNum - 1) * limitNum;
+    const { status, page: pageParam, limit: limitParam, month, year, clienteId } = c.req.query();
+    const { page, limit, offset } = parsePageParams(pageParam, limitParam);
 
     const where = [eq(honorarios.firmId, user.firmId)];
     if (status) where.push(eq(honorarios.status, status));
@@ -76,6 +73,11 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
       where.push(sql`EXTRACT(MONTH FROM ${honorarios.dataVenc}) = ${now.getMonth() + 1}`);
       where.push(sql`EXTRACT(YEAR FROM ${honorarios.dataVenc}) = ${now.getFullYear()}`);
     }
+
+    const [totalRow] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(honorarios)
+      .where(and(...where));
 
     const data = await db
       .select({
@@ -109,11 +111,11 @@ const honorariosRoutes = new Hono<{ Variables: Variables }>()
       .leftJoin(processosJudiciais, eq(honorarios.processoJudicialId, processosJudiciais.id))
       .leftJoin(processosAdministrativos, eq(honorarios.processoAdminId, processosAdministrativos.id))
       .where(and(...where))
-      .limit(limitNum)
+      .limit(limit)
       .offset(offset)
       .orderBy(desc(honorarios.dataVenc));
 
-    return c.json(data);
+    return c.json(paginated(data, Number(totalRow?.count ?? 0), page, limit));
   })
 
   .get('/:id', async (c) => {

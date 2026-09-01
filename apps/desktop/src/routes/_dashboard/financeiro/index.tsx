@@ -83,12 +83,13 @@ function FinanceiroPage() {
 
   const isAdmin = user?.perfil === 'admin';
 
-  const { data: honorarios, isLoading } = useHonorarios({
+  const { data: honorariosResult, isLoading } = useHonorarios({
     status: status === 'all' ? undefined : status,
     limit: 100,
     month: selectedMonth,
     year: selectedYear,
   });
+  const honorarios = honorariosResult?.data;
 
   const { data: summary } = useHonorarioSummary({
     month: selectedMonth,

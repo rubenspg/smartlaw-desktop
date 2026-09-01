@@ -46,8 +46,10 @@ function ProcessosListPage() {
   const [page, setPage] = useState(1);
   const limit = 10;
 
-  const { data: judiciais, isLoading: loadingJud, isError: errorJud } = useProcessosJudiciais({ q, page, limit });
-  const { data: administrativos, isLoading: loadingAdm, isError: errorAdm } = useProcessosAdministrativos({ q, page, limit });
+  const { data: judiciaisResult, isLoading: loadingJud, isError: errorJud } = useProcessosJudiciais({ q, page, limit });
+  const { data: administrativosResult, isLoading: loadingAdm, isError: errorAdm } = useProcessosAdministrativos({ q, page, limit });
+  const judiciais = judiciaisResult?.data;
+  const administrativos = administrativosResult?.data;
   const syncProcesso = useSyncProcesso();
 
   const handleWhatsApp = async (cliente: any) => {

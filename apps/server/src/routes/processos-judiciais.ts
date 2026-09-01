@@ -8,7 +8,7 @@ import { ComparisonService } from '../services/ComparisonService';
 import { processoJudicialSchema } from '@smartlaw/shared';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { parseIdParam } from '../utils';
+import { parseIdParam, parsePageParams, paginated } from '../utils';
 
 const querySchema = z.object({
   q: z.string().optional(),
@@ -22,76 +22,60 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
   
   .get('/', zValidator('query', querySchema), async (c) => {
     const user = c.get('user');
-    const { q, page = '1', limit = '10', clienteId } = c.req.valid('query');
+    const { q, page: pageParam, limit: limitParam, clienteId } = c.req.valid('query');
+    const { page, limit, offset } = parsePageParams(pageParam, limitParam);
 
-    const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.max(1, parseInt(limit) || 10);
-    const offset = (pageNum - 1) * limitNum;
+    // Single shape for the list regardless of whether a search term is present:
+    // a narrow projection plus the client fields the list and WhatsApp action use.
+    const where = [eq(processosJudiciais.firmId, user.firmId)];
 
-    // Use .select() when q is provided to support searching by client name
     if (q) {
       const cleanQ = q.replace(/\D/g, '');
-      const where = [eq(processosJudiciais.firmId, user.firmId)];
-      
       const searchConditions = [
         ilike(processosJudiciais.numero, `%${q}%`),
-        ilike(clientes.nome, `%${q}%`)
+        ilike(clientes.nome, `%${q}%`),
       ];
-
       if (cleanQ.length > 0) {
         searchConditions.push(sql`REPLACE(REPLACE(${processosJudiciais.numero}, '.', ''), '-', '') ILIKE ${`%${cleanQ}%`}`);
       }
-
       where.push(or(...searchConditions)!);
-
-      if (clienteId) {
-        where.push(eq(processosJudiciais.clienteId, parseInt(clienteId)));
-      }
-
-      const data = await db
-        .select({
-          id: processosJudiciais.id,
-          numero: processosJudiciais.numero,
-          situacao: processosJudiciais.situacao,
-          lastSync: processosJudiciais.lastSync,
-          syncStatus: processosJudiciais.syncStatus,
-          createdAt: processosJudiciais.createdAt,
-          cliente: {
-            id: clientes.id,
-            nome: clientes.nome,
-            celular: clientes.celular,
-            telefone1: clientes.telefone1,
-            telefone2: clientes.telefone2,
-          }
-        })
-        .from(processosJudiciais)
-        .leftJoin(clientes, eq(processosJudiciais.clienteId, clientes.id))
-        .where(and(...where))
-        .limit(limitNum)
-        .offset(offset)
-        .orderBy(desc(processosJudiciais.createdAt));
-
-      return c.json(data);
     }
 
-    // Use db.query for cleaner relation handling when no complex search is needed
-    const data = await db.query.processosJudiciais.findMany({
-      where: (processos, { eq, and }) => {
-        const conditions = [eq(processos.firmId, user.firmId)];
-        if (clienteId) {
-          conditions.push(eq(processos.clienteId, parseInt(clienteId)));
-        }
-        return and(...conditions);
-      },
-      with: {
-        cliente: true,
-      },
-      limit: limitNum,
-      offset: offset,
-      orderBy: [desc(processosJudiciais.createdAt)],
-    });
+    if (clienteId) {
+      where.push(eq(processosJudiciais.clienteId, parseInt(clienteId)));
+    }
 
-    return c.json(data);
+    const [totalRow] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(processosJudiciais)
+      .leftJoin(clientes, eq(processosJudiciais.clienteId, clientes.id))
+      .where(and(...where));
+
+    const data = await db
+      .select({
+        id: processosJudiciais.id,
+        clienteId: processosJudiciais.clienteId,
+        numero: processosJudiciais.numero,
+        situacao: processosJudiciais.situacao,
+        lastSync: processosJudiciais.lastSync,
+        syncStatus: processosJudiciais.syncStatus,
+        createdAt: processosJudiciais.createdAt,
+        cliente: {
+          id: clientes.id,
+          nome: clientes.nome,
+          celular: clientes.celular,
+          telefone1: clientes.telefone1,
+          telefone2: clientes.telefone2,
+        },
+      })
+      .from(processosJudiciais)
+      .leftJoin(clientes, eq(processosJudiciais.clienteId, clientes.id))
+      .where(and(...where))
+      .limit(limit)
+      .offset(offset)
+      .orderBy(desc(processosJudiciais.createdAt));
+
+    return c.json(paginated(data, Number(totalRow?.count ?? 0), page, limit));
   })
 
   .get('/:id', async (c) => {
