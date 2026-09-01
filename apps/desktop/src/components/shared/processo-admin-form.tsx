@@ -1,6 +1,7 @@
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { processoAdministrativoSchema, ProcessoAdministrativoInput, ProcessoAdministrativo } from '@smartlaw/shared';
+import { processoAdministrativoSchema, ProcessoAdministrativoInput } from '@smartlaw/shared';
+import { ProcessoAdministrativo } from '@/lib/entities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

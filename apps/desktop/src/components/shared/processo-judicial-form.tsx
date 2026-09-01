@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { processoJudicialSchema, ProcessoJudicialInput, ProcessoJudicial } from '@smartlaw/shared';
+import { processoJudicialSchema, ProcessoJudicialInput } from '@smartlaw/shared';
+import { ProcessoJudicial } from '@/lib/entities';
 import { useRouter } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

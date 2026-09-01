@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import type { AuditLog } from '@smartlaw/shared';
+import type { AuditLog } from '../lib/entities';
 
 export function useAuditLogs(filters: { q?: string; enabled?: boolean } = {}) {
   return useQuery({

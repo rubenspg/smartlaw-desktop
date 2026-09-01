@@ -41,7 +41,8 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/compone
 import { TarefaForm } from '@/components/shared/tarefa-form';
 import { TarefaDetails } from '@/components/shared/tarefa-details';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { type Tarefa, type TarefaInput } from '@smartlaw/shared';
+import { type TarefaInput } from '@smartlaw/shared';
+import { type Tarefa } from '@/lib/entities';
 import { Separator } from '@/components/ui/separator';
 
 export const Route = createFileRoute('/_dashboard/agenda')({

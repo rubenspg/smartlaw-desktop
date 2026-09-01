@@ -40,7 +40,8 @@ import { useAndamentosRecentes, useResumoPendencias, useResumoIA } from '@/hooks
 import { Eye } from 'lucide-react';
 import { TarefaForm } from '@/components/shared/tarefa-form';
 import { TarefaDetails } from '@/components/shared/tarefa-details';
-import { Tarefa, TarefaInput } from '@smartlaw/shared';
+import { TarefaInput } from '@smartlaw/shared';
+import { Tarefa } from '@/lib/entities';
 import { useRegional } from '@/components/regional-provider';
 import { cn } from '@/lib/utils';
 import { openUrl } from '@tauri-apps/plugin-opener';

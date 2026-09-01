@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { tarefaSchema, TarefaInput, Tarefa } from '@smartlaw/shared';
+import { tarefaSchema, TarefaInput } from '@smartlaw/shared';
+import { Tarefa } from '@/lib/entities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

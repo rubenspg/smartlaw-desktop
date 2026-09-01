@@ -48,9 +48,19 @@ const auth = new Hono<{ Variables: Variables }>()
     };
 
     const token = await sign(payload, env.JWT_SECRET, 'HS256');
-    const { exp: _exp, ...userResponse } = payload;
 
-    return c.json({ token, user: userResponse });
+    // Return the same clean user shape as /auth/me, rather than leaking the raw
+    // JWT payload (which carries standard claims and a looser perfil type).
+    return c.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        nome: user.nome,
+        perfil: user.perfil || 'usuario',
+        firmId: user.firmId!,
+      },
+    });
   })
   // Lê do banco em vez de confiar nas claims do token: o JWT vive 7 dias, então
   // desativar ou rebaixar um usuário não teria efeito até a expiração.
