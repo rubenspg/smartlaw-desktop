@@ -1,5 +1,5 @@
 import { db } from './index';
-import { tiposAcao, ritosProcessuais, localizacoesProcesso } from './schema';
+import { tiposAcao, ritosProcessuais, localizacoesProcesso, especiesProcesso, posicoesParte } from './schema';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -70,7 +70,46 @@ export const LOCALIZACOES_PADRAO = [
   { codigo: 'BAIXADO', descricao: 'Baixado' },
 ];
 
-type LookupTable = typeof tiposAcao | typeof ritosProcessuais | typeof localizacoesProcesso;
+/**
+ * Espécies de processo administrativo. O escritório é de previdenciário, então
+ * a tabela legada é essencialmente a lista de benefícios do INSS pelo código B.
+ */
+export const ESPECIES_PADRAO = [
+  { codigo: 'B21', descricao: 'B 21 PENSÃO POR MORTE' },
+  { codigo: 'B25', descricao: 'B 25 AUXÍLIO RECLUSÃO' },
+  { codigo: 'B31', descricao: 'B 31 AUXÍLIO-DOENÇA' },
+  { codigo: 'B32', descricao: 'B 32 APOSENTADORIA POR INVALIDEZ' },
+  { codigo: 'B41', descricao: 'B 41 APOSENTADORIA POR IDADE' },
+  { codigo: 'B42', descricao: 'B 42 APOSENTADORIA POR TEMPO DE CONTRIBUIÇÃO' },
+  { codigo: 'B46', descricao: 'B 46 APOSENTADORIA ESPECIAL' },
+  { codigo: 'B57', descricao: 'B 57 APOSENTADORIA PARA PROFESSOR' },
+  { codigo: 'B80', descricao: 'B 80 SALÁRIO MATERNIDADE' },
+  { codigo: 'B87', descricao: 'B 87 AMPARO SOCIAL À PESSOA COM DEFICIÊNCIA' },
+  { codigo: 'B88', descricao: 'B 88 AMPARO SOCIAL AO IDOSO' },
+  { codigo: 'B91', descricao: 'B 91 AUXÍLIO-DOENÇA ACIDENTE DE TRABALHO' },
+  { codigo: 'B94', descricao: 'B 94 AUXÍLIO-ACIDENTE' },
+  { codigo: 'AVERBACAO_RURAL', descricao: 'AVERBAÇÃO DE PERÍODO RURAL' },
+  { codigo: 'CONTAGEM_TEMPO', descricao: 'CONTAGEM DE TEMPO E RENDA' },
+  { codigo: 'REVISAO', descricao: 'REVISÃO DE BENEFÍCIO' },
+  { codigo: 'OUTROS', descricao: 'OUTROS' },
+];
+
+export const POSICOES_PARTE_PADRAO = [
+  { codigo: 'AUTOR', descricao: 'AUTOR' },
+  { codigo: 'REU', descricao: 'RÉU' },
+  { codigo: 'REQUERENTE', descricao: 'REQUERENTE' },
+  { codigo: 'REQUERIDO', descricao: 'REQUERIDO' },
+  { codigo: 'EXEQUENTE', descricao: 'EXEQUENTE' },
+  { codigo: 'EXECUTADO', descricao: 'EXECUTADO' },
+  { codigo: 'TERCEIRO', descricao: 'TERCEIRO INTERESSADO' },
+];
+
+type LookupTable =
+  | typeof tiposAcao
+  | typeof ritosProcessuais
+  | typeof localizacoesProcesso
+  | typeof especiesProcesso
+  | typeof posicoesParte;
 
 async function seedIfEmpty(
   nome: string,
@@ -99,5 +138,7 @@ export async function ensureLookupDefaults() {
   inseridos += await seedIfEmpty('tipos_acao', tiposAcao, TIPOS_ACAO_PADRAO);
   inseridos += await seedIfEmpty('ritos_processuais', ritosProcessuais, RITOS_PADRAO);
   inseridos += await seedIfEmpty('localizacoes_processo', localizacoesProcesso, LOCALIZACOES_PADRAO);
+  inseridos += await seedIfEmpty('especies_processo', especiesProcesso, ESPECIES_PADRAO);
+  inseridos += await seedIfEmpty('posicoes_parte', posicoesParte, POSICOES_PARTE_PADRAO);
   return inseridos;
 }
