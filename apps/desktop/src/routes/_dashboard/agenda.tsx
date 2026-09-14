@@ -52,9 +52,13 @@ export const Route = createFileRoute('/_dashboard/agenda')({
 type ViewMode = 'month' | 'week';
 
 function AgendaPage() {
+  const { user } = useAuth();
+  const isManagement = user?.perfil === 'admin' || user?.perfil === 'administrativo';
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedUser, setSelectedUser] = useState<string>('all');
+  // A pauta abre nas tarefas do próprio usuário; gestores podem alternar para a equipe.
+  const [selectedUser, setSelectedUser] = useState<string>(user?.id ?? 'all');
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   
   // Dialog states
@@ -63,10 +67,11 @@ function AgendaPage() {
   const [viewingTarefa, setViewingTarefa] = useState<Tarefa | undefined>(undefined);
   const [editingTarefa, setEditingTarefa] = useState<Tarefa | undefined>(undefined);
 
-  const { user } = useAuth();
+  const visibleUser = isManagement ? selectedUser : (user?.id ?? 'all');
+
   const { data: usuarios } = useUsuarios();
   const { data: tarefas, isLoading } = useTarefas({ 
-    usuarioId: selectedUser === 'all' ? undefined : selectedUser 
+    usuarioId: visibleUser === 'all' ? undefined : visibleUser 
   });
   
   const createTarefa = useCreateTarefa();
@@ -228,22 +233,45 @@ function AgendaPage() {
               </div>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
-               <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Colaborador / Doutor</label>
-                  <Select value={selectedUser} onValueChange={setSelectedUser}>
-                    <SelectTrigger className="rounded-xl border-border/50 bg-background/50 h-10 font-bold">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      <SelectItem value="all" className="font-bold uppercase text-[10px]">Todos os Usuários</SelectItem>
-                      {usuarios?.map((u: any) => (
-                        <SelectItem key={u.id} value={u.id} className="font-medium">
-                          {u.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+               <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant={selectedUser === user?.id ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectedUser(user?.id ?? 'all')}
+                    className="rounded-xl font-black uppercase text-[10px] tracking-widest h-9"
+                  >
+                    Minhas Tarefas
+                  </Button>
+                  <Button
+                    variant={selectedUser === 'all' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectedUser('all')}
+                    disabled={!isManagement}
+                    title={isManagement ? undefined : 'Disponível para administradores'}
+                    className="rounded-xl font-black uppercase text-[10px] tracking-widest h-9"
+                  >
+                    Toda a Equipe
+                  </Button>
                </div>
+
+               {isManagement && (
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Colaborador / Doutor</label>
+                    <Select value={selectedUser} onValueChange={setSelectedUser}>
+                      <SelectTrigger className="rounded-xl border-border/50 bg-background/50 h-10 font-bold">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        <SelectItem value="all" className="font-bold uppercase text-[10px]">Todos os Usuários</SelectItem>
+                        {usuarios?.map((u: any) => (
+                          <SelectItem key={u.id} value={u.id} className="font-medium">
+                            {u.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                 </div>
+               )}
             </CardContent>
           </Card>
 
