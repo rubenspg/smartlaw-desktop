@@ -21,6 +21,7 @@
     "migrate": "./scripts/migrate.sh",
     "migrate:dry-run": "./scripts/migrate.sh --dry-run",
     "migrate:profiles": "npx tsx scripts/migrate-profiles.ts",
+    "seed:lookups": "npx tsx scripts/seed-lookups.ts",
     "dev": "./dev.sh"
   },
   "devDependencies": {
