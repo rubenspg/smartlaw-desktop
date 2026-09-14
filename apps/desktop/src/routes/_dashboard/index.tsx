@@ -25,6 +25,7 @@ import { TarefaInput } from '@smartlaw/shared';
 import { Tarefa } from '@/lib/entities';
 import { useRegional } from '@/components/regional-provider';
 import { useToast } from '@/components/ui/toast';
+import { useAuth } from '@/lib/auth';
 
 export const Route = createFileRoute('/_dashboard/')({
   component: HomeComponent,
@@ -41,7 +42,9 @@ function HomeComponent() {
 
   const { t } = useRegional();
   const toast = useToast();
-  const { data: tarefas, isLoading: isLoadingTarefas } = useTarefas();
+  const { user } = useAuth();
+  // O painel pessoal mostra apenas as tarefas atribuídas ao usuário autenticado.
+  const { data: tarefas, isLoading: isLoadingTarefas } = useTarefas({ usuarioId: user?.id });
   const { data: andamentosRecentes, isLoading: isLoadingAndamentos, refetch: refetchAndamentos } = useAndamentosRecentes();
   const { data: pendencias } = useResumoPendencias();
   const { data: resumoIA, isFetching: isLoadingResumoIA } = useResumoIA();
