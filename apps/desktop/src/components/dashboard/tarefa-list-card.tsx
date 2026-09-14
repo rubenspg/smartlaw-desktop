@@ -2,7 +2,6 @@ import {
   ClipboardCheck,
   Loader2,
   CheckCircle2,
-  CheckCircle,
   Clock,
   User as UserIcon,
   Users,
@@ -74,30 +73,19 @@ export function TarefaListCard({ tarefas, isLoading, onView, onEdit, onDelete, o
               {tarefas?.map((tarefa) => (
                 <div
                   key={tarefa.id}
-                  className={cn(
-                    'p-5 group hover:bg-primary/5 transition-all cursor-pointer relative',
-                    tarefa.status === 'CONCLUIDA' && 'opacity-50 grayscale',
-                  )}
+                  className="p-5 group hover:bg-primary/5 transition-all cursor-pointer relative"
                   onClick={() => onView(tarefa)}
                 >
                   <div className="flex items-start gap-4">
                     <button
                       onClick={(e) => { e.stopPropagation(); onToggle(tarefa); }}
-                      className={cn(
-                        'mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shadow-sm',
-                        tarefa.status === 'CONCLUIDA'
-                          ? 'bg-emerald-500 border-emerald-500 text-white'
-                          : 'border-border/60 hover:border-primary bg-background',
-                      )}
-                    >
-                      {tarefa.status === 'CONCLUIDA' && <CheckCircle className="w-4 h-4" />}
-                    </button>
+                      className="mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shadow-sm border-border/60 hover:border-primary bg-background"
+                      title="Concluir tarefa"
+                      aria-label={`Concluir tarefa ${tarefa.titulo}`}
+                    />
 
                     <div className="flex-1 min-w-0 space-y-1">
-                      <h4 className={cn(
-                        'text-sm font-bold truncate leading-none',
-                        tarefa.status === 'CONCLUIDA' ? 'text-muted-foreground line-through' : 'text-foreground/90',
-                      )}>
+                      <h4 className="text-sm font-bold truncate leading-none text-foreground/90">
                         {tarefa.titulo}
                       </h4>
                       {tarefa.descricao && (
