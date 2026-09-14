@@ -44,7 +44,10 @@ function HomeComponent() {
   const toast = useToast();
   const { user } = useAuth();
   // O painel pessoal mostra apenas as tarefas atribuídas ao usuário autenticado.
-  const { data: tarefas, isLoading: isLoadingTarefas } = useTarefas({ usuarioId: user?.id });
+  const { data: tarefas, isLoading: isLoadingTarefas } = useTarefas({
+    usuarioId: user?.id,
+    status: 'PENDENTE',
+  });
   const { data: andamentosRecentes, isLoading: isLoadingAndamentos, refetch: refetchAndamentos } = useAndamentosRecentes();
   const { data: pendencias } = useResumoPendencias();
   const { data: resumoIA, isFetching: isLoadingResumoIA } = useResumoIA();
