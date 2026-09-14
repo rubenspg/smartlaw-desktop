@@ -41,6 +41,7 @@ import { Sparkles } from 'lucide-react';
 import { TarefaForm } from '@/components/shared/tarefa-form';
 import { Tarefa, TarefaInput } from '@smartlaw/shared';
 import { useRegional } from '@/components/regional-provider';
+import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { openUrl } from '@tauri-apps/plugin-opener';
 
@@ -57,7 +58,12 @@ function HomeComponent() {
   const [confirmingTarefa, setConfirmingTarefa] = useState<Tarefa | undefined>(undefined);
 
   const { formatDate, t } = useRegional();
-  const { data: tarefas, isLoading: isLoadingTarefas } = useTarefas();
+  const { user } = useAuth();
+  // O painel pessoal mostra apenas as pendências atribuídas ao usuário autenticado.
+  const { data: tarefas, isLoading: isLoadingTarefas } = useTarefas({
+    usuarioId: user?.id,
+    status: 'PENDENTE',
+  });
   const { data: andamentosRecentes, isLoading: isLoadingAndamentos, refetch: refetchAndamentos } = useAndamentosRecentes();
   const { data: pendencias } = useResumoPendencias();
   const { data: resumoIA, isFetching: isLoadingResumoIA } = useResumoIA(pendencias);
