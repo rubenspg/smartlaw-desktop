@@ -80,7 +80,8 @@ throwaway `node:20-alpine` containers with the repo bind-mounted. Note that
 | `LMSTUDIO_URL` | LM Studio endpoint backing `GET /dashboard/resumo-ia` | `http://localhost:1234` |
 | `LMSTUDIO_MODEL` | Model name requested from LM Studio | `google/gemma-4-e4b` |
 | `NODE_ENV` | `development` or `production` | `development` |
-| `CSV_DATA_DIR` | Absolute path to CSV lookup data for `db:seed` | Resolved from relative path |
+| `CSV_DATA_DIR` | Absolute path to the legacy CSV lookup data for `db:seed`. Optional — without it the seed falls back to built-in defaults (see [Seed lookup data](#seed-lookup-data)) | Resolved from relative path |
+| `SEED_ADMIN_PASSWORD` | Password for the seeded admin user. Without it, one is generated and printed once | *(generated)* |
 
 `DATABASE_URL` and `JWT_SECRET` are validated on startup — the process exits
 with a message rather than booting with a missing or weak secret.
@@ -201,7 +202,29 @@ npm run db:migrate
 npm run db:seed --prefix apps/server
 ```
 
-The seed script reads CSV files from the path set in `CSV_DATA_DIR` (or the default relative path). It creates the default firm and an admin user (`admin@smartlaw.local` / `changeme`).
+This creates the default firm and the admin user `admin@smartlaw.local`. The
+password is taken from `SEED_ADMIN_PASSWORD`, or generated at random and printed
+**once** — copy it before the output scrolls away. Re-running the seed never
+resets an existing admin's password; it will say so instead of printing one.
+
+**The CSV lookup data is optional, and is not in the repository.** `CSV_DATA_DIR`
+points at the firm's legacy export (`tabela_tipo_acoes.csv`, `tabela_municipios.csv`
+and friends), which only exists on the original machine. Without it the seed still
+succeeds: the domain tables — tipos de ação, ritos, localizações, espécies and
+posições de parte — are filled with sensible Brazilian defaults, and the seed prints
+a clear summary of what fell back. The one exception is `municipios`, which has no
+default and stays empty, so município/comarca fields will have no options until you
+point `CSV_DATA_DIR` at the real data.
+
+To (re)fill only the domain tables on a database that already exists, without
+touching firms or users:
+
+```bash
+npm run seed:lookups
+```
+
+It only inserts into tables that are empty, so it is safe to re-run and will not
+disturb an installation that already imported the legacy CSVs.
 
 ### Generate a new migration after schema changes
 
