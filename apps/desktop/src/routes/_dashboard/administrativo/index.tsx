@@ -9,6 +9,8 @@ import {
   ShieldAlert,
   History,
   Database,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import type { UsuarioInput, UsuarioUpdateInput } from '@smartlaw/shared';
 import type { AuditLog, Usuario } from '@/lib/entities';
@@ -160,6 +162,7 @@ function AdministrativoPage() {
             try {
               await createUsuario.mutateAsync(data as UsuarioInput);
               setShowAddForm(false);
+              toast.success('Usuário criado com sucesso!');
             } catch (err: any) {
               toast.error(err.message);
             }
@@ -174,11 +177,17 @@ function AdministrativoPage() {
           onClose={() => setEditingUsuario(null)}
           onSubmit={async (data) => {
             try {
+              const senhaAlterada = !!(data as UsuarioUpdateInput).senha;
               await updateUsuario.mutateAsync({
                 id: editingUsuario.id,
                 data: data as UsuarioUpdateInput,
               });
               setEditingUsuario(null);
+              toast.success(
+                senhaAlterada
+                  ? 'Usuário e credenciais atualizados com sucesso!'
+                  : 'Usuário atualizado com sucesso!',
+              );
             } catch (err: any) {
               toast.error(err.message);
             }
@@ -282,7 +291,37 @@ function UsuarioFormDialog({
     perfil: (usuario?.perfil as 'admin' | 'usuario' | 'administrativo' | 'secretaria') ?? 'usuario',
   });
 
+  const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [showSenha, setShowSenha] = useState(false);
+  const [erroSenha, setErroSenha] = useState<string | null>(null);
+
   const isEditing = !!usuario;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErroSenha(null);
+
+    // Na edição a senha é opcional: só validamos quando o admin preencheu algo.
+    const alterandoSenha = !isEditing || formData.senha.trim() !== '';
+
+    if (alterandoSenha) {
+      if (formData.senha.length < 6) {
+        setErroSenha('A senha deve ter no mínimo 6 caracteres.');
+        return;
+      }
+      if (formData.senha !== confirmarSenha) {
+        setErroSenha('As senhas não coincidem.');
+        return;
+      }
+    }
+
+    const submitData: any = { ...formData };
+    if (!alterandoSenha) {
+      delete submitData.senha;
+    }
+
+    onSubmit(submitData);
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
@@ -303,20 +342,7 @@ function UsuarioFormDialog({
             <XCircle className="w-6 h-6 text-muted-foreground hover:text-foreground" />
           </button>
         </div>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const submitData: any = { ...formData };
-            
-            // Na edição, se a senha estiver vazia, removemos do payload para não sobrescrever
-            if (isEditing && (!submitData.senha || submitData.senha.trim() === "")) {
-              delete submitData.senha;
-            }
-            
-            onSubmit(submitData);
-          }}
-          className="p-6 space-y-4"
-        >
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="space-y-1">
             <label className="text-xs font-bold text-muted-foreground uppercase">Nome Completo</label>
             <input
@@ -343,20 +369,61 @@ function UsuarioFormDialog({
             <label className="text-xs font-bold text-muted-foreground uppercase">
               {isEditing ? 'Alterar Senha' : 'Senha Inicial'}
             </label>
-            <input
-              type="password"
-              className="w-full p-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-foreground"
-              placeholder={isEditing ? 'Deixe vazio para manter a atual' : 'Mínimo 6 caracteres'}
-              required={!isEditing}
-              value={formData.senha}
-              onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
-            />
+            <div className="relative">
+              <input
+                type={showSenha ? 'text' : 'password'}
+                className="w-full p-2 pr-10 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-foreground"
+                placeholder={isEditing ? 'Deixe vazio para manter a atual' : 'Mínimo 6 caracteres'}
+                required={!isEditing}
+                value={formData.senha}
+                onChange={(e) => {
+                  setErroSenha(null);
+                  setFormData({ ...formData, senha: e.target.value });
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowSenha((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label={showSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                title={showSenha ? 'Ocultar senha' : 'Mostrar senha'}
+              >
+                {showSenha ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
             {isEditing && (
               <p className="text-[10px] text-muted-foreground italic">
                 * Preencha apenas se desejar alterar a senha deste usuário.
               </p>
             )}
           </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-muted-foreground uppercase">
+              {isEditing ? 'Confirmar Nova Senha' : 'Confirmar Senha'}
+            </label>
+            <input
+              type={showSenha ? 'text' : 'password'}
+              className="w-full p-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary outline-none text-foreground"
+              placeholder={isEditing ? 'Repita a nova senha' : 'Repita a senha'}
+              required={!isEditing}
+              value={confirmarSenha}
+              onChange={(e) => {
+                setErroSenha(null);
+                setConfirmarSenha(e.target.value);
+              }}
+            />
+          </div>
+
+          {erroSenha && (
+            <p
+              role="alert"
+              className="flex items-center gap-2 text-xs font-bold text-destructive bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2"
+            >
+              <XCircle className="w-4 h-4 shrink-0" />
+              {erroSenha}
+            </p>
+          )}
           <div className="space-y-1">
             <label className="text-xs font-bold text-muted-foreground uppercase">Cargo / Perfil</label>
             <select
