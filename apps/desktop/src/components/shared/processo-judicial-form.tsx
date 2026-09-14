@@ -9,7 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useClientes } from '@/hooks/use-clientes';
-import { useTiposAcao, useRitosProcessuais, useLocalizacoesProcesso } from '@/hooks/use-lookups';
+import {
+  useTiposAcao,
+  useRitosProcessuais,
+  useLocalizacoesProcesso,
+  useCreateTipoAcao,
+  useCreateRitoProcessual,
+  useCreateLocalizacaoProcesso,
+} from '@/hooks/use-lookups';
+import { LookupCombobox } from '@/components/shared/lookup-combobox';
 
 interface ProcessoJudicialFormProps {
   initialData?: ProcessoJudicial;
@@ -44,6 +52,14 @@ export function ProcessoJudicialForm({ initialData, onSubmit, isSubmitting }: Pr
   const { data: tiposAcao } = useTiposAcao();
   const { data: ritos } = useRitosProcessuais();
   const { data: localizacoes } = useLocalizacoesProcesso();
+
+  const createTipoAcao = useCreateTipoAcao();
+  const createRito = useCreateRitoProcessual();
+  const createLocalizacao = useCreateLocalizacaoProcesso();
+
+  const tipoAcaoId = watch('tipoAcaoId');
+  const ritoId = watch('ritoId');
+  const localizacaoId = watch('localizacaoId');
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
@@ -90,40 +106,36 @@ export function ProcessoJudicialForm({ initialData, onSubmit, isSubmitting }: Pr
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="tipoAcaoId">Tipo de Ação</Label>
-              <Select 
-                defaultValue={initialData?.tipoAcaoId || undefined} 
-                onValueChange={(val) => setValue('tipoAcaoId', val)}
-              >
-                <SelectTrigger id="tipoAcaoId">
-                  <SelectValue placeholder="Selecione o tipo..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {tiposAcao?.map((t: any) => (
-                    <SelectItem key={t.codigo} value={t.codigo}>
-                      {t.descricao}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <LookupCombobox
+                id="tipoAcaoId"
+                options={tiposAcao}
+                value={tipoAcaoId}
+                onChange={(val) => setValue('tipoAcaoId', val)}
+                placeholder="Selecione o tipo..."
+                searchPlaceholder="Buscar ou digitar um tipo..."
+                createLabel="Cadastrar tipo"
+                onCreate={async (descricao) => {
+                  const criado = await createTipoAcao.mutateAsync(descricao);
+                  return criado.codigo;
+                }}
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="ritoId">Rito</Label>
-              <Select 
-                defaultValue={initialData?.ritoId || undefined} 
-                onValueChange={(val) => setValue('ritoId', val)}
-              >
-                <SelectTrigger id="ritoId">
-                  <SelectValue placeholder="Selecione o rito..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {ritos?.map((r: any) => (
-                    <SelectItem key={r.codigo} value={r.codigo}>
-                      {r.descricao}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <LookupCombobox
+                id="ritoId"
+                options={ritos}
+                value={ritoId}
+                onChange={(val) => setValue('ritoId', val)}
+                placeholder="Selecione o rito..."
+                searchPlaceholder="Buscar ou digitar um rito..."
+                createLabel="Cadastrar rito"
+                onCreate={async (descricao) => {
+                  const criado = await createRito.mutateAsync(descricao);
+                  return criado.codigo;
+                }}
+              />
             </div>
           </div>
 
@@ -164,21 +176,19 @@ export function ProcessoJudicialForm({ initialData, onSubmit, isSubmitting }: Pr
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="localizacaoId">Localização Atual</Label>
-              <Select 
-                defaultValue={initialData?.localizacaoId || undefined} 
-                onValueChange={(val) => setValue('localizacaoId', val)}
-              >
-                <SelectTrigger id="localizacaoId">
-                  <SelectValue placeholder="Selecione a localização..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {localizacoes?.map((l: any) => (
-                    <SelectItem key={l.codigo} value={l.codigo}>
-                      {l.descricao}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <LookupCombobox
+                id="localizacaoId"
+                options={localizacoes}
+                value={localizacaoId}
+                onChange={(val) => setValue('localizacaoId', val)}
+                placeholder="Selecione a localização..."
+                searchPlaceholder="Buscar ou digitar uma localização..."
+                createLabel="Cadastrar localização"
+                onCreate={async (descricao) => {
+                  const criado = await createLocalizacao.mutateAsync(descricao);
+                  return criado.codigo;
+                }}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="situacao">Situação Atual</Label>

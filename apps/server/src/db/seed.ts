@@ -2,6 +2,7 @@ import { db } from './index';
 import { firms, profiles, especiesProcesso, tiposAcao, ritosProcessuais, localizacoesProcesso, posicoesParte, municipios } from './schema';
 import bcrypt from 'bcryptjs';
 import { parse } from 'csv-parse/sync';
+import { ensureLookupDefaults } from './lookup-defaults';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -126,6 +127,9 @@ async function seed() {
       console.log(`    ✓ ${records.length} records`);
     }
   }
+
+  // 5. Defaults para as tabelas de lookup que os CSVs legados não preencheram
+  await ensureLookupDefaults();
 
   console.log('✅ Seed completed!');
   process.exit(0);

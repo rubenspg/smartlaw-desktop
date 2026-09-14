@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 export function useUsuarios() {
   return useQuery({
@@ -64,4 +64,43 @@ export function usePosicoesParte() {
       return res.json();
     },
   });
+}
+
+/**
+ * Cadastro sob demanda das tabelas de domínio de processos. Permite que o
+ * usuário registre um tipo de ação / rito / localização que o escritório usa
+ * mas que não veio na carga inicial, sem sair do formulário.
+ */
+type LookupEntry = { codigo: string; descricao: string };
+
+function useCreateLookup(
+  key: 'tipos-acao' | 'ritos-processuais' | 'localizacoes-processo',
+  erro: string,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (descricao: string): Promise<LookupEntry> => {
+      const res = await api.lookups[key].$post({ json: { descricao } });
+      if (!res.ok) {
+        const err = (await res.json()) as any;
+        throw new Error(err.error || erro);
+      }
+      return (await res.json()) as LookupEntry;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lookups', key] });
+    },
+  });
+}
+
+export function useCreateTipoAcao() {
+  return useCreateLookup('tipos-acao', 'Falha ao cadastrar tipo de ação');
+}
+
+export function useCreateRitoProcessual() {
+  return useCreateLookup('ritos-processuais', 'Falha ao cadastrar rito');
+}
+
+export function useCreateLocalizacaoProcesso() {
+  return useCreateLookup('localizacoes-processo', 'Falha ao cadastrar localização');
 }
