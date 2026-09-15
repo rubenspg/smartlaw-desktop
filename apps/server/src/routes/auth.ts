@@ -7,6 +7,12 @@ import { eq } from 'drizzle-orm';
 import { loginSchema } from '@smartlaw/shared';
 import { env } from '../env';
 import { authMiddleware, UserPayload, Variables } from '../middleware/auth';
+import {
+  verificarLimiteLogin,
+  registrarFalhaLogin,
+  limparFalhasLogin,
+  ipDoCliente,
+} from '../middleware/rate-limit';
 
 const auth = new Hono<{ Variables: Variables }>()
   .post('/login', async (c) => {
@@ -25,6 +31,22 @@ const auth = new Hono<{ Variables: Variables }>()
 
     const { email, password } = result.data;
 
+    // Limite por IP + e-mail. Antes do bcrypt de propósito: a verificação é o
+    // trabalho caro, e é justamente ele que não queremos oferecer de graça.
+    const ip = ipDoCliente({
+      cfConnectingIp: c.req.header('cf-connecting-ip'),
+      xForwardedFor: c.req.header('x-forwarded-for'),
+    });
+
+    const limite = verificarLimiteLogin(ip, email);
+    if (!limite.permitido) {
+      return c.json(
+        { error: 'Muitas tentativas. Tente novamente em alguns minutos.' },
+        429,
+        { 'Retry-After': String(limite.retryAfter) },
+      );
+    }
+
     const [user] = await db.select().from(profiles).where(eq(profiles.email, email)).limit(1);
 
     // Resposta idêntica para usuário inexistente, inativo e senha errada:
@@ -34,8 +56,13 @@ const auth = new Hono<{ Variables: Variables }>()
       : false;
 
     if (!user || !user.ativo || !isValid) {
+      registrarFalhaLogin(ip, email);
       return c.json({ error: 'Credenciais inválidas' }, 401);
     }
+
+    // Acertou: zera o contador, para que errar a senha e acertar em seguida —
+    // o caso normal — nunca acumule em direção ao bloqueio.
+    limparFalhasLogin(ip, email);
 
     const payload: UserPayload = {
       id: user.id,
