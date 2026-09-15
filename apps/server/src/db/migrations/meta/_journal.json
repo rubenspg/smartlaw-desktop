@@ -43,6 +43,13 @@
       "when": 1788197251547,
       "tag": "0005_adorable_meteorite",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789488452221,
+      "tag": "0006_agenda_token",
+      "breakpoints": true
     }
   ]
 }

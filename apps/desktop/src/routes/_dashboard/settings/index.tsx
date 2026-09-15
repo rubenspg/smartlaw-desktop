@@ -13,7 +13,10 @@ import {
   Loader2,
   Shield,
   Info,
-  ChevronLeft
+  ChevronLeft,
+  CalendarDays,
+  Copy,
+  RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +45,39 @@ function SettingsPage() {
   const { t } = useRegional();
   const toast = useToast();
   const queryClient = useQueryClient();
+
+  // URL de assinatura iCalendar da agenda. O GET cria o token no primeiro acesso.
+  const { data: agendaFeed, isLoading: isLoadingFeed } = useQuery({
+    queryKey: ['agenda-feed'],
+    queryFn: async () => {
+      const res = await (api as any).agenda.feed.$get();
+      if (!res.ok) throw new Error('Falha ao obter a URL da agenda');
+      return (await res.json()) as { url: string };
+    },
+  });
+
+  const rotateFeed = useMutation({
+    mutationFn: async () => {
+      const res = await (api as any).agenda.feed.rotate.$post();
+      if (!res.ok) throw new Error('Falha ao gerar uma nova URL');
+      return (await res.json()) as { url: string };
+    },
+    onSuccess: (data: { url: string }) => {
+      queryClient.setQueryData(['agenda-feed'], data);
+      toast.success('Nova URL gerada. A anterior deixou de funcionar.');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const copiarFeed = async () => {
+    if (!agendaFeed?.url) return;
+    try {
+      await navigator.clipboard.writeText(agendaFeed.url);
+      toast.success('URL copiada.');
+    } catch {
+      toast.error('Não foi possível copiar. Selecione o texto e copie manualmente.');
+    }
+  };
 
   // Connection Settings
   const [serverUrl, setServerUrl] = useState(() => {
@@ -317,6 +353,62 @@ function SettingsPage() {
                   />
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/50 shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <CalendarDays className="w-5 h-5 text-primary" /> Agenda no seu calendário
+              </CardTitle>
+              <CardDescription>
+                Assine esta URL no Apple Calendar (Arquivo → Nova Assinatura de
+                Calendário) ou no Google Agenda (Outras agendas → A partir de URL)
+                para ver seus prazos junto dos demais compromissos. A assinatura é
+                somente leitura e se atualiza sozinha — o Apple Calendar deixa você
+                escolher a frequência; o Google usa o ritmo dele, que pode levar
+                horas.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex gap-2">
+                <Input
+                  readOnly
+                  value={isLoadingFeed ? 'Carregando...' : (agendaFeed?.url ?? '')}
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="font-mono text-xs"
+                />
+                <Button
+                  variant="outline"
+                  onClick={copiarFeed}
+                  disabled={!agendaFeed?.url}
+                  className="gap-2 shrink-0"
+                >
+                  <Copy className="w-4 h-4" /> Copiar
+                </Button>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Quem tiver esta URL enxerga toda a sua agenda, sem precisar de senha.
+                Trate-a como uma credencial. Se ela vazar, gere outra — a anterior
+                para de funcionar na hora, e você precisará refazer a assinatura nos
+                seus dispositivos.
+              </p>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => rotateFeed.mutate()}
+                disabled={rotateFeed.isPending}
+                className="gap-2 text-destructive hover:bg-destructive/10"
+              >
+                {rotateFeed.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
+                Gerar nova URL
+              </Button>
             </CardContent>
           </Card>
 
