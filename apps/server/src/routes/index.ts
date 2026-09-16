@@ -8,6 +8,7 @@ import processosAdministrativos from './processos-administrativos';
 import andamentos from './andamentos';
 import honorarios from './honorarios';
 import tarefas from './tarefas';
+import agenda from './agenda';
 import dashboard from './dashboard';
 import usuarios from './usuarios';
 import auditLogs from './audit-logs';
@@ -24,6 +25,7 @@ const routes = new Hono<{ Variables: Variables }>()
   .route('/processos/andamentos', andamentos)
   .route('/honorarios', honorarios)
   .route('/tarefas', tarefas)
+  .route('/agenda', agenda)
   .route('/dashboard', dashboard)
   .route('/usuarios', usuarios)
   .route('/audit-logs', auditLogs)

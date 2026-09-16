@@ -59,6 +59,9 @@ export const profiles = pgTable('profiles', {
   perfil: text('perfil').$type<'admin' | 'usuario' | 'administrativo' | 'secretaria'>().default('usuario'),
   ativo: boolean('ativo').default(true),
   firmId: uuid('firm_id').references(() => firms.id).notNull(),
+  // Segredo do feed iCalendar da agenda. Fica na URL da assinatura, então é
+  // um token dedicado e revogável — nunca o JWT. Nulo até o usuário gerar.
+  agendaToken: text('agenda_token').unique(),
   // NÃO declarar reset_token / reset_token_expires aqui. A migration 0004 as
   // criou, mas seu .sql sumiu do repositório (#31), então bancos existentes
   // divergem: alguns têm as colunas, outros não. Declará-las faz todo
