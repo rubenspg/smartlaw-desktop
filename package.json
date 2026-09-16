@@ -24,7 +24,9 @@
     "seed:lookups": "npx tsx scripts/seed-lookups.ts",
     "dev": "./dev.sh",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:all": "npm run test && npm run test:integration"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
