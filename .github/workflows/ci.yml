@@ -41,3 +41,41 @@ jobs:
 
       - name: Build desktop bundle
         run: npm run build -w apps/desktop
+
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+
+    # Postgres de verdade: os testes de autorização vivem em cláusulas WHERE do
+    # drizzle, então mock não provaria nada. Aplicar as migrations do zero a
+    # cada execução também faz todo PR provar que elas sobem numa base limpa.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: smartlaw
+          POSTGRES_PASSWORD: smartlaw-pass
+          POSTGRES_DB: smartlaw
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U smartlaw"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Integration tests
+        run: npm run test:integration
+        env:
+          TEST_DATABASE_URL: postgresql://smartlaw:smartlaw-pass@localhost:5432/smartlaw_test
