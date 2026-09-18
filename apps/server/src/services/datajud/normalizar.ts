@@ -70,30 +70,207 @@ export function parseDataAjuizamento(valor?: string): Date | null {
 }
 
 /**
- * Códigos da Tabela Processual Unificada que encerram a tramitação. Trânsito
- * em julgado (848) fica de fora de propósito: cumprimento de sentença continua
- * no mesmo número.
+ * Classificação do estágio do processo a partir dos códigos da Tabela
+ * Processual Unificada (TPU) de TODAS as instâncias, em ordem cronológica.
+ *
+ * Calibrada em 2026-09-18 sobre os 983 processos da firma que existem no
+ * Datajud: 712 têm Baixa Definitiva (22) ou Definitivo (246) como último
+ * movimento; outros 76 têm a baixa seguida só de burocracia (petição,
+ * documento, mudança de assunto…), que não reabre nada; nenhum tem
+ * desarquivamento (861) e só 2 têm arquivamento provisório (245). RPV e
+ * precatório não aparecem nos complementos do TRF4/TJRS, então "pagou" é
+ * lido pela classe (Cumprimento de Sentença…) + baixa.
+ *
+ * Trânsito em julgado (848) NÃO arquiva: o cumprimento de sentença segue no
+ * mesmo número. Um movimento fora da lista de ruído depois da baixa não
+ * reabre automaticamente: vira REVISAR, para uma pessoa olhar.
  */
-const CODIGOS_ARQUIVAMENTO = new Set([22 /* Baixa Definitiva */, 246 /* Arquivado definitivamente */]);
+export const TPU = {
+  BAIXA_DEFINITIVA: 22,
+  ARQUIVADO_DEFINITIVO: 246,
+  ARQUIVADO_PROVISORIO: 245,
+  DESARQUIVAMENTO: 861,
+  TRANSITO_EM_JULGADO: 848,
+  EXTINCAO_EXECUCAO: 196,
+  SUSPENSAO_CUMPRIDA: 12065,
+  PROCEDENCIA: 219,
+  IMPROCEDENCIA: 220,
+  PROCEDENCIA_PARCIAL: 221,
+} as const;
+
+const CODIGOS_ARQUIVAMENTO = new Set<number>([TPU.BAIXA_DEFINITIVA, TPU.ARQUIVADO_DEFINITIVO]);
+const CODIGOS_SUSPENSAO = new Set<number>([TPU.ARQUIVADO_PROVISORIO, TPU.SUSPENSAO_CUMPRIDA]);
+const CODIGOS_JULGAMENTO = new Set<number>([TPU.PROCEDENCIA, TPU.IMPROCEDENCIA, TPU.PROCEDENCIA_PARCIAL]);
+
+/**
+ * Movimentos que o eproc/PJe lança depois da baixa sem que o processo volte a
+ * tramitar (os 76 casos da calibração). Qualquer outro código depois da baixa
+ * pede revisão humana.
+ */
+export const RUIDO_POS_BAIXA = new Set<number>([
+  85, // Petição
+  92, // Publicação
+  581, // Documento
+  60, // Expedição de documento
+  1051, // Decurso de Prazo
+  1061, // Disponibilização no DJe
+  11383, // Ato ordinatório
+  12143, // Mudança de Assunto Processual
+  12265, // Expedida/certificada
+  12282, // Expedida/Certificada
+  12266, // Confirmada
+  12281, // Comunicação eletrônica
+  12291, // Movimentação processual
+  12293, // Ato cumprido pela parte ou interessado
+  36, // Redistribuição
+  898, // Por decisão judicial
+]);
+
+export type EstagioProcesso =
+  | 'ATIVO'
+  | 'SENTENCIADO'
+  | 'TRANSITADO'
+  | 'EM_CUMPRIMENTO'
+  | 'SUSPENSO'
+  | 'ARQUIVADO'
+  | 'REVISAR';
+
+export type ResultadoJulgamento = 'PROCEDENTE' | 'PARCIALMENTE_PROCEDENTE' | 'IMPROCEDENTE';
+
+export interface MovimentoComGrau extends DatajudMovimento {
+  grau: string;
+}
+
+export interface ClassificacaoProcesso {
+  estagio: EstagioProcesso;
+  /** O que cabe em `processos_judiciais.situacao`: só ARQUIVADO fecha. */
+  situacao: 'ATIVO' | 'ARQUIVADO';
+  resultado: ResultadoJulgamento | null;
+  dataArquivamento: Date | null;
+  dataTransito: Date | null;
+  /** Último movimento cronológico entre todas as instâncias. */
+  ultimoMovimento: MovimentoComGrau | null;
+  /** Movimentos de ruído ignorados depois da baixa. */
+  residuais: number;
+  /** Explicação curta para a tela ("Baixa Definitiva em 12/03/2024 (G1)"). */
+  motivo: string;
+}
+
+/** Todos os movimentos de todas as instâncias, do mais antigo para o mais novo. */
+export function movimentosCronologicos(hits: ComSource[]): MovimentoComGrau[] {
+  return hits
+    .flatMap((h) => (h._source.movimentos ?? []).map((m) => ({ ...m, grau: h._source.grau ?? '?' })))
+    .sort((a, b) => a.dataHora.localeCompare(b.dataHora));
+}
+
+const ehClasseCumprimento = (hits: ComSource[]) =>
+  hits.some((h) => /cumprimento de senten|execu[çc][ãa]o/i.test(h._source.classe?.nome ?? ''));
+
+const dataBr = (iso: string) => {
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? iso : d.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+};
+
+export function classificarSituacao(hits: ComSource[]): ClassificacaoProcesso {
+  const movs = movimentosCronologicos(hits);
+  const ultimo = movs[movs.length - 1] ?? null;
+
+  const ultimoJulgamento = [...movs].reverse().find((m) => m.codigo !== undefined && CODIGOS_JULGAMENTO.has(m.codigo));
+  const resultado: ResultadoJulgamento | null =
+    ultimoJulgamento?.codigo === TPU.PROCEDENCIA
+      ? 'PROCEDENTE'
+      : ultimoJulgamento?.codigo === TPU.PROCEDENCIA_PARCIAL
+        ? 'PARCIALMENTE_PROCEDENTE'
+        : ultimoJulgamento?.codigo === TPU.IMPROCEDENCIA
+          ? 'IMPROCEDENTE'
+          : null;
+  const transito = [...movs].reverse().find((m) => m.codigo === TPU.TRANSITO_EM_JULGADO);
+  const dataTransito = transito ? new Date(transito.dataHora) : null;
+
+  const base = { resultado, dataTransito, ultimoMovimento: ultimo, residuais: 0 };
+  const rotulo = (m: MovimentoComGrau) => `${m.nome} em ${dataBr(m.dataHora)} (${m.grau})`;
+
+  if (!ultimo) {
+    return { ...base, estagio: 'ATIVO', situacao: 'ATIVO', dataArquivamento: null, motivo: 'Sem movimentos no Datajud' };
+  }
+
+  // 1-3. Baixa/arquivamento definitivo e o que veio depois.
+  let idxBaixa = -1;
+  for (let i = movs.length - 1; i >= 0; i--) {
+    if (movs[i].codigo !== undefined && CODIGOS_ARQUIVAMENTO.has(movs[i].codigo!)) {
+      idxBaixa = i;
+      break;
+    }
+  }
+  if (idxBaixa >= 0) {
+    const baixa = movs[idxBaixa];
+    const depois = movs.slice(idxBaixa + 1);
+    const estranhos = depois.filter((m) => m.codigo === undefined || !RUIDO_POS_BAIXA.has(m.codigo));
+    if (estranhos.length === 0) {
+      return {
+        ...base,
+        estagio: 'ARQUIVADO',
+        situacao: 'ARQUIVADO',
+        dataArquivamento: new Date(baixa.dataHora),
+        residuais: depois.length,
+        motivo: depois.length ? `${rotulo(baixa)}; ${depois.length} movimento(s) burocrático(s) depois` : rotulo(baixa),
+      };
+    }
+    return {
+      ...base,
+      estagio: 'REVISAR',
+      situacao: 'ATIVO',
+      dataArquivamento: null,
+      residuais: depois.length - estranhos.length,
+      motivo: `${rotulo(baixa)}, mas depois houve ${rotulo(estranhos[estranhos.length - 1])}`,
+    };
+  }
+
+  // 4. Suspenso/sobrestado/arquivado provisoriamente, se for o último evento.
+  if (ultimo.codigo !== undefined && CODIGOS_SUSPENSAO.has(ultimo.codigo)) {
+    return { ...base, estagio: 'SUSPENSO', situacao: 'ATIVO', dataArquivamento: null, motivo: rotulo(ultimo) };
+  }
+
+  // 5. Cumprimento de sentença (classe) ou trânsito em julgado sem baixa.
+  if (ehClasseCumprimento(hits)) {
+    return {
+      ...base,
+      estagio: 'EM_CUMPRIMENTO',
+      situacao: 'ATIVO',
+      dataArquivamento: null,
+      motivo: `Classe de cumprimento/execução sem baixa; último: ${rotulo(ultimo)}`,
+    };
+  }
+  if (transito) {
+    return { ...base, estagio: 'TRANSITADO', situacao: 'ATIVO', dataArquivamento: null, motivo: `${rotulo(transito)}, sem baixa` };
+  }
+
+  // 6. Sentença sem trânsito.
+  if (ultimoJulgamento) {
+    return {
+      ...base,
+      estagio: 'SENTENCIADO',
+      situacao: 'ATIVO',
+      dataArquivamento: null,
+      motivo: `${rotulo(ultimoJulgamento)}; último: ${rotulo(ultimo)}`,
+    };
+  }
+
+  // 7.
+  return { ...base, estagio: 'ATIVO', situacao: 'ATIVO', dataArquivamento: null, motivo: `Último: ${rotulo(ultimo)}` };
+}
 
 export interface SituacaoSugerida {
   situacao: 'ATIVO' | 'ARQUIVADO';
+  estagio: EstagioProcesso;
   ultimoMovimento: DatajudMovimento | null;
   dataArquivamento: Date | null;
 }
 
+/** Resumo de `classificarSituacao` para o cadastro: só ARQUIVADO fecha o processo. */
 export function situacaoSugerida(hits: ComSource[]): SituacaoSugerida {
-  const atual = instanciaAtual(hits);
-  const movimentos = ordenarMovimentos(atual?._source.movimentos);
-  const ultimo = movimentos[0] ?? null;
-  // Só considera arquivado se o arquivamento for o evento mais recente da
-  // instância mais alta — um desarquivamento posterior reabre o processo.
-  const arquivado = ultimo?.codigo !== undefined && CODIGOS_ARQUIVAMENTO.has(ultimo.codigo);
-  return {
-    situacao: arquivado ? 'ARQUIVADO' : 'ATIVO',
-    ultimoMovimento: ultimo,
-    dataArquivamento: arquivado && ultimo ? new Date(ultimo.dataHora) : null,
-  };
+  const c = classificarSituacao(hits);
+  return { situacao: c.situacao, estagio: c.estagio, ultimoMovimento: c.ultimoMovimento, dataArquivamento: c.dataArquivamento };
 }
 
 export interface CamposLocais {

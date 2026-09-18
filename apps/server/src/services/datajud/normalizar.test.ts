@@ -13,7 +13,12 @@ import {
   ordenarMovimentos,
   parseDataAjuizamento,
   situacaoSugerida,
+  classificarSituacao,
+  movimentosCronologicos,
+  RUIDO_POS_BAIXA,
+  TPU,
 } from './normalizar';
+import type { ClassificacaoProcesso } from './normalizar';
 
 const aqui = path.dirname(fileURLToPath(import.meta.url));
 const fixture = (nome: string): DatajudHit[] =>
@@ -158,7 +163,142 @@ describe('situação sugerida', () => {
   });
 
   it('sem instâncias é ATIVO sem movimento', () => {
-    expect(situacaoSugerida([])).toEqual({ situacao: 'ATIVO', ultimoMovimento: null, dataArquivamento: null });
+    expect(situacaoSugerida([])).toEqual({ situacao: 'ATIVO', estagio: 'ATIVO', ultimoMovimento: null, dataArquivamento: null });
+  });
+});
+
+// Sequências reais (códigos TPU e datas, sem números nem nomes) de 71 dos 989
+// processos da firma que existem no Datajud, escolhidas para cobrir todos os
+// estágios; `esperado` foi conferido caso a caso na calibração de 2026-09-18.
+interface CasoFixture {
+  tribunal: string;
+  esperado: ClassificacaoProcesso['estagio'];
+  resultado: ClassificacaoProcesso['resultado'];
+  dataArquivamento: string | null;
+  instancias: Array<{ grau: string; classe: string | null; movimentos: Array<[number, string]> }>;
+}
+const CASOS: CasoFixture[] = JSON.parse(readFileSync(path.join(aqui, '../../../test/fixtures/datajud/estagios-firma.json'), 'utf8'));
+const hitsDoCaso = (c: CasoFixture): DatajudHit[] =>
+  c.instancias.map((i, k) => ({
+    _id: `${k}`,
+    _index: 'x',
+    _source: {
+      numeroProcesso: '1',
+      grau: i.grau,
+      classe: i.classe ? { nome: i.classe } : undefined,
+      movimentos: i.movimentos.map(([codigo, dataHora]) => ({ codigo, dataHora, nome: `mov ${codigo}` })),
+    },
+  }));
+
+const mov = (codigo: number, dataHora: string, nome = `mov ${codigo}`): DatajudMovimento => ({ codigo, nome, dataHora });
+const hit = (grau: string, movimentos: DatajudMovimento[], classe?: string): DatajudHit => ({
+  _id: grau, _index: 'x', _source: { numeroProcesso: '1', grau, classe: classe ? { nome: classe } : undefined, movimentos },
+});
+
+describe('classificarSituacao', () => {
+  it('junta as instâncias em ordem cronológica', () => {
+    const seq = movimentosCronologicos([hit('G2', [mov(1, '2020-05-01T00:00:00Z')]), hit('G1', [mov(2, '2020-01-01T00:00:00Z'), mov(3, '2020-09-01T00:00:00Z')])]);
+    expect(seq.map((m) => `${m.codigo}${m.grau}`)).toEqual(['2G1', '1G2', '3G1']);
+  });
+
+  it('baixa definitiva como último movimento arquiva na data da baixa', () => {
+    const c = classificarSituacao([hit('G1', [mov(848, '2024-01-10T10:00:00Z'), mov(22, '2024-03-12T10:00:00Z', 'Baixa Definitiva')])]);
+    expect(c.estagio).toBe('ARQUIVADO');
+    expect(c.situacao).toBe('ARQUIVADO');
+    expect(c.dataArquivamento?.toISOString()).toBe('2024-03-12T10:00:00.000Z');
+    expect(c.dataTransito?.toISOString()).toBe('2024-01-10T10:00:00.000Z');
+    expect(c.motivo).toBe('Baixa Definitiva em 12/03/2024 (G1)');
+  });
+
+  it('a baixa vale mesmo se a instância mais alta parou antes', () => {
+    // G2 julgou e devolveu; a baixa acontece no G1 depois.
+    const c = classificarSituacao([
+      hit('G2', [mov(123, '2023-01-01T00:00:00Z')]),
+      hit('G1', [mov(26, '2021-01-01T00:00:00Z'), mov(246, '2023-06-01T00:00:00Z', 'Definitivo')]),
+    ]);
+    expect(c.estagio).toBe('ARQUIVADO');
+    expect(c.ultimoMovimento?.grau).toBe('G1');
+  });
+
+  it('burocracia depois da baixa não reabre, mas é contada', () => {
+    const c = classificarSituacao([hit('G1', [mov(22, '2024-03-12T10:00:00Z'), mov(85, '2024-04-01T00:00:00Z'), mov(12143, '2024-05-01T00:00:00Z')])]);
+    expect(c.estagio).toBe('ARQUIVADO');
+    expect(c.residuais).toBe(2);
+    expect(c.motivo).toMatch(/2 movimento/);
+    for (const codigo of RUIDO_POS_BAIXA) {
+      expect(classificarSituacao([hit('G1', [mov(22, '2024-03-12T10:00:00Z'), mov(codigo, '2024-04-01T00:00:00Z')])]).estagio).toBe('ARQUIVADO');
+    }
+  });
+
+  it('movimento substantivo depois da baixa pede revisão, sem fechar', () => {
+    const c = classificarSituacao([hit('G1', [mov(22, '2021-02-03T10:00:00Z'), mov(85, '2021-03-01T00:00:00Z'), mov(51, '2026-07-07T00:00:00Z', 'Conclusão')])]);
+    expect(c.estagio).toBe('REVISAR');
+    expect(c.situacao).toBe('ATIVO');
+    expect(c.dataArquivamento).toBeNull();
+    expect(c.residuais).toBe(1);
+    expect(c.motivo).toMatch(/Conclusão em 07\/07\/2026/);
+    expect(classificarSituacao([hit('G1', [mov(22, '2021-02-03T10:00:00Z'), mov(861, '2022-01-01T00:00:00Z')])]).estagio).toBe('REVISAR');
+  });
+
+  it('só a última baixa conta', () => {
+    const c = classificarSituacao([hit('G1', [mov(22, '2020-01-01T00:00:00Z'), mov(51, '2021-01-01T00:00:00Z'), mov(22, '2022-01-01T00:00:00Z')])]);
+    expect(c.estagio).toBe('ARQUIVADO');
+    expect(c.dataArquivamento?.toISOString()).toBe('2022-01-01T00:00:00.000Z');
+  });
+
+  it('suspensão ou arquivamento provisório como último evento é SUSPENSO', () => {
+    expect(classificarSituacao([hit('G1', [mov(219, '2020-01-01T00:00:00Z'), mov(245, '2021-01-01T00:00:00Z')])]).estagio).toBe('SUSPENSO');
+    expect(classificarSituacao([hit('G1', [mov(12065, '2026-07-13T00:00:00Z')])]).estagio).toBe('SUSPENSO');
+    // Suspensão antiga seguida de tramitação: não é mais suspenso.
+    expect(classificarSituacao([hit('G1', [mov(245, '2021-01-01T00:00:00Z'), mov(51, '2022-01-01T00:00:00Z')])]).estagio).toBe('ATIVO');
+  });
+
+  it('classe de cumprimento sem baixa é EM_CUMPRIMENTO, com ou sem trânsito', () => {
+    const c = classificarSituacao([hit('G1', [mov(848, '2024-01-01T00:00:00Z'), mov(85, '2025-01-01T00:00:00Z')], 'Cumprimento de Sentença contra a Fazenda Pública')]);
+    expect(c.estagio).toBe('EM_CUMPRIMENTO');
+    expect(classificarSituacao([hit('G1', [mov(51, '2025-01-01T00:00:00Z')], 'Execução Contra a Fazenda Pública')]).estagio).toBe('EM_CUMPRIMENTO');
+    expect(classificarSituacao([hit('G1', [mov(22, '2025-06-01T00:00:00Z')], 'Cumprimento de sentença')]).estagio).toBe('ARQUIVADO');
+  });
+
+  it('trânsito sem baixa nem cumprimento é TRANSITADO', () => {
+    const c = classificarSituacao([hit('G1', [mov(219, '2026-06-01T00:00:00Z'), mov(848, '2026-08-21T00:00:00Z')], 'Procedimento Comum Cível')]);
+    expect(c.estagio).toBe('TRANSITADO');
+    expect(c.resultado).toBe('PROCEDENTE');
+    expect(c.motivo).toMatch(/sem baixa/);
+  });
+
+  it('sentença sem trânsito é SENTENCIADO e guarda o resultado mais recente', () => {
+    const c = classificarSituacao([hit('G1', [mov(220, '2025-01-01T00:00:00Z'), mov(221, '2025-06-01T00:00:00Z'), mov(85, '2025-07-01T00:00:00Z')])]);
+    expect(c.estagio).toBe('SENTENCIADO');
+    expect(c.resultado).toBe('PARCIALMENTE_PROCEDENTE');
+    expect(classificarSituacao([hit('G1', [mov(TPU.IMPROCEDENCIA, '2025-01-01T00:00:00Z')])]).resultado).toBe('IMPROCEDENTE');
+  });
+
+  it('sem nada disso é ATIVO', () => {
+    const c = classificarSituacao([hit('G1', [mov(26, '2026-01-01T00:00:00Z'), mov(51, '2026-02-01T00:00:00Z')])]);
+    expect(c.estagio).toBe('ATIVO');
+    expect(c.resultado).toBeNull();
+    expect(c.motivo).toMatch(/^Último:/);
+  });
+
+  it('o fixture real com apelação em curso é SENTENCIADO, não ATIVO nem ARQUIVADO', () => {
+    const c = classificarSituacao(G1_G2);
+    expect(c.estagio).toBe('SENTENCIADO');
+    expect(c.resultado).not.toBeNull();
+    expect(c.situacao).toBe('ATIVO');
+  });
+
+  it('reproduz a calibração sobre os processos reais da firma', () => {
+    expect(CASOS.length).toBeGreaterThan(60);
+    const cobertos = new Set(CASOS.map((c) => c.esperado));
+    expect([...cobertos].sort()).toEqual(['ARQUIVADO', 'ATIVO', 'EM_CUMPRIMENTO', 'REVISAR', 'SENTENCIADO', 'SUSPENSO', 'TRANSITADO']);
+    for (const caso of CASOS) {
+      const c = classificarSituacao(hitsDoCaso(caso));
+      expect(c.estagio, caso.instancias.map((i) => i.classe).join('/')).toBe(caso.esperado);
+      expect(c.resultado).toBe(caso.resultado);
+      expect(c.dataArquivamento?.toISOString() ?? null).toBe(caso.dataArquivamento);
+      expect(c.situacao).toBe(caso.esperado === 'ARQUIVADO' ? 'ARQUIVADO' : 'ATIVO');
+    }
   });
 });
 
