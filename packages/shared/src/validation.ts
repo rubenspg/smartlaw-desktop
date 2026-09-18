@@ -175,6 +175,27 @@ export const firmUpdateSchema = z.object({
   logo: z.string().max(LOGO_MAX_CHARS, 'Logo excede o tamanho máximo').nullable().optional(),
   // Ausente ou vazio significa "manter a chave atual" — nunca sobrescrever com vazio.
   datajudApiKey: z.string().optional(),
+  // Advogados acompanhados no DJEN que não são usuários do app.
+  oabsMonitoradas: z
+    .array(
+      z.object({
+        numero: z.string().min(1, 'Número da OAB é obrigatório').max(12),
+        uf: z.string().length(2, 'UF com 2 letras'),
+        nome: z.string().max(200).optional(),
+      }),
+    )
+    .max(50)
+    .optional(),
+  // Feriados locais além dos nacionais: `MM-DD` (todo ano) ou `YYYY-MM-DD`.
+  feriados: z
+    .array(
+      z.object({
+        data: z.string().regex(/^(\d{4}-)?\d{2}-\d{2}$/, 'Use MM-DD ou YYYY-MM-DD'),
+        nome: z.string().min(1).max(200),
+      }),
+    )
+    .max(100)
+    .optional(),
 });
 
 export type FirmUpdateInput = z.infer<typeof firmUpdateSchema>;
@@ -194,6 +215,9 @@ export const usuarioUpdateSchema = z.object({
   senha: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres').optional(),
   perfil: z.enum(['admin', 'usuario', 'administrativo', 'secretaria']).optional(),
   ativo: z.boolean().optional(),
+  // Inscrição na OAB: quem a tem recebe as tarefas das intimações do DJEN.
+  oabNumero: z.string().max(12).nullable().optional(),
+  oabUf: z.string().length(2, 'UF com 2 letras').nullable().optional(),
 });
 
 export type UsuarioUpdateInput = z.infer<typeof usuarioUpdateSchema>;

@@ -7,6 +7,7 @@ import { zValidator } from '@hono/zod-validator';
 import { usuarioSchema, usuarioUpdateSchema } from '@smartlaw/shared';
 import { authMiddleware, Variables } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
+import { normalizarOab } from '../services/djen/normalizar';
 
 const usuariosRoutes = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
@@ -59,6 +60,8 @@ const usuariosRoutes = new Hono<{ Variables: Variables }>()
         perfil: profiles.perfil,
         ativo: profiles.ativo,
         firmId: profiles.firmId,
+        oabNumero: profiles.oabNumero,
+        oabUf: profiles.oabUf,
         createdAt: profiles.createdAt,
         updatedAt: profiles.updatedAt,
       })
@@ -138,6 +141,9 @@ const usuariosRoutes = new Hono<{ Variables: Variables }>()
 
     try {
       const updateData: any = { ...data, updatedAt: new Date() };
+      // OAB guardada já normalizada ("RS062492" → "62492", UF maiúscula) para casar com o DJEN.
+      if (data.oabNumero !== undefined) updateData.oabNumero = data.oabNumero ? normalizarOab(data.oabNumero) || null : null;
+      if (data.oabUf !== undefined) updateData.oabUf = data.oabUf ? data.oabUf.toUpperCase() : null;
 
       if (senha) {
         updateData.passwordHash = await bcrypt.hash(senha, 10);

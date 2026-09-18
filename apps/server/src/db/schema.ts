@@ -48,8 +48,27 @@ export const firms = pgTable('firms', {
   nome: text('nome').notNull().unique(),
   logo: text('logo'),
   datajudApiKey: text('datajud_api_key'),
+  // Advogados cujas intimações o DJEN deve trazer e que não são usuários do
+  // app (os que são têm profiles.oab_numero). Seed da firma na migration 0008.
+  oabsMonitoradas: jsonb('oabs_monitoradas').$type<OabMonitorada[]>().default([]).notNull(),
+  // Feriados locais (estadual/municipal) além dos nacionais, que ficam no
+  // código (services/djen/prazos.ts). Cada um adia o termo final — só cadastre
+  // os que o tribunal da firma realmente observa.
+  feriados: jsonb('feriados').$type<Feriado[]>().default([]).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
+
+export interface OabMonitorada {
+  numero: string;
+  uf: string;
+  nome?: string;
+}
+
+/** `data` é `MM-DD` (todo ano) ou `YYYY-MM-DD` (só naquele ano). */
+export interface Feriado {
+  data: string;
+  nome: string;
+}
 
 export const profiles = pgTable('profiles', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -62,6 +81,10 @@ export const profiles = pgTable('profiles', {
   // Segredo do feed iCalendar da agenda. Fica na URL da assinatura, então é
   // um token dedicado e revogável — nunca o JWT. Nulo até o usuário gerar.
   agendaToken: text('agenda_token').unique(),
+  // Inscrição na OAB: quem tem OAB recebe as tarefas das intimações em que é
+  // destinatário. Número sem UF e sem zeros à esquerda ("62492"), UF em maiúsculas.
+  oabNumero: text('oab_numero'),
+  oabUf: text('oab_uf'),
   // reset_token / reset_token_expires (migration 0004, nunca usadas) foram
   // removidas com DROP COLUMN IF EXISTS na 0007 — não redeclarar. Ver #31.
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
@@ -226,6 +249,90 @@ export const andamentos = pgTable('andamentos', {
   index('andamentos_firm_id_inclusao_idx').on(t.firmId, t.inclusao),
 ]);
 
+/**
+ * Comunicações do DJEN (comunicaapi.pje.jus.br) endereçadas aos advogados da
+ * firma. Uma linha por comunicação; `external_id` = `djen:<id>` da API. O
+ * vínculo com o processo é por número CNJ; quando o processo não existe, o
+ * sync o cria em TRIAGEM (services/djen/sincronizar.ts).
+ */
+export const intimacoes = pgTable('intimacoes', {
+  id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+  firmId: uuid('firm_id').references(() => firms.id).notNull(),
+  externalId: text('external_id').notNull(),
+  hash: text('hash'),
+  numeroProcesso: text('numero_processo').notNull(), // 20 dígitos
+  processoJudicialId: bigint('processo_judicial_id', { mode: 'number' }).references(() => processosJudiciais.id, { onDelete: 'set null' }),
+  siglaTribunal: text('sigla_tribunal').notNull(),
+  tipoComunicacao: text('tipo_comunicacao').notNull(),
+  tipoDocumento: text('tipo_documento'),
+  nomeOrgao: text('nome_orgao'),
+  idOrgao: integer('id_orgao'),
+  nomeClasse: text('nome_classe'),
+  codigoClasse: text('codigo_classe'),
+  textoHtml: text('texto_html'),
+  textoPlano: text('texto_plano'),
+  link: text('link'),
+  meio: text('meio'),
+  dataDisponibilizacao: date('data_disponibilizacao').notNull(),
+  destinatarios: jsonb('destinatarios').$type<IntimacaoDestinatario[]>().default([]).notNull(),
+  // Todos os advogados destinatários, OAB normalizada; e o subconjunto que é da firma.
+  advogados: jsonb('advogados').$type<IntimacaoAdvogado[]>().default([]).notNull(),
+  oabsAlvo: jsonb('oabs_alvo').$type<string[]>().default([]).notNull(),
+  ativo: boolean('ativo').default(true).notNull(),
+  motivoCancelamento: text('motivo_cancelamento'),
+  dataCancelamento: date('data_cancelamento'),
+  // Prazo calculado na chegada (services/djen/prazos.ts); nulo nas informativas.
+  prazoDias: integer('prazo_dias'),
+  prazoPublicacao: date('prazo_publicacao'),
+  prazoFim: date('prazo_fim'),
+  tarefaId: bigint('tarefa_id', { mode: 'number' }).references(() => tarefas.id, { onDelete: 'set null' }),
+  lidaEm: timestamp('lida_em', { withTimezone: true }),
+  lidaPor: uuid('lida_por').references(() => profiles.id, { onDelete: 'set null' }),
+  raw: jsonb('raw'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex('intimacoes_firm_id_external_id_idx').on(t.firmId, t.externalId),
+  index('intimacoes_firm_id_data_idx').on(t.firmId, t.dataDisponibilizacao),
+  index('intimacoes_firm_id_processo_idx').on(t.firmId, t.processoJudicialId),
+  index('intimacoes_firm_id_numero_idx').on(t.firmId, t.numeroProcesso),
+]);
+
+export interface IntimacaoDestinatario {
+  nome: string;
+  polo: string | null;
+}
+
+export interface IntimacaoAdvogado {
+  nome: string;
+  numero: string;
+  uf: string;
+}
+
+/**
+ * Uma linha por execução dos jobs de sincronização (DJEN hoje; Datajud em
+ * lote na fase 2). `GEOBLOQUEADO` é o 403 do DJEN fora do Brasil — na
+ * produção significa que o túnel do roteador caiu (skill hp-proxmox).
+ */
+export const syncRuns = pgTable('sync_runs', {
+  id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+  firmId: uuid('firm_id').references(() => firms.id).notNull(),
+  tipo: text('tipo').$type<'DJEN' | 'DATAJUD'>().notNull(),
+  status: text('status').$type<'EXECUTANDO' | 'SUCESSO' | 'GEOBLOQUEADO' | 'ERRO'>().notNull(),
+  iniciadoEm: timestamp('iniciado_em', { withTimezone: true }).notNull(),
+  finalizadoEm: timestamp('finalizado_em', { withTimezone: true }),
+  janelaInicio: date('janela_inicio'),
+  janelaFim: date('janela_fim'),
+  itensLidos: integer('itens_lidos').default(0).notNull(),
+  itensNovos: integer('itens_novos').default(0).notNull(),
+  processosCriados: integer('processos_criados').default(0).notNull(),
+  tarefasCriadas: integer('tarefas_criadas').default(0).notNull(),
+  mensagem: text('mensagem'),
+  detalhes: jsonb('detalhes'),
+}, (t) => [
+  index('sync_runs_firm_id_iniciado_em_idx').on(t.firmId, t.iniciadoEm),
+]);
+
 export const partes = pgTable('partes', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
   processoJudicialId: bigint('processo_judicial_id', { mode: 'number' }).references(() => processosJudiciais.id, { onDelete: 'cascade' }),
@@ -318,6 +425,18 @@ export const processosJudiciaisRelations = relations(processosJudiciais, ({ one,
   andamentos: many(andamentos),
   partes: many(partes),
   instancias: many(processoInstancias),
+  intimacoes: many(intimacoes),
+}));
+
+export const intimacoesRelations = relations(intimacoes, ({ one }) => ({
+  processo: one(processosJudiciais, {
+    fields: [intimacoes.processoJudicialId],
+    references: [processosJudiciais.id],
+  }),
+  tarefa: one(tarefas, {
+    fields: [intimacoes.tarefaId],
+    references: [tarefas.id],
+  }),
 }));
 
 export const processoInstanciasRelations = relations(processoInstancias, ({ one, many }) => ({

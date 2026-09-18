@@ -192,7 +192,7 @@ Acceptance (met): `POST /processos/judiciais/:id/sync` on `5019210-08.2021.4.04.
 Files: new `apps/server/src/jobs/scheduler.ts`, `jobs/datajud-sync.ts`, migration `0007_*`, `routes/notificacoes.ts`, desktop Hub card.
 
 1. Table `notificacoes` (`id`, `firm_id`, `usuario_id` nullable = broadcast, `tipo` `ANDAMENTO|INTIMACAO|SYNC_ERRO`, `titulo`, `corpo`, `processo_judicial_id`, `processo_admin_id`, `intimacao_id`, `lida_em`, `created_at`) + index `(firm_id, lida_em, created_at)`.
-2. Table `sync_runs` (`id`, `firm_id`, `fonte` `DATAJUD|DJEN`, `started_at`, `finished_at`, `status`, `processos_verificados`, `novos_andamentos`, `erro`) for the Settings page and for debugging.
+2. ~~Table `sync_runs`~~ — **already created by Phase 3's migration 0008** (`tipo DJEN|DATAJUD`, `status EXECUTANDO|SUCESSO|GEOBLOQUEADO|ERRO`, `janela_inicio/fim`, `itens_lidos/novos`, `processos_criados`, `tarefas_criadas`, `mensagem`, `detalhes jsonb`); write the Datajud job's rows into it with `tipo='DATAJUD'`. Original: table `sync_runs` (`id`, `firm_id`, `fonte` `DATAJUD|DJEN`, `started_at`, `finished_at`, `status`, `processos_verificados`, `novos_andamentos`, `erro`) for the Settings page and for debugging.
 3. Job `datajud-sync` (default every 6 h, configurable `DATAJUD_SYNC_CRON`): for each firm → group active cases (`dt_arquivado is null`) by alias → chunks of 50 numbers → `fetchMany` → upsert instances/movimentos → for each case with new rows create one `notificacoes` row (`ANDAMENTO`, "3 novos andamentos em 5019210-08…"). Skip cases whose instance `dataHoraUltimaAtualizacao` did not change (cheap: compare before parsing movimentos).
 4. Budget check: 1,122 CNJ numbers / 50 = 23 requests per run; with the converted legacy numbers (§7) ~75 requests. At 2 req/s that is < 1 minute. Fine every 6 h.
 5. Scheduler: `startScheduler()` called from `index.ts` only (not from `app.ts`, so tests don't run it); `SCHEDULER_ENABLED=false` to disable; wrap each run in `pg_advisory_xact_lock(hashtext('datajud-sync'))` so two API replicas never overlap.
@@ -203,6 +203,21 @@ Files: new `apps/server/src/jobs/scheduler.ts`, `jobs/datajud-sync.ts`, migratio
 Acceptance: after the first scheduled run, `sync_runs` shows the row, Hub shows notifications, rerun creates none.
 
 ### Phase 3 — DJEN intimações (the caller must be in Brazil, see §5)
+
+**Status (2026-09-18): domain logic implemented by Fable — `apps/server/src/services/djen/`, migration `0008_intimacoes`, `routes/intimacoes.ts`, 47 unit + 10 integration tests on redacted real fixtures (`apps/server/test/fixtures/djen/`).** What exists and what Opus still owns:
+
+| Done (Fable) | Where | Remaining (Opus) |
+|---|---|---|
+| `DjenClient` — paging that ignores `count`, 500 ms throttle, retry on 429/5xx, `403 → DjenError('geobloqueado')`, `direct`/`relay` transport, `obter`, `certidao`, `verificarAcesso` | `services/djen/client.ts` | — |
+| Business-day calendar + prazo (`calcularPrazo`): publication = next business day, count from the next, national + movable holidays, recess 20/12–20/01, `firms.feriados` extras | `services/djen/prazos.ts` | Settings UI for `firms.feriados` |
+| OAB normalization, dedupe by id, `textoPlano`, prazo table (`prazoSugerido`), informational types | `services/djen/normalizar.ts` | Phase 6 proposes N from the text |
+| `sincronizarIntimacoes({firmId, client, datajud?, dias|inicio/fim})`: `sync_runs` row (`EXECUTANDO → SUCESSO|GEOBLOQUEADO|ERRO`), one query per OAB, upsert `(firm_id, external_id)`, link by CNJ digits (also relinks old rows when a case is registered later), **TRIAGEM auto-create** + immediate Datajud sync, **tarefa per prazo** to the profile whose OAB matched (fallback: oldest active admin) | `services/djen/sincronizar.ts` | `jobs/djen-sync.ts` calling it at 09:00 and 14:00 America/Sao_Paulo (window `dias: 3`); `notificacoes` rows from `resultado.processosEmTriagem` |
+| Schema: `intimacoes` (with `prazo_dias/prazo_publicacao/prazo_fim`, `oabs_alvo`, `lida_em/lida_por`, `tarefa_id`), **`sync_runs`** (so Phase 2 reuses it — do not create it again), `profiles.oab_numero/oab_uf`, `firms.oabs_monitoradas` + `firms.feriados` (seeded for this firm in the migration) | `db/schema.ts`, `migrations/0008_intimacoes.sql` | — |
+| Routes: `GET /intimacoes` (filters `lida`, `tribunal`, `inicio`, `fim`, `processoId`, paginated, no HTML), `GET /intimacoes/:id`, `POST|DELETE /intimacoes/:id/lida`, `GET /intimacoes/runs`, `GET /intimacoes/status`, `POST /intimacoes/sync {dias?, inicio?, fim?}` (admin/administrativo); `PATCH /usuarios/:id` accepts `oabNumero/oabUf`; `PATCH /firms/me` accepts `oabsMonitoradas/feriados` | `routes/intimacoes.ts`, `usuarios.ts`, `firms.ts` | Desktop: Intimações page, case-page section, Hub card, Triagem filter/badge on Processos, OAB fields in Usuários, OABs/feriados in Configurações |
+
+Deviations from the list below, on purpose: **Citação suggests 15 business days, not 30** (CPC art. 335; 30 is the Fazenda's doubled prazo, and a suggestion longer than the law is the one error the calculator must never make); `external_id` is unique per firm, not global; `TRIAGEM` creation happens only for intimações inserted in that run (a run with `criarProcessos: false` leaves them unlinked for good, by design). **Backfill in production** = `POST /intimacoes/sync {"dias": 60}` once, from an admin session; it takes a few minutes because each TRIAGEM case is synced in Datajud.
+
+Original spec (kept for reference):
 
 Files: `services/djen/DjenClient.ts`, `jobs/djen-sync.ts`, migration `0008_*`, `routes/intimacoes.ts`, desktop `intimacoes` page.
 
@@ -276,8 +291,8 @@ Still worth considering for latency (every user is in Brazil) and LGPD simplicit
 | `SCHEDULER_ENABLED` | server | default `true` in prod, `false` in tests. |
 | `DATAJUD_SYNC_INTERVAL_MIN` | server | default `360`. |
 | `DJEN_SYNC_TIMES` | server | default `08:00,13:00` (America/Sao_Paulo). |
-| `DJEN_TRANSPORT` | server | `direct` (default; LXC 103 exits through the router VPN, §5) or `relay` (only if the routing setup ever goes away). |
-| `BR_RELAY_URL`, `BR_RELAY_TOKEN` | server | Only when `DJEN_TRANSPORT=relay`. Unset by default. |
+| `DJEN_TRANSPORT` | server | `direct` (default; LXC 103 exits through the router VPN, §5) or `relay` (only if the routing setup ever goes away). Implemented in `env.ts` (Phase 3). |
+| `BR_RELAY_URL`, `BR_RELAY_TOKEN` | server | Only when `DJEN_TRANSPORT=relay`; the server refuses to start with `relay` and no URL. Unset by default. |
 | `NTFY_URL` | server | optional push. |
 
 Add them to `apps/server/.env.example` and to `env.ts` (validate types, do not require).
@@ -286,9 +301,9 @@ Add them to `apps/server/.env.example` and to `env.ts` (validate types, do not r
 
 ## 7. Data-model summary (Drizzle, `apps/server/src/db/schema.ts`)
 
-New: `processo_instancias`, `notificacoes`, `sync_runs`, `intimacoes`, `documentos_inss`.
+New: `processo_instancias` (done, 0007), `intimacoes` + `sync_runs` (done, 0008), `notificacoes`, `documentos_inss`.
 Altered: `processos_judiciais.numero_cnj`; `profiles.oab_numero`, `profiles.oab_uf`; `firms.oab_extras`, `firms.feriados`, `firms.ntfy_topic`; `processos_administrativos.{nb, protocolo, der, dib, situacao, orgao}`; `clientes.procuracao_inss_ate`.
-Every new table has `firm_id not null` + index; every job query filters by it. Generate migrations with `npm run db:generate -w apps/server` (next tag is `0007_*`).
+Every new table has `firm_id not null` + index; every job query filters by it. Generate migrations with `npm run db:generate --name <slug> -w apps/server` (next tag is `0009_*`; 0007 = `processo_instancias`, 0008 = `intimacoes` + `sync_runs` + OAB/feriados columns).
 
 ---
 
