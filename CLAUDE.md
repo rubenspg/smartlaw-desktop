@@ -62,10 +62,21 @@ for the "Sincronizar" button and the future batch job. Datajud stores **one
 document per instance** (`grau` G1/G2/JE/TR) — never read `hits[0]` alone;
 instances land in `processo_instancias`, movimentos in `andamentos` with
 `tipo='DATAJUD'` and a content hash in `external_id`. Each firm may hold its
-own key (`firms.datajudApiKey`), falling back to `DATAJUD_API_KEY` (CNJ's
-published public key by default). **Never return the firm key to the client**;
-`GET /firms/me` exposes only `hasDatajudKey`. Research and roadmap:
-`docs/INTEGRACAO_TRIBUNAIS_INSS.md`.
+own key (`firms.datajudApiKey`), falling back to `DATAJUD_API_KEY`. **Never
+return the firm key to the client**; `GET /firms/me` exposes only `hasDatajudKey`.
+
+**The key is already stored in the database** (`firms.datajud_api_key`, both
+firms, production and dev, set 2026-09-18) — it is CNJ's *published public*
+key, not a secret, so no `.env` entry is needed for the feature to work. CNJ
+may rotate it at any time; when searches start failing with "chave recusada",
+fetch the current one from https://datajud-wiki.cnj.jus.br/api-publica/acesso
+and update the column (or the Settings page). `GET /firms/datajud/status`
+reports which key is in use and whether CNJ accepts it.
+
+**DJEN (court intimações) only answers Brazilian IPs.** The production API on
+LXC 103 exits through the home router's NordVPN Brazil tunnel via a VPN
+Director rule; see the `hp-proxmox` skill's Router section. Research and
+roadmap: `docs/INTEGRACAO_TRIBUNAIS_INSS.md`.
 
 **Migration 0004 was reconstructed** (#31). Its unused `profiles.reset_token`
 and `reset_token_expires` columns are dropped with `IF EXISTS` in 0007 because
