@@ -76,7 +76,7 @@ throwaway `node:20-alpine` containers with the repo bind-mounted. Note that
 | `DATABASE_URL` | PostgreSQL connection string | *(required — server exits if unset)* |
 | `JWT_SECRET` | Secret for signing JWTs | *(required — min 32 chars, server exits otherwise)* |
 | `PORT` | Port the API server listens on | `3001` |
-| `DATAJUD_API_KEY` | Fallback CNJ Datajud API key, used when the firm has none configured | *(optional in dev)* |
+| `DATAJUD_API_KEY` | Fallback CNJ Datajud API key, used when the firm has none configured. `.env.example` ships CNJ's published public key (not a secret; CNJ may rotate it) | CNJ public key |
 | `LMSTUDIO_URL` | LM Studio endpoint backing `GET /dashboard/resumo-ia` | `http://localhost:1234` |
 | `LMSTUDIO_MODEL` | Model name requested from LM Studio | `google/gemma-4-e4b` |
 | `NODE_ENV` | `development` or `production` | `development` |

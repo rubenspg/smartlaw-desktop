@@ -19,6 +19,14 @@ export type ProcessoJudicial = InferResponseType<
   200
 >;
 
+/** Resultado da busca no Datajud antes do cadastro (todas as instâncias resumidas). */
+export type DatajudBusca = InferResponseType<
+  typeof api.processos.judiciais.datajud.search.$post,
+  200
+>;
+
+export type ProcessoInstancia = ProcessoJudicial['instancias'][number];
+
 export type ProcessoAdministrativo = InferResponseType<
   (typeof api.processos.administrativos)[':id']['$get'],
   200

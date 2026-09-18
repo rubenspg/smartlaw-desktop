@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, boolean, bigint, date, decimal, jsonb, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, boolean, bigint, date, decimal, jsonb, index, integer, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // Toda tabela de negócio é filtrada por firm_id em praticamente todas as
@@ -62,11 +62,8 @@ export const profiles = pgTable('profiles', {
   // Segredo do feed iCalendar da agenda. Fica na URL da assinatura, então é
   // um token dedicado e revogável — nunca o JWT. Nulo até o usuário gerar.
   agendaToken: text('agenda_token').unique(),
-  // NÃO declarar reset_token / reset_token_expires aqui. A migration 0004 as
-  // criou, mas seu .sql sumiu do repositório (#31), então bancos existentes
-  // divergem: alguns têm as colunas, outros não. Declará-las faz todo
-  // `select()` sobre profiles quebrar onde elas não existem. Nenhum código as
-  // usa. Ver #31.
+  // reset_token / reset_token_expires (migration 0004, nunca usadas) foram
+  // removidas com DROP COLUMN IF EXISTS na 0007 — não redeclarar. Ver #31.
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 }, (t) => [
@@ -165,15 +162,57 @@ export const processosAdministrativos = pgTable('processos_administrativos', {
   index('processos_administrativos_cliente_id_idx').on(t.clienteId),
 ]);
 
+/**
+ * Uma linha por documento do Datajud: o CNJ guarda um documento por instância
+ * (G1, G2, JE, TR…), então um processo com apelação tem duas linhas aqui.
+ * `datajud_doc_id` é o `_id` do Elasticsearch (ex.: TRF4_G2_5019210082021…).
+ */
+export const processoInstancias = pgTable('processo_instancias', {
+  id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+  firmId: uuid('firm_id').references(() => firms.id).notNull(),
+  processoJudicialId: bigint('processo_judicial_id', { mode: 'number' })
+    .references(() => processosJudiciais.id, { onDelete: 'cascade' })
+    .notNull(),
+  datajudDocId: text('datajud_doc_id').notNull(),
+  tribunal: text('tribunal').notNull(),
+  grau: text('grau').notNull(),
+  // 1 = origem (G1/JE), 2 = recurso (G2/TR), 3 = superior. Para ordenar sem tabela de grau.
+  grauOrdem: integer('grau_ordem').notNull(),
+  numeroProcesso: text('numero_processo').notNull(),
+  classeCodigo: integer('classe_codigo'),
+  classeNome: text('classe_nome'),
+  orgaoJulgadorCodigo: integer('orgao_julgador_codigo'),
+  orgaoJulgadorNome: text('orgao_julgador_nome'),
+  codigoMunicipioIbge: integer('codigo_municipio_ibge'),
+  sistema: text('sistema'),
+  formato: text('formato'),
+  nivelSigilo: integer('nivel_sigilo'),
+  assuntos: jsonb('assuntos'),
+  dataAjuizamento: timestamp('data_ajuizamento', { withTimezone: true }),
+  dataHoraUltimaAtualizacao: timestamp('data_hora_ultima_atualizacao', { withTimezone: true }),
+  totalMovimentos: integer('total_movimentos').default(0).notNull(),
+  raw: jsonb('raw'),
+  syncedAt: timestamp('synced_at', { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+}, (t) => [
+  uniqueIndex('processo_instancias_firm_doc_uidx').on(t.firmId, t.datajudDocId),
+  index('processo_instancias_firm_id_idx').on(t.firmId),
+  index('processo_instancias_processo_judicial_id_idx').on(t.processoJudicialId),
+]);
+
 export const andamentos = pgTable('andamentos', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
   firmId: uuid('firm_id').references(() => firms.id).notNull(),
   processoJudicialId: bigint('processo_judicial_id', { mode: 'number' }).references(() => processosJudiciais.id, { onDelete: 'cascade' }),
   processoAdminId: bigint('processo_admin_id', { mode: 'number' }).references(() => processosAdministrativos.id, { onDelete: 'cascade' }),
   usuarioId: uuid('usuario_id').references(() => profiles.id, { onDelete: 'set null' }),
+  // Instância do Datajud que originou o andamento (tipo DATAJUD); null nos manuais.
+  instanciaId: bigint('instancia_id', { mode: 'number' }).references(() => processoInstancias.id, { onDelete: 'set null' }),
   data: timestamp('data', { withTimezone: true }).notNull(),
   inclusao: timestamp('inclusao', { withTimezone: true }).notNull(),
   historico: text('historico'),
+  // MANUAL (usuário), DATAJUD (movimento do tribunal), SISTEMA (aviso gerado pela aplicação).
   tipo: text('tipo'),
   documento: text('documento'),
   externalId: text('external_id').unique(),
@@ -278,6 +317,15 @@ export const processosJudiciaisRelations = relations(processosJudiciais, ({ one,
   }),
   andamentos: many(andamentos),
   partes: many(partes),
+  instancias: many(processoInstancias),
+}));
+
+export const processoInstanciasRelations = relations(processoInstancias, ({ one, many }) => ({
+  processo: one(processosJudiciais, {
+    fields: [processoInstancias.processoJudicialId],
+    references: [processosJudiciais.id],
+  }),
+  andamentos: many(andamentos),
 }));
 
 export const partesRelations = relations(partes, ({ one }) => ({
@@ -303,6 +351,10 @@ export const andamentosRelations = relations(andamentos, ({ one }) => ({
   processoJudicial: one(processosJudiciais, {
     fields: [andamentos.processoJudicialId],
     references: [processosJudiciais.id],
+  }),
+  instancia: one(processoInstancias, {
+    fields: [andamentos.instanciaId],
+    references: [processoInstancias.id],
   }),
   processoAdmin: one(processosAdministrativos, {
     fields: [andamentos.processoAdminId],

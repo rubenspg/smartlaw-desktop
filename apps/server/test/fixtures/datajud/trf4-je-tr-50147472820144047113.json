@@ -1,0 +1,1091 @@
+{
+  "took": 6,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 2,
+      "relation": "eq"
+    },
+    "max_score": 15.339472,
+    "hits": [
+      {
+        "_index": "api_publica_trf4",
+        "_id": "TRF4_JE_50147472820144047113",
+        "_score": 15.339472,
+        "_source": {
+          "id": "TRF4_JE_50147472820144047113",
+          "tribunal": "TRF4",
+          "grau": "JE",
+          "numeroProcesso": "50147472820144047113",
+          "dataAjuizamento": "20141104155329",
+          "nivelSigilo": 0,
+          "orgaoJulgador": {
+            "codigo": 12597,
+            "nome": "2a Vara Federal de Bento Goncalves",
+            "codigoMunicipioIBGE": 4302105
+          },
+          "classe": {
+            "codigo": 12078,
+            "nome": "Cumprimento de Sentença contra a Fazenda Pública"
+          },
+          "sistema": {
+            "codigo": 4,
+            "nome": "Projudi"
+          },
+          "formato": {
+            "codigo": 1,
+            "nome": "Eletrônico"
+          },
+          "dataHoraUltimaAtualizacao": "2026-08-07T07:36:31.451000Z",
+          "@timestamp": "2026-08-07T07:36:31.451000Z",
+          "movimentos": [
+            {
+              "codigo": 51,
+              "dataHora": "2023-02-15T15:51:44.000Z",
+              "nome": "Conclusão",
+              "complementosTabelados": [
+                {
+                  "codigo": 3,
+                  "descricao": "tipo_de_conclusao",
+                  "valor": 5,
+                  "nome": "para despacho"
+                }
+              ],
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 581,
+              "dataHora": "2023-01-23T13:42:54.000Z",
+              "nome": "Documento",
+              "complementosTabelados": [
+                {
+                  "codigo": 4,
+                  "descricao": "tipo_de_documento",
+                  "valor": 80,
+                  "nome": "Outros documentos"
+                }
+              ],
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 123,
+              "dataHora": "2023-01-19T17:11:58.000Z",
+              "nome": "Remessa",
+              "complementosTabelados": [
+                {
+                  "codigo": 18,
+                  "descricao": "motivo_da_remessa",
+                  "valor": 40,
+                  "nome": "outros motivos"
+                }
+              ],
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 123,
+              "dataHora": "2022-12-17T08:38:26.000Z",
+              "nome": "Remessa",
+              "complementosTabelados": [
+                {
+                  "codigo": 18,
+                  "descricao": "motivo_da_remessa",
+                  "valor": 40,
+                  "nome": "outros motivos"
+                }
+              ],
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 51,
+              "dataHora": "2022-12-16T15:41:55.000Z",
+              "nome": "Conclusão",
+              "complementosTabelados": [
+                {
+                  "codigo": 3,
+                  "descricao": "tipo_de_conclusao",
+                  "valor": 5,
+                  "nome": "para despacho"
+                }
+              ],
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 10966,
+              "dataHora": "2022-12-16T15:32:06.000Z",
+              "nome": "Mudança de Classe Processual",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 1051,
+              "dataHora": "2015-10-06T01:04:57.000Z",
+              "nome": "Decurso de Prazo",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 581,
+              "dataHora": "2015-07-23T16:17:19.000Z",
+              "nome": "Documento",
+              "complementosTabelados": [
+                {
+                  "codigo": 4,
+                  "descricao": "tipo_de_documento",
+                  "valor": 107,
+                  "nome": "Certidão"
+                }
+              ],
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 51,
+              "dataHora": "2015-07-10T16:28:48.000Z",
+              "nome": "Conclusão",
+              "complementosTabelados": [
+                {
+                  "codigo": 3,
+                  "descricao": "tipo_de_conclusao",
+                  "valor": 6,
+                  "nome": "para decisão"
+                }
+              ],
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 123,
+              "dataHora": "2015-05-21T10:31:25.000Z",
+              "nome": "Remessa",
+              "complementosTabelados": [
+                {
+                  "codigo": 18,
+                  "descricao": "motivo_da_remessa",
+                  "valor": 38,
+                  "nome": "em grau de recurso"
+                }
+              ],
+              "orgaoJulgador": {
+                "codigo": "17807",
+                "nome": "1ª Turma Recursal do Rio Grande do Sul"
+              }
+            },
+            {
+              "codigo": 581,
+              "dataHora": "2015-05-16T13:46:37.000Z",
+              "nome": "Documento",
+              "complementosTabelados": [
+                {
+                  "codigo": 4,
+                  "descricao": "tipo_de_documento",
+                  "valor": 107,
+                  "nome": "Certidão"
+                }
+              ],
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 51,
+              "dataHora": "2015-02-13T16:19:16.000Z",
+              "nome": "Conclusão",
+              "complementosTabelados": [
+                {
+                  "codigo": 3,
+                  "descricao": "tipo_de_conclusao",
+                  "valor": 36,
+                  "nome": "para julgamento"
+                }
+              ],
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 1051,
+              "dataHora": "2015-02-03T01:41:21.000Z",
+              "nome": "Decurso de Prazo",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 1051,
+              "dataHora": "2015-01-28T02:10:54.000Z",
+              "nome": "Decurso de Prazo",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 581,
+              "dataHora": "2015-01-12T16:57:56.000Z",
+              "nome": "Documento",
+              "complementosTabelados": [
+                {
+                  "codigo": 4,
+                  "descricao": "tipo_de_documento",
+                  "valor": 107,
+                  "nome": "Certidão"
+                }
+              ],
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 581,
+              "dataHora": "2014-12-29T14:33:31.000Z",
+              "nome": "Documento",
+              "complementosTabelados": [
+                {
+                  "codigo": 4,
+                  "descricao": "tipo_de_documento",
+                  "valor": 107,
+                  "nome": "Certidão"
+                }
+              ],
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 1051,
+              "dataHora": "2014-12-17T01:22:37.000Z",
+              "nome": "Decurso de Prazo",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 26,
+              "dataHora": "2014-11-04T15:53:29.000Z",
+              "nome": "Distribuição",
+              "complementosTabelados": [
+                {
+                  "codigo": 2,
+                  "descricao": "tipo_de_distribuicao_redistribuicao",
+                  "valor": 2,
+                  "nome": "sorteio"
+                }
+              ],
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12281,
+              "dataHora": "2026-07-23T10:35:34.000Z",
+              "nome": "Comunicação eletrônica",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12281,
+              "dataHora": "2025-12-11T13:46:55.000Z",
+              "nome": "Comunicação eletrônica",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 898,
+              "dataHora": "2023-03-07T09:03:36.000Z",
+              "nome": "Por decisão judicial",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2023-03-06T10:12:19.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12266,
+              "dataHora": "2023-02-25T23:59:59.000Z",
+              "nome": "Confirmada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2023-02-18T07:28:41.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12266,
+              "dataHora": "2023-02-18T07:28:41.000Z",
+              "nome": "Confirmada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12265,
+              "dataHora": "2023-02-15T19:24:40.000Z",
+              "nome": "Expedida/certificada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12265,
+              "dataHora": "2023-02-15T19:24:39.000Z",
+              "nome": "Expedida/certificada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12164,
+              "dataHora": "2023-02-15T19:24:39.000Z",
+              "nome": "Outras Decisões",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12281,
+              "dataHora": "2023-02-10T00:03:57.000Z",
+              "nome": "Comunicação eletrônica",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2023-02-09T13:52:09.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12281,
+              "dataHora": "2023-02-09T13:51:23.000Z",
+              "nome": "Comunicação eletrônica",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2023-02-07T10:03:44.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12266,
+              "dataHora": "2023-02-02T23:59:59.000Z",
+              "nome": "Confirmada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12265,
+              "dataHora": "2023-01-23T13:42:54.000Z",
+              "nome": "Expedida/certificada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12265,
+              "dataHora": "2023-01-23T13:42:54.000Z",
+              "nome": "Expedida/certificada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12164,
+              "dataHora": "2022-12-17T08:38:26.000Z",
+              "nome": "Outras Decisões",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 849,
+              "dataHora": "2022-12-15T16:04:21.000Z",
+              "nome": "Reativação",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2022-12-14T17:36:10.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 22,
+              "dataHora": "2015-10-06T10:31:40.000Z",
+              "nome": "Baixa Definitiva",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12266,
+              "dataHora": "2015-09-24T23:59:59.000Z",
+              "nome": "Confirmada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12265,
+              "dataHora": "2015-09-14T10:41:12.000Z",
+              "nome": "Expedida/certificada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12176,
+              "dataHora": "2015-08-25T15:34:04.000Z",
+              "nome": "Paga",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12176,
+              "dataHora": "2015-08-25T15:34:02.000Z",
+              "nome": "Paga",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12174,
+              "dataHora": "2015-07-25T10:01:36.000Z",
+              "nome": "Enviada ao Tribunal",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12174,
+              "dataHora": "2015-07-25T10:01:31.000Z",
+              "nome": "Enviada ao Tribunal",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2015-07-22T14:33:16.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12266,
+              "dataHora": "2015-07-22T14:33:16.000Z",
+              "nome": "Confirmada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2015-07-20T11:06:18.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12266,
+              "dataHora": "2015-07-20T11:06:18.000Z",
+              "nome": "Confirmada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12265,
+              "dataHora": "2015-07-20T11:00:48.000Z",
+              "nome": "Expedida/certificada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12265,
+              "dataHora": "2015-07-20T11:00:46.000Z",
+              "nome": "Expedida/certificada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 11010,
+              "dataHora": "2015-07-14T16:11:44.000Z",
+              "nome": "Mero expediente",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 16,
+              "dataHora": "2015-07-10T16:20:49.000Z",
+              "nome": "Cálculo",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2015-07-06T10:41:29.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12266,
+              "dataHora": "2015-07-06T10:41:28.000Z",
+              "nome": "Confirmada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12265,
+              "dataHora": "2015-07-02T13:03:15.000Z",
+              "nome": "Expedida/certificada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2015-05-20T16:55:25.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12266,
+              "dataHora": "2015-05-14T23:59:59.000Z",
+              "nome": "Confirmada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12265,
+              "dataHora": "2015-05-04T09:31:21.000Z",
+              "nome": "Expedida/certificada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2015-05-01T08:29:03.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12266,
+              "dataHora": "2015-04-30T23:59:59.000Z",
+              "nome": "Confirmada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2015-04-24T08:21:59.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12266,
+              "dataHora": "2015-04-24T08:21:58.000Z",
+              "nome": "Confirmada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12265,
+              "dataHora": "2015-04-20T19:01:44.000Z",
+              "nome": "Expedida/certificada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12265,
+              "dataHora": "2015-04-20T19:01:43.000Z",
+              "nome": "Expedida/certificada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 219,
+              "dataHora": "2015-04-20T19:01:42.000Z",
+              "nome": "Procedência",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2015-03-06T08:40:53.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2015-02-24T11:34:11.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12266,
+              "dataHora": "2015-01-26T23:59:59.000Z",
+              "nome": "Confirmada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12266,
+              "dataHora": "2015-01-22T23:59:59.000Z",
+              "nome": "Confirmada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12265,
+              "dataHora": "2015-01-16T13:32:00.000Z",
+              "nome": "Expedida/certificada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2015-01-16T10:41:08.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12265,
+              "dataHora": "2015-01-12T16:59:02.000Z",
+              "nome": "Expedida/certificada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2014-12-30T07:50:15.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2014-12-18T15:28:18.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2014-12-16T09:10:07.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12266,
+              "dataHora": "2014-12-11T23:59:59.000Z",
+              "nome": "Confirmada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2014-12-04T09:51:31.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12265,
+              "dataHora": "2014-12-01T11:53:42.000Z",
+              "nome": "Expedida/certificada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12287,
+              "dataHora": "2014-12-01T11:53:17.000Z",
+              "nome": "Expedida/Certificada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 12265,
+              "dataHora": "2014-12-01T11:52:56.000Z",
+              "nome": "Expedida/certificada",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 11383,
+              "dataHora": "2014-12-01T11:51:49.000Z",
+              "nome": "Ato ordinatório",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            }
+          ],
+          "assuntos": [
+            {
+              "codigo": 6118,
+              "nome": "Aposentadoria por Tempo de Contribuição (Art. 55/6)"
+            }
+          ]
+        }
+      },
+      {
+        "_index": "api_publica_trf4",
+        "_id": "TRF4_TR_50147472820144047113",
+        "_score": 15.339472,
+        "_source": {
+          "id": "TRF4_TR_50147472820144047113",
+          "tribunal": "TRF4",
+          "grau": "TR",
+          "numeroProcesso": "50147472820144047113",
+          "dataAjuizamento": "20150521103125",
+          "nivelSigilo": 0,
+          "orgaoJulgador": {
+            "codigo": 17807,
+            "nome": "1ª Turma Recursal do Rio Grande do Sul",
+            "codigoMunicipioIBGE": 4314902
+          },
+          "classe": {
+            "codigo": 460,
+            "nome": "Recurso Inominado Cível"
+          },
+          "sistema": {
+            "codigo": 4,
+            "nome": "Projudi"
+          },
+          "formato": {
+            "codigo": 1,
+            "nome": "Eletrônico"
+          },
+          "dataHoraUltimaAtualizacao": "2026-08-07T07:36:32.124000Z",
+          "@timestamp": "2026-08-07T07:36:32.124000Z",
+          "movimentos": [
+            {
+              "codigo": 848,
+              "dataHora": "2015-07-01T17:02:12.000Z",
+              "nome": "Trânsito em julgado",
+              "orgaoJulgador": {
+                "codigo": "17807",
+                "nome": "1ª Turma Recursal do Rio Grande do Sul"
+              }
+            },
+            {
+              "codigo": 581,
+              "dataHora": "2015-06-15T19:07:16.000Z",
+              "nome": "Documento",
+              "complementosTabelados": [
+                {
+                  "codigo": 4,
+                  "descricao": "tipo_de_documento",
+                  "valor": 117,
+                  "nome": "Acórdão"
+                }
+              ],
+              "orgaoJulgador": {
+                "codigo": "17807",
+                "nome": "1ª Turma Recursal do Rio Grande do Sul"
+              }
+            },
+            {
+              "codigo": 51,
+              "dataHora": "2015-05-21T13:33:06.000Z",
+              "nome": "Conclusão",
+              "complementosTabelados": [
+                {
+                  "codigo": 3,
+                  "descricao": "tipo_de_conclusao",
+                  "valor": 36,
+                  "nome": "para julgamento"
+                }
+              ],
+              "orgaoJulgador": {
+                "codigo": "17807",
+                "nome": "1ª Turma Recursal do Rio Grande do Sul"
+              }
+            },
+            {
+              "codigo": 26,
+              "dataHora": "2015-05-21T10:31:25.000Z",
+              "nome": "Distribuição",
+              "complementosTabelados": [
+                {
+                  "codigo": 2,
+                  "descricao": "tipo_de_distribuicao_redistribuicao",
+                  "valor": 2,
+                  "nome": "sorteio"
+                }
+              ],
+              "orgaoJulgador": {
+                "codigo": "17807",
+                "nome": "1ª Turma Recursal do Rio Grande do Sul"
+              }
+            },
+            {
+              "codigo": 22,
+              "dataHora": "2015-07-01T17:02:16.000Z",
+              "nome": "Baixa Definitiva",
+              "orgaoJulgador": {
+                "codigo": "12597",
+                "nome": "2ª Vara Federal de Bento Gonçalves"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2015-07-01T14:19:01.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "17807",
+                "nome": "1ª Turma Recursal do Rio Grande do Sul"
+              }
+            },
+            {
+              "codigo": 12266,
+              "dataHora": "2015-06-26T23:59:59.000Z",
+              "nome": "Confirmada",
+              "orgaoJulgador": {
+                "codigo": "17807",
+                "nome": "1ª Turma Recursal do Rio Grande do Sul"
+              }
+            },
+            {
+              "codigo": 85,
+              "dataHora": "2015-06-18T14:27:35.000Z",
+              "nome": "Petição",
+              "orgaoJulgador": {
+                "codigo": "17807",
+                "nome": "1ª Turma Recursal do Rio Grande do Sul"
+              }
+            },
+            {
+              "codigo": 12266,
+              "dataHora": "2015-06-18T14:27:35.000Z",
+              "nome": "Confirmada",
+              "orgaoJulgador": {
+                "codigo": "17807",
+                "nome": "1ª Turma Recursal do Rio Grande do Sul"
+              }
+            },
+            {
+              "codigo": 12265,
+              "dataHora": "2015-06-16T14:31:39.000Z",
+              "nome": "Expedida/certificada",
+              "orgaoJulgador": {
+                "codigo": "17807",
+                "nome": "1ª Turma Recursal do Rio Grande do Sul"
+              }
+            },
+            {
+              "codigo": 12265,
+              "dataHora": "2015-06-16T14:31:18.000Z",
+              "nome": "Expedida/certificada",
+              "orgaoJulgador": {
+                "codigo": "17807",
+                "nome": "1ª Turma Recursal do Rio Grande do Sul"
+              }
+            },
+            {
+              "codigo": 12252,
+              "dataHora": "2015-06-15T17:31:33.000Z",
+              "nome": "Sentença confirmada",
+              "orgaoJulgador": {
+                "codigo": "17807",
+                "nome": "1ª Turma Recursal do Rio Grande do Sul"
+              }
+            },
+            {
+              "codigo": 12265,
+              "dataHora": "2015-05-26T09:46:38.000Z",
+              "nome": "Expedida/certificada",
+              "orgaoJulgador": {
+                "codigo": "17807",
+                "nome": "1ª Turma Recursal do Rio Grande do Sul"
+              }
+            },
+            {
+              "codigo": 12105,
+              "dataHora": "2015-05-26T09:37:31.000Z",
+              "nome": "Inclusão do processo para julgamento eletrônico",
+              "orgaoJulgador": {
+                "codigo": "17807",
+                "nome": "1ª Turma Recursal do Rio Grande do Sul"
+              }
+            }
+          ],
+          "assuntos": [
+            {
+              "codigo": 6118,
+              "nome": "Aposentadoria por Tempo de Contribuição (Art. 55/6)"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

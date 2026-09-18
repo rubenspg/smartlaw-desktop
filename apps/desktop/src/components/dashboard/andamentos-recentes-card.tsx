@@ -58,6 +58,7 @@ export function AndamentosRecentesCard({ andamentos, isLoading, onRefresh }: And
             <div className="divide-y divide-border/30">
               {andamentos?.map((a) => {
                 const isSistema = a.tipo === 'SISTEMA';
+                const isTribunal = a.tipo === 'DATAJUD';
                 const isJudicial = !!a.processoJudicialId;
                 const processo = isJudicial ? a.processoJudicial : a.processoAdmin;
                 const cliente = processo?.cliente;
@@ -80,6 +81,10 @@ export function AndamentosRecentesCard({ andamentos, isLoading, onRefresh }: And
                           {isSistema ? (
                             <Badge variant="destructive" className="text-[9px] font-black px-1.5 py-0 rounded-md uppercase tracking-widest border-none shadow-sm">
                               <AlertCircle className="w-2.5 h-2.5 mr-1" /> URGENTE
+                            </Badge>
+                          ) : isTribunal ? (
+                            <Badge className="text-[9px] font-black px-1.5 py-0 rounded-md bg-primary/10 text-primary border-none uppercase tracking-widest">
+                              Tribunal
                             </Badge>
                           ) : isJudicial ? (
                             <Badge className="text-[9px] font-black px-1.5 py-0 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border-none uppercase tracking-widest">

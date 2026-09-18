@@ -1,10 +1,21 @@
 import { Hono } from 'hono';
 import { db } from '../db';
-import { processosJudiciais, clientes, andamentos, firms } from '../db/schema';
-import { eq, and, ilike, or, desc, sql } from 'drizzle-orm';
+import { processosJudiciais, clientes, andamentos, firms, municipios, processoInstancias } from '../db/schema';
+import { eq, and, ilike, or, desc, asc, sql } from 'drizzle-orm';
 import { authMiddleware, Variables } from '../middleware/auth';
-import { DatajudService } from '../services/DatajudService';
-import { ComparisonService } from '../services/ComparisonService';
+import {
+  DatajudClient,
+  DatajudError,
+  NumeroCnjInvalidoError,
+  formatarNumeroCnj,
+  ordenarMovimentos,
+  parseDataAjuizamento,
+  resolverChave,
+  sincronizarProcesso,
+  situacaoSugerida,
+  somenteDigitos,
+  validarNumeroCnj,
+} from '../services/datajud';
 import { processoJudicialSchema } from '@smartlaw/shared';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
@@ -16,6 +27,8 @@ const querySchema = z.object({
   limit: z.string().optional(),
   clienteId: z.string().optional(),
 });
+
+const datajudSearchSchema = z.object({ numero: z.string().min(1, 'Número é obrigatório') });
 
 const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
@@ -94,7 +107,11 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
           with: {
             posicao: true
           }
-        }
+        },
+        instancias: {
+          columns: { raw: false },
+          orderBy: [asc(processoInstancias.grauOrdem), asc(processoInstancias.dataHoraUltimaAtualizacao)],
+        },
       }
     });
 
@@ -159,91 +176,130 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
     return c.json(newProcesso, 201);
   })
 
-  .post('/datajud/search', async (c) => {
+  /**
+   * Consulta o Datajud antes de cadastrar. Devolve TODAS as instâncias do
+   * processo (G1, G2, JE, TR…) resumidas, mais os campos sugeridos para o
+   * formulário. Os movimentos completos entram no banco só na sincronização.
+   */
+  .post('/datajud/search', zValidator('json', datajudSearchSchema), async (c) => {
     const user = c.get('user');
-    let rawBody: unknown;
-    try {
-      rawBody = await c.req.json();
-    } catch {
-      return c.json({ error: 'Invalid JSON body' }, 400);
+    const { numero } = c.req.valid('json');
+    const digitos = somenteDigitos(numero);
+    if (!validarNumeroCnj(digitos)) {
+      return c.json({ error: 'Número CNJ inválido: confira os 20 dígitos e os dígitos verificadores.' }, 400);
     }
-    const numero = (rawBody as Record<string, unknown>)?.numero;
-    if (!numero || typeof numero !== 'string') return c.json({ error: 'Número é obrigatório' }, 400);
 
     try {
-      // Get firm specific API key
-      const [firm] = await db.select({ key: firms.datajudApiKey }).from(firms).where(eq(firms.id, user.firmId)).limit(1);
-      
-      const source = await DatajudService.fetchFromDatajud(numero, firm?.key || undefined);
-      return c.json({ data: { hits: { hits: source ? [{ _source: source }] : [] } } });
-    } catch (err: any) {
-      return c.json({ error: err.message }, 400);
+      const client = await clientDaFirma(user.firmId);
+      const hits = await client.buscarPorNumero(digitos);
+      const origem = hits[0]?._source;
+      const sugestao = situacaoSugerida(hits);
+
+      // Comarca a partir do município IBGE do órgão de origem, quando a tabela
+      // de municípios foi importada (o seed padrão a deixa vazia).
+      let comarcaSugerida: string | null = null;
+      const ibge = origem?.orgaoJulgador?.codigoMunicipioIBGE;
+      if (ibge) {
+        const [m] = await db
+          .select({ comarca: municipios.comarca, nome: municipios.nome })
+          .from(municipios)
+          .where(eq(municipios.codIbge, String(ibge)))
+          .limit(1);
+        comarcaSugerida = m?.comarca ?? m?.nome ?? null;
+      }
+
+      return c.json({
+        numero: digitos,
+        numeroFormatado: formatarNumeroCnj(digitos),
+        encontrado: hits.length > 0,
+        sugestao: origem
+          ? {
+              justica: origem.tribunal ?? null,
+              juizo: origem.orgaoJulgador?.nome ?? null,
+              orgaoJulgador: origem.orgaoJulgador?.nome ?? null,
+              comarca: comarcaSugerida,
+              distribuicao: parseDataAjuizamento(origem.dataAjuizamento)?.toISOString() ?? null,
+              situacao: sugestao.situacao,
+            }
+          : null,
+        instancias: hits.map((h) => {
+          const s = h._source;
+          const movimentos = ordenarMovimentos(s.movimentos);
+          return {
+            docId: h._id,
+            tribunal: s.tribunal ?? null,
+            grau: s.grau ?? null,
+            classe: s.classe?.nome ?? null,
+            orgaoJulgador: s.orgaoJulgador?.nome ?? null,
+            sistema: s.sistema?.nome ?? null,
+            formato: s.formato?.nome ?? null,
+            assuntos: (s.assuntos ?? []).map((a) => a.nome),
+            dataAjuizamento: parseDataAjuizamento(s.dataAjuizamento)?.toISOString() ?? null,
+            dataHoraUltimaAtualizacao: s.dataHoraUltimaAtualizacao ?? null,
+            totalMovimentos: movimentos.length,
+            ultimoMovimento: movimentos[0] ? { nome: movimentos[0].nome, dataHora: movimentos[0].dataHora } : null,
+          };
+        }),
+      });
+    } catch (err) {
+      const { mensagem, status } = erroDatajud(err);
+      return c.json({ error: mensagem }, status);
     }
   })
 
+  /**
+   * Traz o processo ao estado do tribunal: instâncias + um andamento por
+   * movimento. Idempotente; ver services/datajud/sincronizar.ts.
+   */
   .post('/:id/sync', async (c) => {
     const user = c.get('user');
     const id = parseIdParam(c.req.param('id'));
     if (id === null) return c.json({ error: 'ID inválido' }, 400);
 
+    const local = await db.query.processosJudiciais.findFirst({
+      where: and(eq(processosJudiciais.id, id), eq(processosJudiciais.firmId, user.firmId)),
+      columns: {
+        id: true, firmId: true, numero: true, juizo: true, justica: true, orgaoJulgador: true,
+        comarca: true, situacao: true, distribuicao: true, dtArquivado: true,
+      },
+    });
+    if (!local) return c.json({ error: 'Processo não encontrado' }, 404);
+
+    if (!validarNumeroCnj(local.numero)) {
+      return c.json({ error: 'O número deste processo não está no padrão CNJ; não é possível sincronizar.' }, 400);
+    }
+
     try {
-      const local = await db.query.processosJudiciais.findFirst({
-        where: and(eq(processosJudiciais.id, id), eq(processosJudiciais.firmId, user.firmId)),
-        with: {
-          andamentos: true
-        }
-      });
-
-      if (!local) return c.json({ error: 'Processo não encontrado' }, 404);
-
-      // Get firm specific API key
-      const [firm] = await db.select({ key: firms.datajudApiKey }).from(firms).where(eq(firms.id, user.firmId)).limit(1);
-
-      const remote = await DatajudService.fetchFromDatajud(local.numero, firm?.key || undefined);
-      if (!remote) return c.json({ error: 'Processo não encontrado no Datajud' }, 404);
-
-      const drift = ComparisonService.checkDrift(local, remote);
-
-      // Update basic fields if they are missing
-      const updateData: any = {
-        lastSync: new Date(),
-        syncStatus: drift.hasDrift ? 'DIVERGENTE' : 'SUCESSO',
-        datajudRaw: remote as any
-      };
-
-      if (!local.juizo && remote.orgaoJulgador?.nome) updateData.juizo = remote.orgaoJulgador.nome;
-      if (!local.justica && remote.tribunal) updateData.justica = remote.tribunal;
-      
-      // Update situacao based on latest movement if it's currently empty/NA
-      if ((!local.situacao || local.situacao === 'N/A') && remote.movimentos && remote.movimentos.length > 0) {
-        updateData.situacao = remote.movimentos[0].nome;
-      }
-
-      await db.update(processosJudiciais)
-        .set(updateData)
-        .where(eq(processosJudiciais.id, id));
-
-      if (drift.newMovements > 0) {
-        await db.insert(andamentos).values({
-          data: new Date(),
-          inclusao: new Date(),
-          tipo: 'SISTEMA',
-          historico: `Sincronização Datajud: detectadas ${drift.newMovements} novas movimentações no tribunal.`,
-          processoJudicialId: id,
-          firmId: user.firmId,
-        });
-      }
-
-      return c.json({ 
-        success: true, 
-        hasDrift: drift.hasDrift, 
-        fields: drift.fields,
-        newMovements: drift.newMovements 
-      });
-    } catch (err: any) {
-      console.error('Sync Error:', err);
-      return c.json({ error: 'Erro ao sincronizar: ' + err.message }, 500);
+      const client = await clientDaFirma(user.firmId);
+      const resultado = await sincronizarProcesso(local, client);
+      if (!resultado.encontrado) return c.json({ error: 'Processo não encontrado no Datajud' }, 404);
+      return c.json({ success: true, ...resultado });
+    } catch (err) {
+      const { mensagem, status } = erroDatajud(err);
+      return c.json({ error: mensagem }, status);
     }
   });
+
+async function clientDaFirma(firmId: string): Promise<DatajudClient> {
+  const [firm] = await db.select({ key: firms.datajudApiKey }).from(firms).where(eq(firms.id, firmId)).limit(1);
+  const { chave } = resolverChave(firm?.key);
+  return new DatajudClient({ apiKey: chave });
+}
+
+/**
+ * Mapeia falhas do Datajud para (mensagem, status). Devolve dados em vez de
+ * chamar `c.json` para que o Hono continue inferindo o tipo da resposta de
+ * sucesso para o cliente tipado do desktop.
+ */
+function erroDatajud(err: unknown): { mensagem: string; status: 400 | 502 } {
+  if (err instanceof NumeroCnjInvalidoError) return { mensagem: err.message, status: 400 };
+  if (err instanceof DatajudError) {
+    if (err.tipo === 'sem_chave' || err.tipo === 'chave_invalida') return { mensagem: err.message, status: 400 };
+    console.error('[Datajud]', err.tipo, err.status, err.message);
+    return { mensagem: 'Datajud indisponível no momento. Tente novamente em instantes.', status: 502 };
+  }
+  console.error('[Datajud] erro inesperado:', err);
+  return { mensagem: 'Erro ao consultar o Datajud.', status: 502 };
+}
 
 export default processosJudiciaisRoutes;

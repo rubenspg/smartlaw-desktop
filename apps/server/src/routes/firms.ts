@@ -6,6 +6,7 @@ import { zValidator } from '@hono/zod-validator';
 import { firmUpdateSchema } from '@smartlaw/shared';
 import { authMiddleware, Variables } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
+import { DatajudClient, resolverChave } from '../services/datajud';
 
 const firmsRoutes = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
@@ -31,6 +32,22 @@ const firmsRoutes = new Hono<{ Variables: Variables }>()
 
     const { datajudApiKey, ...safeFirm } = firm;
     return c.json({ ...safeFirm, hasDatajudKey: Boolean(datajudApiKey) });
+  })
+
+  /**
+   * Diagnóstico da chave do Datajud para a tela de configurações: de onde
+   * vem a chave em uso e se o CNJ a aceita. Faz uma busca `size:0` real.
+   */
+  .get('/datajud/status', async (c) => {
+    const user = c.get('user');
+    const [firm] = await db
+      .select({ key: firms.datajudApiKey })
+      .from(firms)
+      .where(eq(firms.id, user.firmId))
+      .limit(1);
+    const { chave, origem } = resolverChave(firm?.key);
+    const status = await new DatajudClient({ apiKey: chave }).verificarChave();
+    return c.json({ origem, status });
   })
 
   .patch('/me', requireAdmin, zValidator('json', firmUpdateSchema), async (c) => {

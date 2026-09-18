@@ -55,17 +55,21 @@ User-facing strings are pt-BR. Match the surrounding language in code comments.
 dev/build; `npm run typecheck` regenerates it first via `tsr generate`. Never
 edit it, and don't be surprised when it is absent on a fresh clone.
 
-**Datajud is the CNJ public case-tracking API.** `DatajudService` maps a CNJ case
-number to the right tribunal endpoint. Each firm may hold its own API key
-(`firms.datajudApiKey`), falling back to `DATAJUD_API_KEY`. **That key is a
-secret — never return it to the client**; `GET /firms/me` exposes only
-`hasDatajudKey`.
+**Datajud is the CNJ public case-tracking API.** `services/datajud/` maps a CNJ
+number to the tribunal index (`cnj.ts`), talks to the API with throttle and
+retry (`client.ts`), and `sincronizarProcesso` is the single idempotent path
+for the "Sincronizar" button and the future batch job. Datajud stores **one
+document per instance** (`grau` G1/G2/JE/TR) — never read `hits[0]` alone;
+instances land in `processo_instancias`, movimentos in `andamentos` with
+`tipo='DATAJUD'` and a content hash in `external_id`. Each firm may hold its
+own key (`firms.datajudApiKey`), falling back to `DATAJUD_API_KEY` (CNJ's
+published public key by default). **Never return the firm key to the client**;
+`GET /firms/me` exposes only `hasDatajudKey`. Research and roadmap:
+`docs/INTEGRACAO_TRIBUNAIS_INSS.md`.
 
-**Migration 0004's SQL file is missing** from `apps/server/src/db/migrations`
-even though its journal entry and snapshot exist, so a fresh database cannot be
-bootstrapped from migrations alone. Tracked in #31. `profiles.reset_token` and
-`reset_token_expires` come from it, are unused, and are declared in `schema.ts`
-only so drizzle-kit does not try to drop them.
+**Migration 0004 was reconstructed** (#31). Its unused `profiles.reset_token`
+and `reset_token_expires` columns are dropped with `IF EXISTS` in 0007 because
+existing databases disagreed on whether they existed; do not redeclare them.
 
 ## Conventions
 
