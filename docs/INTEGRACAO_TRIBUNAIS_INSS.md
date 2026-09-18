@@ -9,6 +9,41 @@ runs in the US unless it is moved (see §5).
 
 ---
 
+## Status board — updated 2026-09-18
+
+Production runs on LXC 103 and exits through the home router's NordVPN Brazil tunnel (§5); DJEN answered `200` from there after each deploy.
+
+| Phase | Scope | Status |
+|---|---|---|
+| 1 | Datajud multi-instance sync (`services/datajud/`) | **Done and in production.** PR #65, migration `0007_processo_instancias`. |
+| 1b | Case stage classifier (`classificarSituacao`) | **Done and in production.** PR #69, commit `d968bbe5`, no migration. |
+| 2 | Scheduler, bulk Datajud sync, `notificacoes` | **Not started.** Owner: Opus. |
+| 3 domain | DJEN client, business-day prazos, `intimacoes`, `sync_runs`, TRIAGEM, tarefas | **Done and in production.** PR #68, commit `28c6152c`, migration `0008_intimacoes`. |
+| 3 UI + job | Intimações page, Hub card, Triagem badge, scheduled `djen-sync` | **Not started.** Owner: Opus. |
+| 4 | Legacy number conversion + backfill | **Not started.** Owner: Opus. |
+| 5 | INSS document import | **Not started.** Owner: Opus. |
+| 6 | AI on top | **Not started.** |
+
+### Do these next, in this order
+
+1. **Run the 60-day DJEN backfill in production.** Nothing has been ingested yet: `intimacoes` and `sync_runs` are both empty. From inside LXC 103, not through the public URL, because Cloudflare cuts the request at 100 s while the sync keeps running:
+   ```bash
+   TOKEN=$(curl -s -X POST http://localhost:3001/auth/login -H 'Content-Type: application/json' \
+     -d '{"email":"<admin>","password":"<senha>"}' | sed 's/.*"token":"\([^"]*\)".*/\1/')
+   curl -s -m 1800 -X POST http://localhost:3001/intimacoes/sync -H "Authorization: Bearer $TOKEN" \
+     -H 'Content-Type: application/json' -d '{"dias": 60}'
+   ```
+   Expect ≈470 intimações, ≈260 cases in `TRIAGEM`, one `sync_runs` row with `SUCESSO`. `GEOBLOQUEADO` means the router tunnel dropped, never "no intimações". A second attempt inside 30 minutes is refused by the in-flight guard.
+2. **Phase 2**, whose scope changed because of what Phase 3 already built: write `sync_runs` rows with `tipo='DATAJUD'` instead of creating that table, schedule `djen-sync` (09:00 and 14:00 America/Sao_Paulo, `dias: 3`) next to `datajud-sync`, raise `notificacoes` from `ResultadoSyncDjen.processosEmTriagem`, and persist the case stage. Full list in the Phase 2 table below.
+3. **Phase 3's UI**, listed in the Phase 3 status table below.
+
+### Two facts that constrain the planning
+
+- **The production database is a snapshot, not the office's live system.** At the v1 release the data will be migrated again from the firm's real production database. So every count taken from `processos_judiciais` here is indicative only and must be re-measured after that migration; everything derived from the courts (Datajud, DJEN) is stable and will reclassify in about a minute.
+- **Court coverage, measured 2026-09-18 over the firm's 1,121 CNJ-numbered cases:** 983 exist in Datajud, 128 do not, and 112 of those were filed between 2010 and 2014, before eproc. Legacy-format cases (§7, Phase 4) are not in that count at all.
+
+---
+
 ## 0. TL;DR — decisions already made by the research
 
 | Source | Verdict | Why |
@@ -31,7 +66,10 @@ The firm's data drives priorities. From `smartlaw_backup.sql`:
 
 ---
 
-## 1. What exists in the codebase today
+## 1. Baseline — the code as it was before this work
+
+Kept as the record of what Phase 1 replaced. `DatajudService.ts` and `ComparisonService.ts` no longer exist; `services/datajud/` and `services/djen/` took their place. See the status board for what is live.
+
 
 - `apps/server/src/services/DatajudService.ts` — maps a CNJ number to an alias and does one `match` query. Returns only `hits[0]._source`.
 - `apps/server/src/services/ComparisonService.ts` — "drift" check: compares `orgaoJulgador`, `tribunal`, and *counts* of movimentos vs. local andamentos of tipo `DATAJUD|SISTEMA`.
@@ -161,12 +199,12 @@ Principles:
 
 ## 4. Phased plan (each phase is one PR-sized unit for an agent)
 
-**Model allocation (decided 2026-09-18):** Fable implements Phase 1 (Datajud core + fixtures + tests) and the Phase 3 domain logic (prazo/business-day rules, OAB dedupe, `TRIAGEM` auto-create, `DjenClient` + transport). Opus implements everything else — Phase 2, Phase 4, the gluetun/relay/deploy hook, all desktop UI, Phase 5, Phase 6 — building on Phase 1's merged code, not on this document alone. Every Opus PR gets a `/code-review` pass with two explicit checks: every query scoped by `firm_id`, and authorization via `requirePerfil(...)` allowlists only.
+**Model allocation (decided 2026-09-18; Fable's part is finished):** Fable implemented Phase 1 (Datajud core + fixtures + tests), the case stage classifier, and the Phase 3 domain logic (prazo/business-day rules, OAB dedupe, `TRIAGEM` auto-create, `DjenClient` + transport) — all three are merged and deployed. Opus implements everything else — Phase 2, Phase 4, the gluetun/relay/deploy hook, all desktop UI, Phase 5, Phase 6 — building on Phase 1's merged code, not on this document alone. Every Opus PR gets a `/code-review` pass with two explicit checks: every query scoped by `firm_id`, and authorization via `requirePerfil(...)` allowlists only.
 
 
 ### Phase 1 — Make Datajud correct (no schema change except one table)
 
-**Status: implemented on branch `feat/datajud-instancias` (2026-09-18, Fable).** Code: `apps/server/src/services/datajud/{cnj,client,normalizar,sincronizar}.ts`, migration `0007_processo_instancias`, routes `POST /processos/judiciais/datajud/search`, `POST /processos/judiciais/:id/sync`, `GET /firms/datajud/status`; desktop wizard, case page (instances card, per-instance badges) and Settings status panel. Tests: 47 unit (`*.test.ts` next to the code, fixtures in `apps/server/test/fixtures/datajud/`) + 5 integration (`sincronizar.itest.ts`). Verified live against Datajud: `5019210-08.2021.4.04.7100` → 2 instances, 119 distinct andamentos (the G1 document carries 3 exact duplicate movimentos, merged on purpose), second sync inserts 0. Phase 2 should call `aplicarInstancias()` with the hits from `DatajudClient.buscarVarios()` — do not re-implement the upsert.
+**Status: done, merged as PR #65 and deployed to production on 2026-09-18 (Fable).** Code: `apps/server/src/services/datajud/{cnj,client,normalizar,sincronizar}.ts`, migration `0007_processo_instancias`, routes `POST /processos/judiciais/datajud/search`, `POST /processos/judiciais/:id/sync`, `GET /firms/datajud/status`; desktop wizard, case page (instances card, per-instance badges) and Settings status panel. Tests: 47 unit (`*.test.ts` next to the code, fixtures in `apps/server/test/fixtures/datajud/`) + 5 integration (`sincronizar.itest.ts`). Verified live against Datajud: `5019210-08.2021.4.04.7100` → 2 instances, 119 distinct andamentos (the G1 document carries 3 exact duplicate movimentos, merged on purpose), second sync inserts 0. Phase 2 should call `aplicarInstancias()` with the hits from `DatajudClient.buscarVarios()` — do not re-implement the upsert.
 
 
 Files: `apps/server/src/services/DatajudService.ts`, `ComparisonService.ts`, `routes/processos-judiciais.ts`, `packages/shared/src/types.ts`, `apps/desktop/src/routes/_dashboard/processos/novo.tsx`, `$id.tsx`.
@@ -191,7 +229,16 @@ Acceptance (met): `POST /processos/judiciais/:id/sync` on `5019210-08.2021.4.04.
 
 ### Phase 2 — Scheduled bulk sync + in-app notifications
 
-Files: new `apps/server/src/jobs/scheduler.ts`, `jobs/datajud-sync.ts`, migration `0007_*`, `routes/notificacoes.ts`, desktop Hub card.
+**Status: not started. Next up, owner Opus.** Read this before starting, because Phase 3 changed what Phase 2 has to build:
+
+| Was in the plan | Now |
+|---|---|
+| Create `sync_runs` | **Already exists** (migration 0008). Write rows with `tipo='DATAJUD'`; the DJEN job already writes `tipo='DJEN'`. |
+| Only a Datajud job | **Two jobs on one scheduler.** `djen-sync` calls `sincronizarIntimacoes({firmId, client, datajud, dias: 3})` at 09:00 and 14:00 America/Sao_Paulo; `datajud-sync` keeps its own cadence. Do not reimplement either sync. |
+| Notifications from andamentos only | **Also from TRIAGEM.** `ResultadoSyncDjen.processosEmTriagem` returns the ids created in the run; each one deserves a "vincule o cliente" notification. |
+| Situação as a boolean | **Persist the stage.** Add `processos_judiciais.estagio` and `estagio_motivo`, filled from `classificarSituacao` on every sync, and give the Processos list a `REVISAR` filter. |
+
+Files: new `apps/server/src/jobs/scheduler.ts`, `jobs/datajud-sync.ts`, `jobs/djen-sync.ts`, migration `0009_*`, `routes/notificacoes.ts`, desktop Hub card.
 
 1. Table `notificacoes` (`id`, `firm_id`, `usuario_id` nullable = broadcast, `tipo` `ANDAMENTO|INTIMACAO|SYNC_ERRO`, `titulo`, `corpo`, `processo_judicial_id`, `processo_admin_id`, `intimacao_id`, `lida_em`, `created_at`) + index `(firm_id, lida_em, created_at)`.
 2. ~~Table `sync_runs`~~ — **already created by Phase 3's migration 0008** (`tipo DJEN|DATAJUD`, `status EXECUTANDO|SUCESSO|GEOBLOQUEADO|ERRO`, `janela_inicio/fim`, `itens_lidos/novos`, `processos_criados`, `tarefas_criadas`, `mensagem`, `detalhes jsonb`); write the Datajud job's rows into it with `tipo='DATAJUD'`. Original: table `sync_runs` (`id`, `firm_id`, `fonte` `DATAJUD|DJEN`, `started_at`, `finished_at`, `status`, `processos_verificados`, `novos_andamentos`, `erro`) for the Settings page and for debugging.
@@ -206,7 +253,7 @@ Acceptance: after the first scheduled run, `sync_runs` shows the row, Hub shows 
 
 ### Phase 3 — DJEN intimações (the caller must be in Brazil, see §5)
 
-**Status (2026-09-18): domain logic implemented by Fable — `apps/server/src/services/djen/`, migration `0008_intimacoes`, `routes/intimacoes.ts`, 47 unit + 10 integration tests on redacted real fixtures (`apps/server/test/fixtures/djen/`).** What exists and what Opus still owns:
+**Status (2026-09-18): domain logic done, merged as PR #68 and deployed to production — `apps/server/src/services/djen/`, migration `0008_intimacoes`, `routes/intimacoes.ts`, 47 unit + 10 integration tests on redacted real fixtures (`apps/server/test/fixtures/djen/`). The backfill has not been run yet, so `intimacoes` is still empty in production.** What exists and what Opus still owns:
 
 | Done (Fable) | Where | Remaining (Opus) |
 |---|---|---|
@@ -303,7 +350,8 @@ Add them to `apps/server/.env.example` and to `env.ts` (validate types, do not r
 
 ## 7. Data-model summary (Drizzle, `apps/server/src/db/schema.ts`)
 
-New: `processo_instancias` (done, 0007), `intimacoes` + `sync_runs` (done, 0008), `notificacoes`, `documentos_inss`.
+New: `processo_instancias` (done, 0007), `intimacoes` + `sync_runs` (done, 0008), `notificacoes` (Phase 2), `documentos_inss` (Phase 5).
+Also done in 0008: `profiles.oab_numero/oab_uf`, `firms.oabs_monitoradas`, `firms.feriados` (seeded with the firm's three lawyers and the RS holidays).
 Altered: `processos_judiciais.numero_cnj`; `profiles.oab_numero`, `profiles.oab_uf`; `firms.oab_extras`, `firms.feriados`, `firms.ntfy_topic`; `processos_administrativos.{nb, protocolo, der, dib, situacao, orgao}`; `clientes.procuracao_inss_ate`.
 Every new table has `firm_id not null` + index; every job query filters by it. Generate migrations with `npm run db:generate --name <slug> -w apps/server` (next tag is `0009_*`; 0007 = `processo_instancias`, 0008 = `intimacoes` + `sync_runs` + OAB/feriados columns).
 
@@ -335,15 +383,16 @@ UF table for J=8/6: 01 ac, 02 al, 03 ap, 04 am, 05 ba, 06 ce, 07 dft, 08 es, 09 
 
 ## 9. Open questions for Rubens
 
-Answered 2026-09-18: OABs RS 62492, RS 55817, RS 127837 are the firm's lawyers (confirmed); DJEN runs server-side and LXC 103 exits through the home router's NordVPN Brazil tunnel, verified live (§5).
+Answered 2026-09-18: OABs RS 62492, RS 55817, RS 127837 are the firm's lawyers (confirmed); DJEN runs server-side and LXC 103 exits through the home router's NordVPN Brazil tunnel, verified live (§5); the DHCP reservation for 192.168.50.127 is in place, so the VPN Director rule cannot drift.
 
-Still open (none blocks Phase 1/2):
+Still open (none blocks Phase 2):
 
-1. **Production database vs. the April dump**: 263 of the firm's 321 active DJEN cases are absent from the backup. Is production more complete, or are new cases not being registered? This decides how heavily the `TRIAGEM` auto-create path is used (the plan assumes: heavily).
-2. ~~VPN provider~~ Answered: router-level routing, no sidecar (§5). Pending: DHCP reservation for 192.168.50.127 on the router.
-3. **Push notifications**: ntfy on the lawyers' phones, or in-app only?
-4. **INSS documents**: which PDFs the office actually downloads today (CNIS, HISCRE, carta de concessão, extrato do requerimento). Send 2–3 samples to build the parsers.
-5. **Datajud ToS**: internal use by the firm fits "fins legais e autorizados"; if smartlaw is ever sold to other firms, art. 3.8 (no commercial exploitation) needs a legal read.
+1. ~~**Production database vs. the April dump**~~ Superseded: Rubens confirmed on 2026-09-18 that the database on LXC 103 is a **snapshot**, and that the office's live data will be migrated again at the v1 release. So "why are cases missing" is not a data-quality question to chase now. What it does mean: the `TRIAGEM` path will be exercised heavily on the snapshot and must be **re-measured after the real migration**, when many of those 260 cases may already exist and simply link instead.
+2. **The 128 cases Datajud does not have** (112 filed 2010–2014, pre-eproc): leave them as they are, mark them, or retire them? They will never sync. A `syncStatus='NAO_ENCONTRADO'` filter in the UI would let the office decide case by case.
+3. **The `REVISAR` bucket** (24 cases today): who reviews it, and does a resolved review write back a manual `situacao` that the sync then stops touching? Current behaviour is that the sync never overwrites a non-empty `situacao`, which already protects a human decision.
+4. **Push notifications**: ntfy on the lawyers' phones, or in-app only?
+5. **INSS documents**: which PDFs the office actually downloads today (CNIS, HISCRE, carta de concessão, extrato do requerimento). Send 2–3 samples to build the parsers.
+6. **Datajud ToS**: internal use by the firm fits "fins legais e autorizados"; if smartlaw is ever sold to other firms, art. 3.8 (no commercial exploitation) needs a legal read.
 
 ## 10. Sources
 
