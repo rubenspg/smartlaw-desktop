@@ -21,6 +21,7 @@ import {
   Briefcase,
   Activity,
   History,
+  Layers,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +32,16 @@ import { cn } from '@/lib/utils';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import type { ProcessoInstancia } from '@/lib/entities';
+
+const GRAU_LABEL: Record<string, string> = {
+  G1: '1º grau',
+  G2: '2º grau',
+  G3: 'Superior',
+  JE: 'Juizado Especial',
+  TR: 'Turma Recursal',
+  SUP: 'Superior',
+};
 
 export const Route = createFileRoute('/_dashboard/processos/$id')({
   component: ProcessoDetailPage,
@@ -82,11 +93,24 @@ function ProcessoDetailPage() {
 
   const handleSync = async () => {
     try {
-      await syncProcesso.mutateAsync(procId);
-    } catch (err) {
-      console.error('Sync failed:', err);
+      const r = await syncProcesso.mutateAsync(procId);
+      if (r.newMovements > 0) {
+        toast.success(`${r.newMovements} novo(s) andamento(s) importado(s) do tribunal.`);
+      } else {
+        toast.success('Processo já está atualizado com o tribunal.');
+      }
+      if (r.hasDrift) {
+        toast.error(`Divergência com o tribunal: ${r.fields.map((f) => `${f.field} (${String(f.remote)})`).join(', ')}`);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Falha na sincronização');
     }
   };
+
+  // Grau de cada instância, para rotular os andamentos importados.
+  const grauPorInstancia = new Map<number, string>(
+    (processo?.instancias ?? []).map((i: ProcessoInstancia) => [i.id, i.grau]),
+  );
 
   const handleDelete = async () => {
     if (await confirm({ description: 'Tem certeza que deseja excluir este processo?', destructive: true, confirmText: 'Excluir' })) {
@@ -234,6 +258,54 @@ function ProcessoDetailPage() {
             </CardContent>
           </Card>
 
+          {/* Instâncias no tribunal (Datajud) */}
+          <Card className="border-border/40 shadow-premium overflow-hidden bg-card/50 backdrop-blur-sm">
+            <CardHeader className="bg-muted/30 border-b border-border/40 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-4.5 h-4.5 text-primary" />
+                  <CardTitle className="text-sm font-black uppercase tracking-widest text-foreground/80">Instâncias no Tribunal</CardTitle>
+                </div>
+                {processo.lastSync && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Sincronizado em {new Date(processo.lastSync).toLocaleString('pt-BR')}
+                    {processo.syncStatus && ` · ${processo.syncStatus}`}
+                  </span>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="p-5">
+              {!processo.instancias || processo.instancias.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">
+                  Nenhuma instância sincronizada. Clique em "Sincronizar" para buscar no Datajud.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {processo.instancias.map((inst: ProcessoInstancia) => (
+                    <div key={inst.id} className="rounded-2xl border border-border/40 bg-background/50 p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Badge variant="outline" className="font-black text-[10px] uppercase tracking-wider border-primary/30 text-primary">
+                          {inst.grau} · {GRAU_LABEL[inst.grau] ?? inst.grau}
+                        </Badge>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">{inst.tribunal}</span>
+                      </div>
+                      <p className="text-sm font-bold text-foreground leading-snug">{inst.classeNome || '-'}</p>
+                      <p className="text-xs text-muted-foreground">{inst.orgaoJulgadorNome || '-'}</p>
+                      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground pt-1">
+                        <span>{inst.totalMovimentos} movimentos</span>
+                        <span>
+                          {inst.dataHoraUltimaAtualizacao
+                            ? `Atualizado ${new Date(inst.dataHoraUltimaAtualizacao).toLocaleDateString('pt-BR')}`
+                            : ''}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Andamentos Section */}
           <div className="space-y-6">
             <div className="flex items-center justify-between px-1">
@@ -302,8 +374,12 @@ function ProcessoDetailPage() {
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            {andamento.tipo === 'SISTEMA' ? (
-                               <Badge variant="destructive" className="text-[8px] font-black px-1.5 py-0 h-4 rounded-md uppercase tracking-widest border-none shadow-sm">Tribunal</Badge>
+                            {andamento.tipo === 'DATAJUD' ? (
+                               <Badge className="text-[8px] font-black px-1.5 py-0 h-4 rounded-md uppercase tracking-widest border-none bg-primary/10 text-primary shadow-sm">
+                                 Tribunal{andamento.instanciaId && grauPorInstancia.get(andamento.instanciaId) ? ` · ${grauPorInstancia.get(andamento.instanciaId)}` : ''}
+                               </Badge>
+                            ) : andamento.tipo === 'SISTEMA' ? (
+                               <Badge variant="destructive" className="text-[8px] font-black px-1.5 py-0 h-4 rounded-md uppercase tracking-widest border-none shadow-sm">Sistema</Badge>
                             ) : (
                                <Badge variant="outline" className="text-[8px] font-black px-1.5 py-0 h-4 rounded-md uppercase tracking-widest border-primary/20 text-primary">Manual</Badge>
                             )}

@@ -34,6 +34,19 @@ import { useTheme } from '@/components/theme-provider';
 import { useRegional } from '@/components/regional-provider';
 import { useToast } from '@/components/ui/toast';
 
+const DATAJUD_STATUS_LABEL: Record<string, string> = {
+  ok: 'Datajud acessível — a chave foi aceita pelo CNJ.',
+  sem_chave: 'Nenhuma chave configurada (nem da firma, nem do servidor).',
+  chave_invalida: 'O CNJ recusou a chave. Confira-a ou apague para usar a chave pública.',
+  indisponivel: 'Datajud indisponível no momento.',
+};
+
+const DATAJUD_ORIGEM_LABEL: Record<string, string> = {
+  firma: 'chave própria do escritório',
+  ambiente: 'chave pública do CNJ (padrão do servidor)',
+  nenhuma: 'nenhuma',
+};
+
 export const Route = createFileRoute('/_dashboard/settings/')({
   component: SettingsPage,
 });
@@ -110,6 +123,17 @@ function SettingsPage() {
   const [firmLogo, setFirmLogo] = useState<string | null>(null);
   const [datajudApiKey, setDatajudApiKey] = useState('');
 
+  // Diagnóstico real: de onde vem a chave em uso e se o CNJ a aceita.
+  const datajudStatus = useQuery({
+    queryKey: ['datajud-status'],
+    queryFn: async () => {
+      const res = await api.firms.datajud.status.$get();
+      if (!res.ok) throw new Error('Falha ao verificar o Datajud');
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+
   // A chave do Datajud nunca volta do servidor — só a informação de que existe.
   const hasDatajudKey = Boolean(firm && 'hasDatajudKey' in firm && firm.hasDatajudKey);
 
@@ -149,6 +173,7 @@ function SettingsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['firm'] });
+      queryClient.invalidateQueries({ queryKey: ['datajud-status'] });
       toast.success('Dados do escritório atualizados com sucesso!');
     },
     onError: (err: any) => {
@@ -449,7 +474,39 @@ function SettingsPage() {
                 <p className="text-[10px] text-muted-foreground italic">
                   Esta chave é usada para buscar processos automaticamente no tribunal.
                   {hasDatajudKey && ' Deixe em branco para manter a chave atual.'}
+                  {' '}Sem chave própria, o sistema usa a chave pública publicada pelo CNJ.
                 </p>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted/20 px-4 py-3 text-sm">
+                <span
+                  className={
+                    'h-2.5 w-2.5 rounded-full ' +
+                    (datajudStatus.isFetching
+                      ? 'bg-muted-foreground animate-pulse'
+                      : datajudStatus.data?.status === 'ok'
+                        ? 'bg-emerald-500'
+                        : 'bg-destructive')
+                  }
+                />
+                <div className="flex-1">
+                  <p className="font-semibold">
+                    {datajudStatus.isFetching
+                      ? 'Verificando conexão com o Datajud…'
+                      : datajudStatus.isError
+                        ? 'Não foi possível verificar o Datajud.'
+                        : DATAJUD_STATUS_LABEL[datajudStatus.data?.status ?? 'indisponivel']}
+                  </p>
+                  {datajudStatus.data && (
+                    <p className="text-xs text-muted-foreground">
+                      Chave em uso: {DATAJUD_ORIGEM_LABEL[datajudStatus.data.origem]}
+                    </p>
+                  )}
+                </div>
+                <Button variant="outline" size="sm" onClick={() => datajudStatus.refetch()} disabled={datajudStatus.isFetching}>
+                  <RefreshCw className={'w-3.5 h-3.5 mr-1.5 ' + (datajudStatus.isFetching ? 'animate-spin' : '')} />
+                  Testar
+                </Button>
               </div>
 
               <Button 
