@@ -75,8 +75,20 @@ reports which key is in use and whether CNJ accepts it.
 
 **DJEN (court intimações) only answers Brazilian IPs.** The production API on
 LXC 103 exits through the home router's NordVPN Brazil tunnel via a VPN
-Director rule; see the `hp-proxmox` skill's Router section. Research and
-roadmap: `docs/INTEGRACAO_TRIBUNAIS_INSS.md`.
+Director rule; see the `hp-proxmox` skill's Router section. From a
+non-Brazilian IP (local dev) every run ends as `sync_runs.status =
+'GEOBLOQUEADO'` — that is expected, not a bug, and must never be turned into
+"success with zero items". `services/djen/` holds the client, the business-day
+prazo calendar (`prazos.ts`, conservative by design: a missing local holiday
+makes a deadline earlier, never later) and `sincronizarIntimacoes`, the single
+path for the manual button and the scheduled job. An intimação for an unknown
+case creates the `processo_judicial` in `situacao='TRIAGEM'` with no client —
+the normal path, not an error — and each prazo becomes a `tarefa` for the
+profile whose OAB matched (`profiles.oab_numero`) or, failing that, the oldest
+admin. Lawyers who are not app users live in `firms.oabs_monitoradas`. Test
+fixtures under `apps/server/test/fixtures/djen/` are real responses with party
+names replaced; keep them that way. Research and roadmap:
+`docs/INTEGRACAO_TRIBUNAIS_INSS.md`.
 
 **Migration 0004 was reconstructed** (#31). Its unused `profiles.reset_token`
 and `reset_token_expires` columns are dropped with `IF EXISTS` in 0007 because

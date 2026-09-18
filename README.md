@@ -77,6 +77,8 @@ throwaway `node:20-alpine` containers with the repo bind-mounted. Note that
 | `JWT_SECRET` | Secret for signing JWTs | *(required — min 32 chars, server exits otherwise)* |
 | `PORT` | Port the API server listens on | `3001` |
 | `DATAJUD_API_KEY` | Fallback CNJ Datajud API key, used when the firm has none configured. `.env.example` ships CNJ's published public key (not a secret; CNJ may rotate it) | CNJ public key |
+| `DJEN_TRANSPORT` | How the server reaches the DJEN (court intimações), which only answers Brazilian IPs: `direct` (production exits through the router VPN) or `relay` | `direct` |
+| `BR_RELAY_URL` / `BR_RELAY_TOKEN` | Brazilian proxy for DJEN, only with `DJEN_TRANSPORT=relay` | *(unset)* |
 | `LMSTUDIO_URL` | LM Studio endpoint backing `GET /dashboard/resumo-ia` | `http://localhost:1234` |
 | `LMSTUDIO_MODEL` | Model name requested from LM Studio | `google/gemma-4-e4b` |
 | `NODE_ENV` | `development` or `production` | `development` |

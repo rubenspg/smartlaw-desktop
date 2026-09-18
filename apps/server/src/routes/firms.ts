@@ -7,6 +7,7 @@ import { firmUpdateSchema } from '@smartlaw/shared';
 import { authMiddleware, Variables } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import { DatajudClient, resolverChave } from '../services/datajud';
+import { normalizarOab } from '../services/djen/normalizar';
 
 const firmsRoutes = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
@@ -21,6 +22,8 @@ const firmsRoutes = new Hono<{ Variables: Variables }>()
         logo: firms.logo,
         createdAt: firms.createdAt,
         datajudApiKey: firms.datajudApiKey,
+        oabsMonitoradas: firms.oabsMonitoradas,
+        feriados: firms.feriados,
       })
       .from(firms)
       .where(eq(firms.id, user.firmId))
@@ -52,7 +55,7 @@ const firmsRoutes = new Hono<{ Variables: Variables }>()
 
   .patch('/me', requireAdmin, zValidator('json', firmUpdateSchema), async (c) => {
     const user = c.get('user');
-    const { nome, logo, datajudApiKey } = c.req.valid('json');
+    const { nome, logo, datajudApiKey, oabsMonitoradas, feriados } = c.req.valid('json');
 
     const [updated] = await db
       .update(firms)
@@ -61,6 +64,12 @@ const firmsRoutes = new Hono<{ Variables: Variables }>()
         logo,
         // Campo em branco mantém a chave existente; só grava quando há valor novo.
         datajudApiKey: datajudApiKey?.trim() ? datajudApiKey.trim() : undefined,
+        oabsMonitoradas: oabsMonitoradas?.map((o) => ({
+          numero: normalizarOab(o.numero),
+          uf: o.uf.toUpperCase(),
+          nome: o.nome?.trim() || undefined,
+        })),
+        feriados,
       })
       .where(eq(firms.id, user.firmId))
       .returning({
@@ -68,6 +77,8 @@ const firmsRoutes = new Hono<{ Variables: Variables }>()
         nome: firms.nome,
         logo: firms.logo,
         createdAt: firms.createdAt,
+        oabsMonitoradas: firms.oabsMonitoradas,
+        feriados: firms.feriados,
       });
 
     if (!updated) {

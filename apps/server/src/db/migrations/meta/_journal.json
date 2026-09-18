@@ -57,6 +57,13 @@
       "when": 1789751586006,
       "tag": "0007_processo_instancias",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789756702725,
+      "tag": "0008_intimacoes",
+      "breakpoints": true
     }
   ]
 }

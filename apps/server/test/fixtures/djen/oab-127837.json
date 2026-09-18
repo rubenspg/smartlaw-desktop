@@ -1,0 +1,236 @@
+{
+ "status": "success",
+ "message": "Consulta realizada com sucesso",
+ "count": 3,
+ "items": [
+  {
+   "id": 731069288,
+   "data_disponibilizacao": "2026-09-18",
+   "siglaTribunal": "TRF4",
+   "tipoComunicacao": "Intimação",
+   "nomeOrgao": "SECRETARIA DE RECURSOS AOS TRIBUNAIS SUPERIORES",
+   "idOrgao": 43803,
+   "texto": "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\"><html lang=\"pt-br\"><head><meta http-equiv=\"Pragma\" content=\"no-cache\" /><meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\"/></head><style>body{ padding: 10px; font-family: Times New Roman; font-size:13pt }; #divHeader{ line-height:25px; margin-bottom:30px }; #divBody{ max-width:90%; text-align:justify }</style><body><div id=\"divHeader\"><b>APELAÇÃO CÍVEL Nº 5004073-05.2025.4.04.7113/RS (originário: processo nº 50040730520254047113/RS)<table border=\"0\"><tr><td>RELATOR</td><td>: VIVIAN JOSETE PANTALEÃO CAMINHA</td></tr><tr><td>APELANTE</td><td>: PARTE 4 (AUTOR)</td></tr><tr><td>ADVOGADO(A)</td><td>: MARIA EDUARDA GIRELLI GONÇALVES (OAB RS127837)</td></tr><tr><td>ADVOGADO(A)</td><td>: MAURICIO FERRON</td></tr><tr><td>ADVOGADO(A)</td><td>: RAFAEL PLENTZ GONÇALVES</td></tr></table></b></div><div id=\"divBody\"><center><p>ATO ORDINATÓRIO</p></center><br/><p>Intimação realizada no sistema eproc.</p><p>O ato refere-se aos seguintes eventos:</p><p>Evento 66 - 15/09/2026 - Recurso extraordinário não admitido</p><p>Evento 65 - 15/09/2026 - Recurso especial não admitido</p></div></body></html>",
+   "numero_processo": "50040730520254047113",
+   "meio": "D",
+   "link": "https://eproc.trf4.jus.br/eproc2trf4/externo_controlador.php?acao=consulta_publica_documento&numProcesso=50040730520254047113&idDocumento=041789674302178798820963757376&hash=90bde8b851acd77d35b511f72651b867d84e42cea57a39e170e1ba4f4339314f",
+   "tipoDocumento": "Ato ordinatório",
+   "nomeClasse": "APELAçãO CíVEL",
+   "codigoClasse": "198",
+   "numeroComunicacao": 19444,
+   "ativo": true,
+   "hash": "2nqe4VJbRaDSOPBIzTn1d2bYKk7AgO",
+   "status": "P",
+   "motivo_cancelamento": null,
+   "data_cancelamento": null,
+   "datadisponibilizacao": "18/09/2026",
+   "meiocompleto": "Diário de Justiça Eletrônico Nacional",
+   "numeroprocessocommascara": "5004073-05.2025.4.04.7113",
+   "destinatarios": [
+    {
+     "nome": "PARTE 4",
+     "comunicacao_id": 731069288,
+     "polo": "A"
+    }
+   ],
+   "destinatarioadvogados": [
+    {
+     "id": 1368914151,
+     "comunicacao_id": 731069288,
+     "advogado_id": 3602312,
+     "created_at": "2026-09-17T16:46:53",
+     "updated_at": "2026-09-17T16:46:53",
+     "advogado": {
+      "id": 3602312,
+      "nome": "MARIA EDUARDA GIRELLI GONÇALVES",
+      "numero_oab": "127837",
+      "uf_oab": "RS"
+     }
+    },
+    {
+     "id": 1368914147,
+     "comunicacao_id": 731069288,
+     "advogado_id": 3999032,
+     "created_at": "2026-09-17T16:46:53",
+     "updated_at": "2026-09-17T16:46:53",
+     "advogado": {
+      "id": 3999032,
+      "nome": "RAFAEL PLENTZ GONÇALVES",
+      "numero_oab": "62492",
+      "uf_oab": "RS"
+     }
+    },
+    {
+     "id": 1368914141,
+     "comunicacao_id": 731069288,
+     "advogado_id": 78646,
+     "created_at": "2026-09-17T16:46:53",
+     "updated_at": "2026-09-17T16:46:53",
+     "advogado": {
+      "id": 78646,
+      "nome": "MAURICIO FERRON",
+      "numero_oab": "55817",
+      "uf_oab": "RS"
+     }
+    }
+   ]
+  },
+  {
+   "id": 729551261,
+   "data_disponibilizacao": "2026-09-17",
+   "siglaTribunal": "TJRS",
+   "tipoComunicacao": "Intimação",
+   "nomeOrgao": "Juizado Especial Cível Adjunto da Comarca de Casca",
+   "idOrgao": 40305,
+   "texto": "<p align=\"center\" >Processo PARTE 15so</p><br/><p align=\"center\" >Para visualização do documento, consulte os autos digitais</p>",
+   "numero_processo": "50008987920268210090",
+   "meio": "D",
+   "link": null,
+   "tipoDocumento": "Outros",
+   "nomeClasse": "PROCEDIMENTO DO JUIZADO ESPECIAL CíVEL",
+   "codigoClasse": "436",
+   "numeroComunicacao": 23347,
+   "ativo": true,
+   "hash": "W5ljVaJnYkvu3agUDTelJdeZAve9mD",
+   "status": "P",
+   "motivo_cancelamento": null,
+   "data_cancelamento": null,
+   "datadisponibilizacao": "17/09/2026",
+   "meiocompleto": "Diário de Justiça Eletrônico Nacional",
+   "numeroprocessocommascara": "5000898-79.2026.8.21.0090",
+   "destinatarios": [
+    {
+     "nome": "PARTE 15",
+     "comunicacao_id": 729551261,
+     "polo": "A"
+    }
+   ],
+   "destinatarioadvogados": [
+    {
+     "id": 1365651936,
+     "comunicacao_id": 729551261,
+     "advogado_id": 3999032,
+     "created_at": "2026-09-16T14:53:15",
+     "updated_at": "2026-09-16T14:53:15",
+     "advogado": {
+      "id": 3999032,
+      "nome": "RAFAEL PLENTZ GONÇALVES",
+      "numero_oab": "62492",
+      "uf_oab": "RS"
+     }
+    },
+    {
+     "id": 1365651937,
+     "comunicacao_id": 729551261,
+     "advogado_id": 4375039,
+     "created_at": "2026-09-16T14:53:15",
+     "updated_at": "2026-09-16T14:53:15",
+     "advogado": {
+      "id": 4375039,
+      "nome": "MARIA EDUARDA GIRELLI GONCALVES",
+      "numero_oab": "127837",
+      "uf_oab": "RS"
+     }
+    },
+    {
+     "id": 1365651938,
+     "comunicacao_id": 729551261,
+     "advogado_id": 1036794,
+     "created_at": "2026-09-16T14:53:15",
+     "updated_at": "2026-09-16T14:53:15",
+     "advogado": {
+      "id": 1036794,
+      "nome": "NARA CANDIDA PINHEIRO BONADIES",
+      "numero_oab": "26234",
+      "uf_oab": "CE"
+     }
+    },
+    {
+     "id": 1365651935,
+     "comunicacao_id": 729551261,
+     "advogado_id": 78646,
+     "created_at": "2026-09-16T14:53:15",
+     "updated_at": "2026-09-16T14:53:15",
+     "advogado": {
+      "id": 78646,
+      "nome": "MAURICIO FERRON",
+      "numero_oab": "55817",
+      "uf_oab": "RS"
+     }
+    }
+   ]
+  },
+  {
+   "id": 726236707,
+   "data_disponibilizacao": "2026-09-14",
+   "siglaTribunal": "TJRS",
+   "tipoComunicacao": "Intimação",
+   "nomeOrgao": "Vara Judicial da Comarca de Casca",
+   "idOrgao": 38529,
+   "texto": "<p align=\"center\" >Processo PARTE 15so</p><br/><p align=\"center\" >Para visualização do documento, consulte os autos digitais</p>",
+   "numero_processo": "50024277020258210090",
+   "meio": "D",
+   "link": null,
+   "tipoDocumento": "Outros",
+   "nomeClasse": "INTERDIçãO",
+   "codigoClasse": "58",
+   "numeroComunicacao": 86643,
+   "ativo": true,
+   "hash": "v3KLNz5ZoQu81JNT7TK7qjvRkXgDen",
+   "status": "P",
+   "motivo_cancelamento": null,
+   "data_cancelamento": null,
+   "datadisponibilizacao": "14/09/2026",
+   "meiocompleto": "Diário de Justiça Eletrônico Nacional",
+   "numeroprocessocommascara": "5002427-70.2025.8.21.0090",
+   "destinatarios": [
+    {
+     "nome": "PARTE 15",
+     "comunicacao_id": 726236707,
+     "polo": "A"
+    }
+   ],
+   "destinatarioadvogados": [
+    {
+     "id": 1358424671,
+     "comunicacao_id": 726236707,
+     "advogado_id": 3999032,
+     "created_at": "2026-09-13T22:40:19",
+     "updated_at": "2026-09-13T22:40:19",
+     "advogado": {
+      "id": 3999032,
+      "nome": "RAFAEL PLENTZ GONÇALVES",
+      "numero_oab": "62492",
+      "uf_oab": "RS"
+     }
+    },
+    {
+     "id": 1358424673,
+     "comunicacao_id": 726236707,
+     "advogado_id": 4375039,
+     "created_at": "2026-09-13T22:40:19",
+     "updated_at": "2026-09-13T22:40:19",
+     "advogado": {
+      "id": 4375039,
+      "nome": "MARIA EDUARDA GIRELLI GONCALVES",
+      "numero_oab": "127837",
+      "uf_oab": "RS"
+     }
+    },
+    {
+     "id": 1358424672,
+     "comunicacao_id": 726236707,
+     "advogado_id": 78646,
+     "created_at": "2026-09-13T22:40:19",
+     "updated_at": "2026-09-13T22:40:19",
+     "advogado": {
+      "id": 78646,
+      "nome": "MAURICIO FERRON",
+      "numero_oab": "55817",
+      "uf_oab": "RS"
+     }
+    }
+   ]
+  }
+ ]
+}
