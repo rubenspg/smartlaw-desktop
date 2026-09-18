@@ -12,7 +12,7 @@ import {
   parseDataAjuizamento,
   resolverChave,
   sincronizarProcesso,
-  situacaoSugerida,
+  classificarSituacao,
   somenteDigitos,
   validarNumeroCnj,
 } from '../services/datajud';
@@ -193,7 +193,7 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
       const client = await clientDaFirma(user.firmId);
       const hits = await client.buscarPorNumero(digitos);
       const origem = hits[0]?._source;
-      const sugestao = situacaoSugerida(hits);
+      const classificacao = classificarSituacao(hits);
 
       // Comarca a partir do município IBGE do órgão de origem, quando a tabela
       // de municípios foi importada (o seed padrão a deixa vazia).
@@ -219,7 +219,10 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
               orgaoJulgador: origem.orgaoJulgador?.nome ?? null,
               comarca: comarcaSugerida,
               distribuicao: parseDataAjuizamento(origem.dataAjuizamento)?.toISOString() ?? null,
-              situacao: sugestao.situacao,
+              situacao: classificacao.situacao,
+              estagio: classificacao.estagio,
+              resultado: classificacao.resultado,
+              motivoSituacao: classificacao.motivo,
             }
           : null,
         instancias: hits.map((h) => {

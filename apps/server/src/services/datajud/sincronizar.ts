@@ -4,6 +4,7 @@ import { db } from '../../db';
 import { andamentos, processoInstancias, processosJudiciais } from '../../db/schema';
 import type { DatajudClient, DatajudHit } from './client';
 import { somenteDigitos } from './cnj';
+import type { EstagioProcesso } from './normalizar';
 import {
   chaveMovimento,
   compararCampos,
@@ -31,6 +32,8 @@ export interface ResultadoSync extends DriftResult {
   encontrado: boolean;
   instancias: number;
   situacao: string | null;
+  /** Estágio classificado pelos códigos TPU (ver classificarSituacao); null se não encontrado. */
+  estagio: EstagioProcesso | null;
 }
 
 /**
@@ -68,7 +71,7 @@ export async function aplicarInstancias(
       .update(processosJudiciais)
       .set({ lastSync: agora, syncStatus: 'NAO_ENCONTRADO', updatedAt: agora })
       .where(and(eq(processosJudiciais.id, processoId), eq(processosJudiciais.firmId, firmId)));
-    return { encontrado: false, instancias: 0, hasDrift: false, fields: [], newMovements: 0, situacao: null };
+    return { encontrado: false, instancias: 0, hasDrift: false, fields: [], newMovements: 0, situacao: null, estagio: null };
   }
 
   const fields = compararCampos(processo, hits);
@@ -170,6 +173,7 @@ export async function aplicarInstancias(
     fields,
     newMovements: novos,
     situacao: sugestao.situacao,
+    estagio: sugestao.estagio,
   };
 }
 

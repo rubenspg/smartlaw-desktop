@@ -64,6 +64,12 @@ instances land in `processo_instancias`, movimentos in `andamentos` with
 `tipo='DATAJUD'` and a content hash in `external_id`. Each firm may hold its
 own key (`firms.datajudApiKey`), falling back to `DATAJUD_API_KEY`. **Never
 return the firm key to the client**; `GET /firms/me` exposes only `hasDatajudKey`.
+`classificarSituacao` (normalizar.ts) derives the case stage from the TPU
+movement codes of all instances together: only Baixa Definitiva (22) or
+Definitivo (246) close a case, trânsito em julgado (848) does not, and a
+substantive movement after a baixa yields `REVISAR` instead of reopening. It
+was calibrated on the firm's own cases (fixture `estagios-firma.json`), so
+change the code lists only with new evidence.
 
 **The key is already stored in the database** (`firms.datajud_api_key`, both
 firms, production and dev, set 2026-09-18) — it is CNJ's *published public*
