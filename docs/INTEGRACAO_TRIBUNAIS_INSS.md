@@ -208,7 +208,7 @@ Files: `services/djen/DjenClient.ts`, `jobs/djen-sync.ts`, migration `0008_*`, `
 
 1. Schema: `profiles.oab_numero`, `profiles.oab_uf` (editable by admin in Administrativo → Usuários). `firms.oabs_monitoradas jsonb` `[{numero, uf, nome}]` for lawyers who are not app users. Seed for this firm (**confirmed by Rubens 2026-09-18**): RS 62492 (Rafael Plentz Gonçalves), RS 55817 (Mauricio Ferron), RS 127837 (Maria Eduarda Girelli Gonçalves).
 2. Table `intimacoes` (`id`, `firm_id`, `external_id` unique `djen:<id>`, `hash`, `numero_processo` (20 digits), `processo_judicial_id` nullable, `sigla_tribunal`, `tipo_comunicacao`, `tipo_documento`, `nome_orgao`, `id_orgao`, `nome_classe`, `codigo_classe`, `texto_html`, `texto_plano`, `link`, `meio`, `data_disponibilizacao date`, `destinatarios jsonb`, `advogados jsonb` (normalized OABs), `ativo`, `motivo_cancelamento`, `lida_em`, `lida_por`, `tarefa_id` nullable, `raw jsonb`, `created_at`) + indexes `(firm_id, data_disponibilizacao desc)`, `(firm_id, processo_judicial_id)`.
-3. `DjenClient.listByOab({numero, uf, from, to})`: `itensPorPagina=100`, loop `pagina` until `items.length < 100`; ignore `count`; 500 ms between requests; retry 5xx with backoff; on `403` mark the run `GEOBLOQUEADO` (this is what a US caller sees). Dedupe by `id` across OABs (the two partners share 99% of items). `getCertidao(hash)` → PDF bytes for the documents feature (issue #2).
+3. `DjenClient.listByOab({numero, uf, from, to})`: `itensPorPagina=100`, loop `pagina` until `items.length < 100`; ignore `count`; 500 ms between requests; retry 5xx with backoff; on `403` mark the run `GEOBLOQUEADO` (what a non-Brazilian caller sees — on LXC 103 it means the router's VPN tunnel is down, see `hp-proxmox` skill). Dedupe by `id` across OABs (the two partners share 99% of items). `getCertidao(hash)` → PDF bytes for the documents feature (issue #2).
 4. Job `djen-sync` — twice a day, 09:00 and 14:00 America/Sao_Paulo; window = last 3 days (DJEN backfills late publications); upsert by `external_id`; link to the case by `numero_processo` (compare digits with `processos_judiciais.numero_cnj`).
 5. **Unknown case is the normal path (82% in the sample).** Default: auto-create the `processo_judicial` with `situacao='TRIAGEM'`, `cliente_id=null`, `numero`/`numero_cnj` from the intimação, `justica`/`orgao_julgador` from the DJEN item, then run the Datajud sync for it (Phase 1) to fill classe/instances/movimentos, and raise a `notificacoes` row "Processo em triagem: vincule o cliente". The Processos list gets a "Triagem" filter/badge. Client linking is manual (party names in `destinatarios` can prefill a search over `clientes.nome`).
 6. Prazo → tarefa: on each new `Intimação`/`Citação` create a `tarefa` (`titulo="Intimação — <tipoDocumento> — <numero>"`, `usuario_id` = the profile whose OAB matched, `dataLimite` = `data_disponibilizacao` + 1 business day (publication) + N business days; N default 15 for `Intimação`, 5 for `Ato ordinatório`/`DESPACHO`, 30 for `Citação`; editable). Business-day calendar per Res. CNJ 455 (count starts the next business day) with `firms.feriados jsonb` seeded with national holidays; the AI step (Phase 6) proposes N from `texto_plano`, the human confirms. Skip tarefa creation for `Lista de distribuição`, `Pauta de julgamento`, `Ata de sessão` (informational; still stored and shown).
@@ -242,69 +242,31 @@ There is no API. The realistic plan, in order of value:
 
 ---
 
-## 5. Where the DJEN caller runs — decided: server-side, through a VPN sidecar
+## 5. Where the DJEN caller runs — decided and verified: server-side, through the home router's VPN
 
-Verified: DJEN answers only to Brazilian IPs; Datajud answers from anywhere. The desktop app runs in Brazil on the lawyers' machines; the API server runs on the Proxmox host (LXC 103) in the US today. Rubens's consumer VPN with a Brazil exit was accepted by CloudFront in every test on 2026-09-18, so provider IPs are not blocked.
+Verified: DJEN answers only to Brazilian IPs; Datajud answers from anywhere. The desktop app runs in Brazil on the lawyers' machines; the API server runs on the Proxmox host (LXC 103) in the US.
 
-**Decision (2026-09-18):** keep the DJEN job on the server (one fetch per run for the whole firm, no 3× duplication from three desktops) and give only that traffic a Brazilian exit.
+**Decision (2026-09-18, verified live):** the DJEN job stays on the server (one fetch per run for the whole firm). LXC 103's traffic is routed through the home router's existing NordVPN Brazil OpenVPN client with an Asuswrt-Merlin **VPN Director** rule (`192.168.50.127 → OVPN1`). No sidecar, no VPN key on the server, no relay: `DjenClient` calls `comunicaapi.pje.jus.br` directly (`DJEN_TRANSPORT=direct`).
 
-### 5.1 Now — NordVPN sidecar (gluetun) on LXC 103, next to the API (Phase 3 prerequisite)
+Verified from inside LXC 103 after the change: egress `BR`, `GET /api/v1/comunicacao?numeroOab=62492&ufOab=RS` → `200` with the day's intimações, Datajud `200`, GitHub `200`, and the public API through the Cloudflare tunnel healthy.
 
-Verified on the host 2026-09-18: LXC 103 is privileged (`lxc.apparmor.profile: unconfined`, no `cap.drop`, `nesting=1`), Docker 29 with compose network `smartlaw-desktop_default`, 5.5 GB free, host kernel `6.17.2-1-pve` has the `wireguard` module. **Missing: `/dev/net/tun` inside the container**, which gluetun needs. Fix on the Proxmox host (one-time, needs a container restart ≈ 1 min of API downtime):
+Operational facts (full detail and troubleshooting in the `hp-proxmox` skill, Router section):
 
-```
-# /etc/pve/lxc/103.conf  (append)
-lxc.cgroup2.devices.allow: c 10:200 rwm
-lxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file
-# then: pct reboot 103
-```
+- The router's kill switch for routed clients is **off** on purpose: if the tunnel drops, LXC 103 falls back to the WAN, the API and Cloudflare tunnel stay up, and only DJEN answers `403` until the tunnel returns. The DJEN job must therefore treat `403` as `GEOBLOQUEADO` in `sync_runs`, never as "no intimações".
+- NordVPN retires servers; when that happens the client shows `state=-1` with TLS timeouts. The fix is a new `brNNN.nordvpn.com` in **both** the server address and the `verify-x509-name` line, plus current service credentials. All three bit on 2026-09-18.
+- smartlawdb's IP `192.168.50.127` must get a DHCP reservation (MAC `bc:24:11:b2:f8:a7`), or the VPN Director rule silently stops matching if the lease moves.
+- If the API ever moves to Brazil (§5.2 below), nothing changes in the code.
 
-Credentials: NordVPN → gluetun supports it natively. In the Nord account dashboard generate an **access token** ("Set up NordVPN manually"), then derive the NordLynx (WireGuard) private key once — on the LXC, never on a shared machine — and store it in the LXC `.env` (gitignored):
+### 5.1 Rejected alternatives (kept for the record)
 
-```
-curl -s -u token:<ACCESS_TOKEN> https://api.nordvpn.com/v1/users/services/credentials | jq -r .nordlynx_private_key
-# → NORDVPN_WIREGUARD_KEY=... in /root/smartlaw-desktop/.env ; discard the access token afterwards
-```
-
-Compose: add `docker-compose.djen.yml` to the repo (an override, applied by `deploy-prod.sh` only when `NORDVPN_WIREGUARD_KEY` is set):
-
-```yaml
-services:
-  gluetun:
-    image: qmcgaw/gluetun
-    cap_add: [NET_ADMIN]
-    devices: ["/dev/net/tun:/dev/net/tun"]
-    environment:
-      VPN_SERVICE_PROVIDER: nordvpn
-      VPN_TYPE: wireguard
-      WIREGUARD_PRIVATE_KEY: ${NORDVPN_WIREGUARD_KEY}
-      SERVER_COUNTRIES: Brazil
-      TZ: America/Sao_Paulo
-    restart: unless-stopped
-  djen-relay:
-    build: ./relay            # 30-line Hono proxy, see below
-    network_mode: "service:gluetun"
-    environment:
-      RELAY_TOKEN: ${BR_RELAY_TOKEN}
-    depends_on: [gluetun]
-    restart: unless-stopped
-```
-
-The relay listens on 8080 inside gluetun's namespace; the API (`api` service, on the normal compose network) reaches it as `http://gluetun:8080` — add `gluetun` as an alias on `smartlaw-desktop_default` or give both services that network. The relay forwards only `GET /comunicacao` and `GET /comunicacao/:hash/certidao` to `https://comunicaapi.pje.jus.br/api/v1/…`, requires `Authorization: Bearer $RELAY_TOKEN`, and rejects everything else. gluetun's healthcheck restarts the tunnel; a VPN drop fails only the DJEN job (`sync_runs.status='RELAY_INDISPONIVEL'`), never the API, Postgres, the Cloudflare tunnel, Datajud or ntfy — those never touch the VPN.
-
-Acceptance: `docker exec smartlaw-api curl -s http://gluetun:8080/comunicacao?numeroOab=62492&ufOab=RS&itensPorPagina=1&pagina=1 -H "Authorization: Bearer …"` returns one item, `docker exec gluetun wget -qO- https://ipinfo.io/country` prints `BR`, and `docker exec smartlaw-api curl -s https://ipinfo.io/country` still prints `US`.
+- **gluetun/NordVPN sidecar on LXC 103** — would work (kernel has WireGuard, container needs `/dev/net/tun`), but duplicates a VPN the router already runs.
+- **Whole LXC behind a consumer VPN app** — a drop would take the API down; the router approach avoids this only because the kill switch is off.
+- **Desktop-side fetch** — three desktops would fetch the same feed; runs only while the app is open; splits sync logic across client and server.
+- **Relay in the law office / Oracle free tier** — extra infrastructure for the same result.
 
 ### 5.2 Later — move the API + Postgres to Brazil (separate project)
 
-Worth doing regardless of DJEN: every user is in Brazil (each request crosses to the US today), and hosting Brazilian citizens' data in Brazil simplifies LGPD. Candidate: Oracle Cloud Free Tier, São Paulo (always-on ARM VM, enough for Hono + Postgres), same Cloudflare Tunnel and `deploy-prod.sh` flow; the Proxmox host becomes the backup/replica target. When that happens set `DJEN_TRANSPORT=direct` and drop the sidecar.
-
-### 5.3 Rejected
-
-- **Whole LXC behind the VPN**: a VPN drop takes the API and the Cloudflare tunnel down with it, and Datajud/GitHub/ntfy traffic would detour for no reason.
-- **Desktop-side fetch (`tauri-plugin-http` + `POST /intimacoes/importar`)**: three desktops would fetch the same feed unless the server hands out a lease; runs only while a lawyer has the app open; splits sync logic across client and server. Keep as a documented fallback only.
-- **Relay in the law office**: works, but depends on an office machine Rubens does not operate.
-
-Implement `DjenClient` behind a `DjenTransport` (`relay` | `direct`) so 5.2 is configuration, not a rewrite.
+Still worth considering for latency (every user is in Brazil) and LGPD simplicity: Oracle Cloud Free Tier São Paulo, same Cloudflare Tunnel and `deploy-prod.sh` flow, Proxmox as backup target. Set `DJEN_TRANSPORT=direct` (already the default) and the router rule becomes unnecessary.
 
 ## 6. Config
 
@@ -314,8 +276,8 @@ Implement `DjenClient` behind a `DjenTransport` (`relay` | `direct`) so 5.2 is c
 | `SCHEDULER_ENABLED` | server | default `true` in prod, `false` in tests. |
 | `DATAJUD_SYNC_INTERVAL_MIN` | server | default `360`. |
 | `DJEN_SYNC_TIMES` | server | default `08:00,13:00` (America/Sao_Paulo). |
-| `DJEN_TRANSPORT` | server | `relay` (default, VPN sidecar §5.1) or `direct` (server in Brazil, §5.2). |
-| `BR_RELAY_URL`, `BR_RELAY_TOKEN` | server | `http://gluetun:8080` + shared token when `DJEN_TRANSPORT=relay`; unset → DJEN job records `NAO_CONFIGURADO` and skips. |
+| `DJEN_TRANSPORT` | server | `direct` (default; LXC 103 exits through the router VPN, §5) or `relay` (only if the routing setup ever goes away). |
+| `BR_RELAY_URL`, `BR_RELAY_TOKEN` | server | Only when `DJEN_TRANSPORT=relay`. Unset by default. |
 | `NTFY_URL` | server | optional push. |
 
 Add them to `apps/server/.env.example` and to `env.ts` (validate types, do not require).
@@ -356,12 +318,12 @@ UF table for J=8/6: 01 ac, 02 al, 03 ap, 04 am, 05 ba, 06 ce, 07 dft, 08 es, 09 
 
 ## 9. Open questions for Rubens
 
-Answered 2026-09-18: OABs RS 62492, RS 55817, RS 127837 are the firm's lawyers (confirmed); DJEN runs server-side through a VPN sidecar now, with a possible move of the server to Brazil later (§5).
+Answered 2026-09-18: OABs RS 62492, RS 55817, RS 127837 are the firm's lawyers (confirmed); DJEN runs server-side and LXC 103 exits through the home router's NordVPN Brazil tunnel, verified live (§5).
 
 Still open (none blocks Phase 1/2):
 
 1. **Production database vs. the April dump**: 263 of the firm's 321 active DJEN cases are absent from the backup. Is production more complete, or are new cases not being registered? This decides how heavily the `TRIAGEM` auto-create path is used (the plan assumes: heavily).
-2. ~~VPN provider~~ Answered: NordVPN, sidecar on LXC 103 (§5.1). Pending: the `/dev/net/tun` change + reboot of LXC 103, and the NordLynx key in the LXC `.env`.
+2. ~~VPN provider~~ Answered: router-level routing, no sidecar (§5). Pending: DHCP reservation for 192.168.50.127 on the router.
 3. **Push notifications**: ntfy on the lawyers' phones, or in-app only?
 4. **INSS documents**: which PDFs the office actually downloads today (CNIS, HISCRE, carta de concessão, extrato do requerimento). Send 2–3 samples to build the parsers.
 5. **Datajud ToS**: internal use by the firm fits "fins legais e autorizados"; if smartlaw is ever sold to other firms, art. 3.8 (no commercial exploitation) needs a legal read.
