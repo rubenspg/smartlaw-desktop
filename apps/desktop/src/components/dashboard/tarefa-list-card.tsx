@@ -9,6 +9,9 @@ import {
   Eye,
   Edit2,
   Trash2,
+  Video,
+  Scale,
+  Briefcase,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,14 +37,25 @@ interface TarefaListCardProps {
 
 function priorityColor(p: string | null): string {
   switch (p) {
-    case 'ALTA': return 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400';
-    case 'MEDIA': return 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400';
-    case 'BAIXA': return 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400';
-    default: return 'bg-muted text-muted-foreground';
+    case 'ALTA':
+      return 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400';
+    case 'MEDIA':
+      return 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400';
+    case 'BAIXA':
+      return 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400';
+    default:
+      return 'bg-muted text-muted-foreground';
   }
 }
 
-export function TarefaListCard({ tarefas, isLoading, onView, onEdit, onDelete, onToggle }: TarefaListCardProps) {
+export function TarefaListCard({
+  tarefas,
+  isLoading,
+  onView,
+  onEdit,
+  onDelete,
+  onToggle,
+}: TarefaListCardProps) {
   const { formatDate, t } = useRegional();
 
   return (
@@ -66,7 +80,9 @@ export function TarefaListCard({ tarefas, isLoading, onView, onEdit, onDelete, o
                 <CheckCircle2 className="w-10 h-10 text-muted-foreground/30" />
               </div>
               <p className="text-muted-foreground font-bold">Tudo em dia!</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">Você não tem tarefas pendentes.</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">
+                Você não tem tarefas pendentes.
+              </p>
             </div>
           ) : (
             <div className="divide-y divide-border/30">
@@ -78,7 +94,10 @@ export function TarefaListCard({ tarefas, isLoading, onView, onEdit, onDelete, o
                 >
                   <div className="flex items-start gap-4">
                     <button
-                      onClick={(e) => { e.stopPropagation(); onToggle(tarefa); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggle(tarefa);
+                      }}
                       className="mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shadow-sm border-border/60 hover:border-primary bg-background"
                       title="Concluir tarefa"
                       aria-label={`Concluir tarefa ${tarefa.titulo}`}
@@ -95,20 +114,70 @@ export function TarefaListCard({ tarefas, isLoading, onView, onEdit, onDelete, o
                       )}
 
                       <div className="flex flex-wrap items-center gap-3 mt-3">
-                        <Badge className={cn('text-[10px] px-1.5 py-0 border-none font-black tracking-widest uppercase rounded-md shadow-sm', priorityColor(tarefa.prioridade))}>
+                        <Badge
+                          className={cn(
+                            'text-[10px] px-1.5 py-0 border-none font-black tracking-widest uppercase rounded-md shadow-sm',
+                            priorityColor(tarefa.prioridade),
+                          )}
+                        >
                           {tarefa.prioridade}
                         </Badge>
+
+                        {tarefa.categoria && tarefa.categoria !== 'GERAL' && (
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] font-semibold px-1.5 py-0.5 rounded border-border/60 uppercase tracking-wider bg-muted/40 flex items-center gap-1"
+                          >
+                            {tarefa.categoria === 'AUDIENCIA' && (
+                              <Scale className="w-2.5 h-2.5 text-purple-600" />
+                            )}
+                            {tarefa.categoria === 'PRAZO' && (
+                              <Clock className="w-2.5 h-2.5 text-rose-600" />
+                            )}
+                            {tarefa.categoria === 'REUNIAO' && (
+                              <Users className="w-2.5 h-2.5 text-sky-600" />
+                            )}
+                            {tarefa.categoria === 'DILIGENCIA' && (
+                              <Briefcase className="w-2.5 h-2.5 text-amber-600" />
+                            )}
+                            {tarefa.categoria === 'AUDIENCIA'
+                              ? 'Audiência'
+                              : tarefa.categoria === 'PRAZO'
+                                ? 'Prazo Fatal'
+                                : tarefa.categoria === 'REUNIAO'
+                                  ? 'Reunião'
+                                  : 'Diligência'}
+                          </Badge>
+                        )}
+
+                        {tarefa.link && (
+                          <Video className="w-3.5 h-3.5 text-primary shrink-0 opacity-80" />
+                        )}
 
                         {tarefa.dataLimite && (
                           <div className="flex items-center gap-1 text-xs font-bold text-primary uppercase tracking-wider">
                             <Clock className="w-3.5 h-3.5" />
-                            {formatDate(tarefa.dataLimite, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                            {formatDate(tarefa.dataLimite, {
+                              day: '2-digit',
+                              month: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
                           </div>
                         )}
 
                         <div className="flex items-center gap-1 text-xs font-bold text-muted-foreground/70 uppercase tracking-wider">
-                          <UserIcon className="w-3.5 h-3.5" />
-                          {tarefa.usuario?.nome.split(' ')[0]}
+                          {tarefa.usuario ? (
+                            <>
+                              <UserIcon className="w-3.5 h-3.5" />
+                              {tarefa.usuario.nome.split(' ')[0]}
+                            </>
+                          ) : (
+                            <>
+                              <Users className="w-3.5 h-3.5 text-primary" />
+                              <span className="text-primary font-black">Equipe</span>
+                            </>
+                          )}
                         </div>
 
                         {tarefa.cliente && (
@@ -131,7 +200,10 @@ export function TarefaListCard({ tarefas, isLoading, onView, onEdit, onDelete, o
                           <MoreVertical className="w-4 h-4 text-muted-foreground" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="rounded-xl shadow-premium-lg border-border/40">
+                      <DropdownMenuContent
+                        align="end"
+                        className="rounded-xl shadow-premium-lg border-border/40"
+                      >
                         <DropdownMenuItem onClick={() => onView(tarefa)} className="rounded-lg">
                           <Eye className="w-3.5 h-3.5 mr-2" />
                           Visualizar

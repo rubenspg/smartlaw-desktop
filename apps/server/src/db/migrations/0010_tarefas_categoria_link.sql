@@ -1,0 +1,2 @@
+ALTER TABLE "tarefas" ADD COLUMN IF NOT EXISTS "categoria" text DEFAULT 'GERAL';
+ALTER TABLE "tarefas" ADD COLUMN IF NOT EXISTS "link" text;

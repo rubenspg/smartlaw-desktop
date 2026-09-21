@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { db } from '../db';
 import { tarefas } from '../db/schema';
-import { eq, and, desc, or, ne, gte } from 'drizzle-orm';
+import { eq, and, desc, or, ne, gte, isNull } from 'drizzle-orm';
 import { tarefaSchema } from '@smartlaw/shared';
 import { authMiddleware, Variables } from '../middleware/auth';
 import { zValidator } from '@hono/zod-validator';
@@ -9,29 +9,26 @@ import { parseIdParam } from '../utils';
 
 const tarefasRoutes = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
-  
+
   .get('/', async (c) => {
     const user = c.get('user');
     const { status, usuarioId } = c.req.query();
-    
+
     const where = [eq(tarefas.firmId, user.firmId)];
 
     if (status) {
       where.push(eq(tarefas.status, status));
     }
 
-    if (usuarioId) {
-      where.push(eq(tarefas.usuarioId, usuarioId));
+    if (usuarioId === 'team') {
+      where.push(isNull(tarefas.usuarioId));
+    } else if (usuarioId) {
+      where.push(or(eq(tarefas.usuarioId, usuarioId), isNull(tarefas.usuarioId))!);
     }
 
     // Tarefas concluídas só aparecem por 24h após a conclusão (usa updatedAt como proxy)
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    where.push(
-      or(
-        ne(tarefas.status, 'CONCLUIDA'),
-        gte(tarefas.updatedAt, oneDayAgo),
-      )!,
-    );
+    where.push(or(ne(tarefas.status, 'CONCLUIDA'), gte(tarefas.updatedAt, oneDayAgo))!);
 
     const data = await db.query.tarefas.findMany({
       where: and(...where),
@@ -41,14 +38,20 @@ const tarefasRoutes = new Hono<{ Variables: Variables }>()
             id: true,
             nome: true,
             email: true,
-          }
+          },
         },
         cliente: {
           columns: {
             id: true,
             nome: true,
-          }
-        }
+          },
+        },
+        processoJudicial: {
+          columns: {
+            id: true,
+            numero: true,
+          },
+        },
       },
       orderBy: [desc(tarefas.createdAt)],
     });
@@ -69,15 +72,21 @@ const tarefasRoutes = new Hono<{ Variables: Variables }>()
             id: true,
             nome: true,
             email: true,
-          }
+          },
         },
         cliente: {
           columns: {
             id: true,
             nome: true,
-          }
-        }
-      }
+          },
+        },
+        processoJudicial: {
+          columns: {
+            id: true,
+            numero: true,
+          },
+        },
+      },
     });
 
     if (!data) {
@@ -95,6 +104,7 @@ const tarefasRoutes = new Hono<{ Variables: Variables }>()
       .insert(tarefas)
       .values({
         ...data,
+        categoria: data.categoria ?? 'GERAL',
         firmId: user.firmId,
         dataLimite: data.dataLimite ? new Date(data.dataLimite) : null,
       })
@@ -111,13 +121,14 @@ const tarefasRoutes = new Hono<{ Variables: Variables }>()
 
     const whereUpdate = [eq(tarefas.id, id), eq(tarefas.firmId, user.firmId)];
     if (user.perfil !== 'admin' && user.perfil !== 'administrativo') {
-      whereUpdate.push(eq(tarefas.usuarioId, user.id));
+      whereUpdate.push(or(eq(tarefas.usuarioId, user.id), isNull(tarefas.usuarioId))!);
     }
 
     const [updatedTarefa] = await db
       .update(tarefas)
       .set({
         ...data,
+        ...(data.categoria !== undefined ? { categoria: data.categoria ?? 'GERAL' } : {}),
         dataLimite: data.dataLimite ? new Date(data.dataLimite) : null,
         updatedAt: new Date(),
       })
@@ -138,7 +149,7 @@ const tarefasRoutes = new Hono<{ Variables: Variables }>()
 
     const whereDelete = [eq(tarefas.id, id), eq(tarefas.firmId, user.firmId)];
     if (user.perfil !== 'admin' && user.perfil !== 'administrativo') {
-      whereDelete.push(eq(tarefas.usuarioId, user.id));
+      whereDelete.push(or(eq(tarefas.usuarioId, user.id), isNull(tarefas.usuarioId))!);
     }
 
     const [deletedTarefa] = await db

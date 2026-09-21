@@ -18,8 +18,8 @@ function validateCPF(value: string): boolean {
 function validateCNPJ(value: string): boolean {
   const d = value.replace(/\D/g, '');
   if (d.length !== 14 || /^(\d)\1{13}$/.test(d)) return false;
-  const w1 = [5,4,3,2,9,8,7,6,5,4,3,2];
-  const w2 = [6,5,4,3,2,9,8,7,6,5,4,3,2];
+  const w1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  const w2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
   let sum = w1.reduce((acc, w, i) => acc + parseInt(d[i]) * w, 0);
   let rem = sum % 11;
   if ((rem < 2 ? 0 : 11 - rem) !== parseInt(d[12])) return false;
@@ -35,65 +35,75 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
-export const clienteSchema = z.object({
-  tipo: z.enum(['F', 'J']),
-  nome: z.string().min(1, 'Nome é obrigatório'),
-  fantasia: z.string().optional().nullable(),
-  cpfCnpj: z.string().optional().nullable(),
-  rg: z.string().optional().nullable(),
-  nascimento: z.string().optional().nullable(),
-  sexo: z.string().optional().nullable(),
-  estCivil: z.string().optional().nullable(),
-  profissao: z.string().optional().nullable(),
-  endereco: z.string().optional().nullable(),
-  endNumero: z.string().optional().nullable(),
-  complemento: z.string().optional().nullable(),
-  bairro: z.string().optional().nullable(),
-  municipio: z.string().optional().nullable(),
-  municipioCodigo: z.string().optional().nullable(),
-  cep: z.string().optional().nullable(),
-  estado: z.string().optional().nullable(),
-  pais: z.string().optional().nullable(),
-  telefone1: z.string().optional().nullable(),
-  telefone2: z.string().optional().nullable(),
-  celular: z.string().optional().nullable(),
-  email: z.string().email('E-mail inválido').optional().nullable().or(z.literal('')),
-  nomePai: z.string().optional().nullable(),
-  nomeMae: z.string().optional().nullable(),
-  nomeConjuge: z.string().optional().nullable(),
-  observacoes: z.string().optional().nullable(),
-  situacao: z.string().optional(),
-  bloqueado: z.boolean().optional(),
-}).superRefine((data, ctx) => {
-  if (data.cpfCnpj) {
-    const digits = data.cpfCnpj.replace(/\D/g, '');
-    if (data.tipo === 'F') {
+export const clienteSchema = z
+  .object({
+    tipo: z.enum(['F', 'J']),
+    nome: z.string().min(1, 'Nome é obrigatório'),
+    fantasia: z.string().optional().nullable(),
+    cpfCnpj: z.string().optional().nullable(),
+    rg: z.string().optional().nullable(),
+    nascimento: z.string().optional().nullable(),
+    sexo: z.string().optional().nullable(),
+    estCivil: z.string().optional().nullable(),
+    profissao: z.string().optional().nullable(),
+    endereco: z.string().optional().nullable(),
+    endNumero: z.string().optional().nullable(),
+    complemento: z.string().optional().nullable(),
+    bairro: z.string().optional().nullable(),
+    municipio: z.string().optional().nullable(),
+    municipioCodigo: z.string().optional().nullable(),
+    cep: z.string().optional().nullable(),
+    estado: z.string().optional().nullable(),
+    pais: z.string().optional().nullable(),
+    telefone1: z.string().optional().nullable(),
+    telefone2: z.string().optional().nullable(),
+    celular: z.string().optional().nullable(),
+    email: z.string().email('E-mail inválido').optional().nullable().or(z.literal('')),
+    nomePai: z.string().optional().nullable(),
+    nomeMae: z.string().optional().nullable(),
+    nomeConjuge: z.string().optional().nullable(),
+    observacoes: z.string().optional().nullable(),
+    situacao: z.string().optional(),
+    bloqueado: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.cpfCnpj) {
+      const digits = data.cpfCnpj.replace(/\D/g, '');
+      if (data.tipo === 'F') {
+        if (digits.length > 0 && digits.length !== 11) {
+          ctx.addIssue({ code: 'custom', path: ['cpfCnpj'], message: 'CPF deve ter 11 dígitos' });
+        } else if (digits.length === 11 && !validateCPF(data.cpfCnpj)) {
+          ctx.addIssue({ code: 'custom', path: ['cpfCnpj'], message: 'CPF inválido' });
+        }
+      } else {
+        if (digits.length > 0 && digits.length !== 14) {
+          ctx.addIssue({ code: 'custom', path: ['cpfCnpj'], message: 'CNPJ deve ter 14 dígitos' });
+        } else if (digits.length === 14 && !validateCNPJ(data.cpfCnpj)) {
+          ctx.addIssue({ code: 'custom', path: ['cpfCnpj'], message: 'CNPJ inválido' });
+        }
+      }
+    }
+    if (data.celular) {
+      const digits = data.celular.replace(/\D/g, '');
       if (digits.length > 0 && digits.length !== 11) {
-        ctx.addIssue({ code: 'custom', path: ['cpfCnpj'], message: 'CPF deve ter 11 dígitos' });
-      } else if (digits.length === 11 && !validateCPF(data.cpfCnpj)) {
-        ctx.addIssue({ code: 'custom', path: ['cpfCnpj'], message: 'CPF inválido' });
-      }
-    } else {
-      if (digits.length > 0 && digits.length !== 14) {
-        ctx.addIssue({ code: 'custom', path: ['cpfCnpj'], message: 'CNPJ deve ter 14 dígitos' });
-      } else if (digits.length === 14 && !validateCNPJ(data.cpfCnpj)) {
-        ctx.addIssue({ code: 'custom', path: ['cpfCnpj'], message: 'CNPJ inválido' });
+        ctx.addIssue({
+          code: 'custom',
+          path: ['celular'],
+          message: 'Celular deve ter DDD + 9 dígitos. Ex: (51) 99999-9999',
+        });
       }
     }
-  }
-  if (data.celular) {
-    const digits = data.celular.replace(/\D/g, '');
-    if (digits.length > 0 && digits.length !== 11) {
-      ctx.addIssue({ code: 'custom', path: ['celular'], message: 'Celular deve ter DDD + 9 dígitos. Ex: (51) 99999-9999' });
+    if (data.telefone1) {
+      const digits = data.telefone1.replace(/\D/g, '');
+      if (digits.length > 0 && digits.length !== 10) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['telefone1'],
+          message: 'Telefone deve ter DDD + 8 dígitos. Ex: (51) 3333-3333',
+        });
+      }
     }
-  }
-  if (data.telefone1) {
-    const digits = data.telefone1.replace(/\D/g, '');
-    if (digits.length > 0 && digits.length !== 10) {
-      ctx.addIssue({ code: 'custom', path: ['telefone1'], message: 'Telefone deve ter DDD + 8 dígitos. Ex: (51) 3333-3333' });
-    }
-  }
-});
+  });
 
 export type ClienteInput = z.infer<typeof clienteSchema>;
 
@@ -140,23 +150,24 @@ export const honorarioSchema = z.object({
   processoJudicialId: z.number().optional().nullable(),
   processoAdminId: z.number().optional().nullable(),
   descricao: z.string().min(1, 'Descrição é obrigatória'),
-  valor: z.string().min(1, 'Valor é obrigatório').refine(
-    (v) => {
+  valor: z
+    .string()
+    .min(1, 'Valor é obrigatório')
+    .refine((v) => {
       const cleaned = v.replace('R$', '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
       const num = Number(cleaned);
       return !isNaN(num) && num > 0;
-    },
-    'Valor deve ser um número positivo',
-  ),
-  valorPago: z.string().optional().nullable().refine(
-    (v) => {
+    }, 'Valor deve ser um número positivo'),
+  valorPago: z
+    .string()
+    .optional()
+    .nullable()
+    .refine((v) => {
       if (v == null || v === '') return true;
       const cleaned = v.replace('R$', '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
       const num = Number(cleaned);
       return !isNaN(num) && num >= 0;
-    },
-    'Valor pago inválido',
-  ),
+    }, 'Valor pago inválido'),
   dataVenc: z.string().min(1, 'Vencimento é obrigatório'),
   dataPagto: z.string().optional().nullable(),
   status: z.enum(['PENDENTE', 'PAGO', 'CANCELADO']).default('PENDENTE'),
@@ -223,7 +234,7 @@ export const usuarioUpdateSchema = z.object({
 export type UsuarioUpdateInput = z.infer<typeof usuarioUpdateSchema>;
 
 export const tarefaSchema = z.object({
-  usuarioId: z.string().uuid('Usuário inválido'),
+  usuarioId: z.string().uuid('Usuário inválido').nullable().optional(),
   clienteId: z.number().optional().nullable(),
   processoJudicialId: z.number().optional().nullable(),
   processoAdminId: z.number().optional().nullable(),
@@ -232,6 +243,8 @@ export const tarefaSchema = z.object({
   dataLimite: z.string().optional().nullable(),
   prioridade: z.enum(['BAIXA', 'MEDIA', 'ALTA']),
   status: z.enum(['PENDENTE', 'CONCLUIDA', 'CANCELADA']),
+  categoria: z.enum(['AUDIENCIA', 'PRAZO', 'REUNIAO', 'DILIGENCIA', 'GERAL']).optional().nullable(),
+  link: z.string().optional().nullable(),
 });
 
 export type TarefaInput = z.infer<typeof tarefaSchema>;

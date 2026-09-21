@@ -16,6 +16,8 @@ export interface AgendaEvent {
   prioridade: string | null;
   status: string | null;
   clienteNome?: string | null;
+  categoria?: string | null;
+  link?: string | null;
 }
 
 /** Duração padrão de um compromisso sem hora final definida. */
@@ -108,6 +110,8 @@ function eventPriority(prioridade: string | null): string {
 
 function buildDescription(e: AgendaEvent): string {
   const linhas: string[] = [];
+  if (e.categoria && e.categoria !== 'GERAL') linhas.push(`Tipo: ${e.categoria}`);
+  if (e.link) linhas.push(`Link/Local: ${e.link}`);
   if (e.descricao) linhas.push(e.descricao);
   if (e.clienteNome) linhas.push(`Cliente: ${e.clienteNome}`);
   if (e.prioridade) linhas.push(`Prioridade: ${e.prioridade}`);
@@ -152,6 +156,10 @@ export function renderCalendar(eventos: AgendaEvent[], options: CalendarOptions)
     linhas.push(prop('DTEND', toIcsUtc(fim)));
     linhas.push(prop('SUMMARY', escapeText(e.titulo)));
     if (descricao) linhas.push(prop('DESCRIPTION', escapeText(descricao)));
+    if (e.link) {
+      linhas.push(prop('URL', e.link));
+      linhas.push(prop('LOCATION', escapeText(e.link)));
+    }
     linhas.push(prop('PRIORITY', eventPriority(e.prioridade)));
     linhas.push(prop('STATUS', eventStatus(e.status)));
     linhas.push('END:VEVENT');

@@ -16,6 +16,7 @@ for arg in "$@"; do
 done
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export PATH="/opt/homebrew/bin:$HOME/.cargo/bin:$PATH"
 
 cleanup() {
   echo ""
@@ -65,6 +66,7 @@ echo "  ✅ API server ready at http://localhost:3001"
 # ── Desktop app ───────────────────────────────────────────────────────────────
 if [[ $NO_DESKTOP == false ]]; then
   echo "▶ Starting desktop app..."
+  export VITE_API_URL="http://localhost:3001"
   npm run dev:desktop --prefix "$ROOT_DIR" &
   DESKTOP_PID=$!
   echo "  ✅ Desktop app starting (Tauri window will open shortly)"

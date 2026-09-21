@@ -64,6 +64,20 @@
       "when": 1789756702725,
       "tag": "0008_intimacoes",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790000000000,
+      "tag": "0009_tarefas_equipe",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790000001000,
+      "tag": "0010_tarefas_categoria_link",
+      "breakpoints": true
     }
   ]
 }

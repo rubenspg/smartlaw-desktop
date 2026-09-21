@@ -14,7 +14,9 @@ describe('loginSchema', () => {
   });
 
   it('recusa e-mail malformado', () => {
-    expect(loginSchema.safeParse({ email: 'nao-e-email', password: 'seissss' }).success).toBe(false);
+    expect(loginSchema.safeParse({ email: 'nao-e-email', password: 'seissss' }).success).toBe(
+      false,
+    );
   });
 
   // A senha do login e a do cadastro precisam concordar no mínimo, senão dá
@@ -46,7 +48,10 @@ describe('usuarioSchema', () => {
 
   it('recusa perfil fora da lista', () => {
     const r = usuarioSchema.safeParse({
-      nome: 'Ana', email: 'ana@x.com', senha: 'abcdef', perfil: 'superadmin',
+      nome: 'Ana',
+      email: 'ana@x.com',
+      senha: 'abcdef',
+      perfil: 'superadmin',
     });
     expect(r.success).toBe(false);
   });
@@ -86,16 +91,28 @@ describe('clienteSchema', () => {
   // isso quebraria o cadastro de quem não tem e-mail.
   it('aceita e-mail vazio, mas não um e-mail inválido', () => {
     expect(clienteSchema.safeParse({ tipo: 'F', nome: 'Ana', email: '' }).success).toBe(true);
-    expect(clienteSchema.safeParse({ tipo: 'F', nome: 'Ana', email: 'quebrado' }).success).toBe(false);
+    expect(clienteSchema.safeParse({ tipo: 'F', nome: 'Ana', email: 'quebrado' }).success).toBe(
+      false,
+    );
   });
 });
 
 describe('tarefaSchema', () => {
-  const base = { usuarioId: '00000000-0000-0000-0000-000000000000', titulo: 'X', prioridade: 'MEDIA', status: 'PENDENTE' };
+  const base = {
+    usuarioId: '00000000-0000-0000-0000-000000000000',
+    titulo: 'X',
+    prioridade: 'MEDIA',
+    status: 'PENDENTE',
+  };
 
-  it('exige usuarioId em formato UUID', () => {
+  it('exige usuarioId em formato UUID quando informado', () => {
     expect(tarefaSchema.safeParse({ ...base, usuarioId: 'nao-uuid' }).success).toBe(false);
     expect(tarefaSchema.safeParse(base).success).toBe(true);
+  });
+
+  it('aceita usuarioId nulo ou ausente para tarefas de toda a equipe', () => {
+    expect(tarefaSchema.safeParse({ ...base, usuarioId: null }).success).toBe(true);
+    expect(tarefaSchema.safeParse({ ...base, usuarioId: undefined }).success).toBe(true);
   });
 
   it('exige título', () => {
@@ -116,6 +133,23 @@ describe('tarefaSchema', () => {
     }
     expect(tarefaSchema.safeParse({ ...base, prioridade: 'URGENTE' }).success).toBe(false);
   });
+
+  it('aceita categorias válidas e rejeita inválidas', () => {
+    for (const categoria of ['AUDIENCIA', 'PRAZO', 'REUNIAO', 'DILIGENCIA', 'GERAL']) {
+      expect(tarefaSchema.safeParse({ ...base, categoria }).success, categoria).toBe(true);
+    }
+    expect(tarefaSchema.safeParse({ ...base, categoria: 'INVALIDA' }).success).toBe(false);
+    expect(tarefaSchema.safeParse({ ...base, categoria: null }).success).toBe(true);
+    expect(tarefaSchema.safeParse({ ...base, categoria: undefined }).success).toBe(true);
+  });
+
+  it('aceita link opcional de reunião/videoconferência', () => {
+    expect(tarefaSchema.safeParse({ ...base, link: 'https://meet.google.com/xyz' }).success).toBe(
+      true,
+    );
+    expect(tarefaSchema.safeParse({ ...base, link: null }).success).toBe(true);
+    expect(tarefaSchema.safeParse({ ...base, link: undefined }).success).toBe(true);
+  });
 });
 
 describe('processoJudicialSchema', () => {
@@ -128,7 +162,11 @@ describe('processoJudicialSchema', () => {
   // Os lookups são opcionais: a #46 mostrou que eles podem chegar vazios.
   it('aceita tipo de ação, rito e localização ausentes', () => {
     const r = processoJudicialSchema.safeParse({
-      clienteId: 1, numero: '123', ritoId: null, tipoAcaoId: null, localizacaoId: null,
+      clienteId: 1,
+      numero: '123',
+      ritoId: null,
+      tipoAcaoId: null,
+      localizacaoId: null,
     });
     expect(r.success).toBe(true);
   });

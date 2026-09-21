@@ -1,33 +1,45 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Plus, 
-  Clock, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Clock,
   User as UserIcon,
+  Users,
   Filter,
-  CalendarDays
+  CalendarDays,
+  Eye,
+  EyeOff,
+  Video,
+  Scale,
+  Briefcase,
 } from 'lucide-react';
-import { 
-  format, 
-  addMonths, 
-  subMonths, 
-  startOfMonth, 
-  endOfMonth, 
-  startOfWeek, 
-  endOfWeek, 
-  isSameDay, 
+import {
+  format,
+  addMonths,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  isSameDay,
   eachDayOfInterval,
   parseISO,
   startOfDay,
   setHours,
   addWeeks,
   subWeeks,
-  eachHourOfInterval
+  eachHourOfInterval,
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useTarefas, useCreateTarefa, useUpdateTarefa, useDeleteTarefa, useToggleTarefaStatus } from '@/hooks/use-tarefas';
+import {
+  useTarefas,
+  useCreateTarefa,
+  useUpdateTarefa,
+  useDeleteTarefa,
+  useToggleTarefaStatus,
+} from '@/hooks/use-tarefas';
 import { useUsuarios } from '@/hooks/use-lookups';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
@@ -37,7 +49,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { TarefaForm } from '@/components/shared/tarefa-form';
 import { TarefaDetails } from '@/components/shared/tarefa-details';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { type TarefaInput } from '@smartlaw/shared';
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm-dialog';
@@ -60,20 +78,21 @@ function AgendaPage() {
   // A pauta abre nas tarefas do próprio usuário; gestores podem alternar para a equipe.
   const [selectedUser, setSelectedUser] = useState<string>(user?.id ?? 'all');
   const [viewMode, setViewMode] = useState<ViewMode>('month');
-  
+  const [ocultarConcluidas, setOcultarConcluidas] = useState(false);
+
   // Dialog states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [viewingTarefa, setViewingTarefa] = useState<Tarefa | undefined>(undefined);
   const [editingTarefa, setEditingTarefa] = useState<Tarefa | undefined>(undefined);
 
-  const visibleUser = isManagement ? selectedUser : (user?.id ?? 'all');
+  const visibleUser = selectedUser;
 
   const { data: usuarios } = useUsuarios();
-  const { data: tarefas, isLoading } = useTarefas({ 
-    usuarioId: visibleUser === 'all' ? undefined : visibleUser 
+  const { data: tarefas, isLoading } = useTarefas({
+    usuarioId: visibleUser === 'all' ? undefined : visibleUser,
   });
-  
+
   const createTarefa = useCreateTarefa();
   const updateTarefa = useUpdateTarefa(editingTarefa?.id || 0);
   const toggleStatus = useToggleTarefaStatus();
@@ -144,7 +163,12 @@ function AgendaPage() {
   });
 
   const getTasksForDay = (day: Date) => {
-    return (tarefas || []).filter(t => t.dataLimite && isSameDay(parseISO(String(t.dataLimite)), day))
+    return (tarefas || [])
+      .filter((t) => {
+        if (!t.dataLimite) return false;
+        if (ocultarConcluidas && t.status === 'CONCLUIDA') return false;
+        return isSameDay(parseISO(String(t.dataLimite)), day);
+      })
       .sort((a, b) => {
         if (!a.dataLimite || !b.dataLimite) return 0;
         return new Date(a.dataLimite).getTime() - new Date(b.dataLimite).getTime();
@@ -158,10 +182,14 @@ function AgendaPage() {
 
   const getPriorityColor = (p: string | null) => {
     switch (p) {
-      case 'ALTA': return 'bg-red-500';
-      case 'MEDIA': return 'bg-amber-500';
-      case 'BAIXA': return 'bg-blue-500';
-      default: return 'bg-slate-400';
+      case 'ALTA':
+        return 'bg-red-500';
+      case 'MEDIA':
+        return 'bg-amber-500';
+      case 'BAIXA':
+        return 'bg-blue-500';
+      default:
+        return 'bg-slate-400';
     }
   };
 
@@ -173,24 +201,29 @@ function AgendaPage() {
             <CalendarDays className="w-8 h-8 text-primary" />
             Agenda do Escritório
           </h1>
-          <p className="text-muted-foreground font-medium">Gestão de consultas, prazos e tarefas dos doutores.</p>
+          <p className="text-muted-foreground font-medium">
+            Gestão de consultas, prazos e tarefas dos doutores.
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 bg-muted/50 p-1.5 rounded-2xl border border-border/50">
           <div className="flex items-center gap-2 bg-background rounded-xl p-1 shadow-sm border">
-            <Button 
-              variant={viewMode === 'month' ? 'secondary' : 'ghost'} 
-              size="sm" 
+            <Button
+              variant={viewMode === 'month' ? 'secondary' : 'ghost'}
+              size="sm"
               onClick={() => setViewMode('month')}
-              className={cn("rounded-lg font-bold h-8 text-xs", viewMode === 'month' && "shadow-sm")}
+              className={cn(
+                'rounded-lg font-bold h-8 text-xs',
+                viewMode === 'month' && 'shadow-sm',
+              )}
             >
               Mês
             </Button>
-            <Button 
-              variant={viewMode === 'week' ? 'secondary' : 'ghost'} 
-              size="sm" 
+            <Button
+              variant={viewMode === 'week' ? 'secondary' : 'ghost'}
+              size="sm"
               onClick={() => setViewMode('week')}
-              className={cn("rounded-lg font-bold h-8 text-xs", viewMode === 'week' && "shadow-sm")}
+              className={cn('rounded-lg font-bold h-8 text-xs', viewMode === 'week' && 'shadow-sm')}
             >
               Semana
             </Button>
@@ -199,24 +232,42 @@ function AgendaPage() {
           <Separator orientation="vertical" className="h-6 hidden sm:block" />
 
           <div className="flex items-center gap-1">
-             <Button variant="ghost" size="icon" onClick={handlePrev} className="h-9 w-9 rounded-xl hover:bg-background shadow-sm">
-                <ChevronLeft className="w-4 h-4" />
-             </Button>
-             <div className="px-4 text-sm font-black uppercase tracking-widest min-w-[160px] text-center">
-                {viewMode === 'month' 
-                  ? format(currentDate, 'MMMM yyyy', { locale: ptBR })
-                  : `Semana de ${format(weekStart, 'dd/MM', { locale: ptBR })}`
-                }
-             </div>
-             <Button variant="ghost" size="icon" onClick={handleNext} className="h-9 w-9 rounded-xl hover:bg-background shadow-sm">
-                <ChevronRight className="w-4 h-4" />
-             </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handlePrev}
+              className="h-9 w-9 rounded-xl hover:bg-background shadow-sm"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <div className="px-4 text-sm font-black uppercase tracking-widest min-w-[160px] text-center">
+              {viewMode === 'month'
+                ? format(currentDate, 'MMMM yyyy', { locale: ptBR })
+                : `Semana de ${format(weekStart, 'dd/MM', { locale: ptBR })}`}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleNext}
+              className="h-9 w-9 rounded-xl hover:bg-background shadow-sm"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
           </div>
           <Separator orientation="vertical" className="h-6 hidden sm:block" />
-          <Button variant="outline" size="sm" onClick={handleToday} className="rounded-xl font-bold h-9 bg-background">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleToday}
+            className="rounded-xl font-bold h-9 bg-background"
+          >
             Hoje
           </Button>
-          <Button onClick={() => handleCreate()} size="sm" className="rounded-xl font-black h-9 shadow-premium">
+          <Button
+            onClick={() => handleCreate()}
+            size="sm"
+            className="rounded-xl font-black h-9 shadow-premium"
+          >
             <Plus className="w-4 h-4 mr-1.5" /> Agendar
           </Button>
         </div>
@@ -229,100 +280,208 @@ function AgendaPage() {
             <CardHeader className="bg-muted/30 border-b border-border/40 py-4">
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-primary" />
-                <CardTitle className="text-xs font-black uppercase tracking-widest text-foreground/80">Filtrar Agenda</CardTitle>
+                <CardTitle className="text-xs font-black uppercase tracking-widest text-foreground/80">
+                  Filtrar Agenda
+                </CardTitle>
               </div>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
-               <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    variant={selectedUser === user?.id ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setSelectedUser(user?.id ?? 'all')}
-                    className="rounded-xl font-black uppercase text-[10px] tracking-widest h-9"
-                  >
-                    Minhas Tarefas
-                  </Button>
-                  <Button
-                    variant={selectedUser === 'all' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setSelectedUser('all')}
-                    disabled={!isManagement}
-                    title={isManagement ? undefined : 'Disponível para administradores'}
-                    className="rounded-xl font-black uppercase text-[10px] tracking-widest h-9"
-                  >
-                    Toda a Equipe
-                  </Button>
-               </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant={selectedUser === user?.id ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedUser(user?.id ?? 'all')}
+                  className="rounded-xl font-black uppercase text-[10px] tracking-widest h-9"
+                >
+                  Minhas Tarefas
+                </Button>
+                <Button
+                  variant={selectedUser === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedUser('all')}
+                  className="rounded-xl font-black uppercase text-[10px] tracking-widest h-9"
+                >
+                  Toda a Equipe
+                </Button>
+              </div>
 
-               {isManagement && (
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Colaborador / Doutor</label>
-                    <Select value={selectedUser} onValueChange={setSelectedUser}>
-                      <SelectTrigger className="rounded-xl border-border/50 bg-background/50 h-10 font-bold">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        <SelectItem value="all" className="font-bold uppercase text-[10px]">Todos os Usuários</SelectItem>
-                        {usuarios?.map((u: any) => (
-                          <SelectItem key={u.id} value={u.id} className="font-medium">
-                            {u.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                 </div>
-               )}
+              {isManagement && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                    Colaborador / Doutor
+                  </label>
+                  <Select value={selectedUser} onValueChange={setSelectedUser}>
+                    <SelectTrigger className="rounded-xl border-border/50 bg-background/50 h-10 font-bold">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="all" className="font-bold uppercase text-[10px]">
+                        Todos os Usuários / Geral
+                      </SelectItem>
+                      <SelectItem
+                        value="team"
+                        className="font-bold text-primary text-[10px] uppercase"
+                      >
+                        Apenas Tarefas da Equipe
+                      </SelectItem>
+                      {usuarios?.map((u: any) => (
+                        <SelectItem key={u.id} value={u.id} className="font-medium">
+                          {u.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-border/20">
+                <Button
+                  variant={ocultarConcluidas ? 'secondary' : 'outline'}
+                  size="sm"
+                  onClick={() => setOcultarConcluidas(!ocultarConcluidas)}
+                  className={cn(
+                    'w-full rounded-xl font-black uppercase text-[10px] tracking-widest h-9 flex items-center justify-center gap-2 border-border/60 transition-all',
+                    ocultarConcluidas && 'bg-primary/15 text-primary border-primary/40 font-black',
+                  )}
+                >
+                  {ocultarConcluidas ? (
+                    <>
+                      <EyeOff className="w-3.5 h-3.5 text-primary" />
+                      Ocultando Realizadas
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+                      Ocultar Realizadas
+                    </>
+                  )}
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
           <Card className="border-border/40 shadow-premium bg-card/50 backdrop-blur-sm">
             <CardHeader className="py-4">
-               <CardTitle className="text-xs font-black uppercase tracking-widest text-foreground/80">Compromissos do Dia</CardTitle>
-               <p className="text-[10px] font-bold text-muted-foreground">{format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}</p>
+              <CardTitle className="text-xs font-black uppercase tracking-widest text-foreground/80">
+                Compromissos do Dia
+              </CardTitle>
+              <p className="text-[10px] font-bold text-muted-foreground">
+                {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}
+              </p>
             </CardHeader>
             <CardContent className="p-0 border-t border-border/20">
-               <div className="divide-y divide-border/20">
-                  {getTasksForDay(selectedDate).length === 0 ? (
-                    <div className="p-8 text-center">
-                       <Clock className="w-8 h-8 text-muted-foreground/20 mx-auto mb-2" />
-                       <p className="text-[11px] font-bold text-muted-foreground italic">Nenhum compromisso para este dia.</p>
-                       <Button variant="link" size="sm" onClick={() => handleCreate(selectedDate)} className="text-[10px] font-black uppercase mt-2">Agendar Agora</Button>
-                    </div>
-                  ) : (
-                    getTasksForDay(selectedDate).map(t => (
-                      <div key={t.id} className="p-4 hover:bg-primary/5 transition-all group relative cursor-pointer" onClick={() => handleView(t)}>
-                        <div className="flex items-start justify-between gap-3">
-                           <div className="space-y-1">
-                              <div className="flex items-center gap-1.5 mb-1">
-                                 {t.dataLimite && (
-                                   <span className="text-xs font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded">
-                                      {format(parseISO(String(t.dataLimite)), 'HH:mm')}
-                                   </span>
-                                 )}
-                                 <p className="text-sm font-black text-foreground line-clamp-1">{t.titulo}</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                 <Badge className={cn("text-[10px] font-black px-1.5 py-0 rounded-md uppercase tracking-tight border-none", 
-                                    t.status === 'CONCLUIDA' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'
-                                 )}>
-                                    {t.status === 'CONCLUIDA' ? 'Realizado' : t.status}
-                                 </Badge>
-                                 <span className="text-xs font-bold text-muted-foreground flex items-center gap-1">
-                                    <UserIcon className="w-2.5 h-2.5" /> {t.usuario?.nome.split(' ')[0]}
-                                 </span>
-                              </div>
-                              {t.clienteId && (
-                                <p className="text-xs font-bold text-muted-foreground mt-1">
-                                   Cliente: {t.cliente?.nome}
-                                </p>
+              <div className="divide-y divide-border/20">
+                {getTasksForDay(selectedDate).length === 0 ? (
+                  <div className="p-8 text-center">
+                    <Clock className="w-8 h-8 text-muted-foreground/20 mx-auto mb-2" />
+                    <p className="text-[11px] font-bold text-muted-foreground italic">
+                      Nenhum compromisso para este dia.
+                    </p>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={() => handleCreate(selectedDate)}
+                      className="text-[10px] font-black uppercase mt-2"
+                    >
+                      Agendar Agora
+                    </Button>
+                  </div>
+                ) : (
+                  getTasksForDay(selectedDate).map((t) => (
+                    <div
+                      key={t.id}
+                      className="p-4 hover:bg-primary/5 transition-all group relative cursor-pointer"
+                      onClick={() => handleView(t)}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            {t.dataLimite && (
+                              <span className="text-xs font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                                {format(parseISO(String(t.dataLimite)), 'HH:mm')}
+                              </span>
+                            )}
+                            <p className="text-sm font-black text-foreground line-clamp-1">
+                              {t.titulo}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge
+                              className={cn(
+                                'text-[10px] font-black px-1.5 py-0 rounded-md uppercase tracking-tight border-none',
+                                t.status === 'CONCLUIDA'
+                                  ? 'bg-emerald-500/10 text-emerald-600'
+                                  : 'bg-amber-500/10 text-amber-600',
                               )}
-                           </div>
-                           <div className={cn("w-1 h-10 rounded-full", getPriorityColor(t.prioridade))} />
+                            >
+                              {t.status === 'CONCLUIDA' ? 'Realizado' : t.status}
+                            </Badge>
+                            {t.categoria && t.categoria !== 'GERAL' && (
+                              <Badge
+                                variant="outline"
+                                className="text-[9px] font-semibold px-1.5 py-0.5 rounded border-border/60 uppercase tracking-wider bg-muted/30 flex items-center gap-1"
+                              >
+                                {t.categoria === 'AUDIENCIA' && (
+                                  <Scale className="w-2.5 h-2.5 text-purple-600" />
+                                )}
+                                {t.categoria === 'PRAZO' && (
+                                  <Clock className="w-2.5 h-2.5 text-rose-600" />
+                                )}
+                                {t.categoria === 'REUNIAO' && (
+                                  <Users className="w-2.5 h-2.5 text-sky-600" />
+                                )}
+                                {t.categoria === 'DILIGENCIA' && (
+                                  <Briefcase className="w-2.5 h-2.5 text-amber-600" />
+                                )}
+                                {t.categoria === 'AUDIENCIA'
+                                  ? 'Audiência'
+                                  : t.categoria === 'PRAZO'
+                                    ? 'Prazo'
+                                    : t.categoria === 'REUNIAO'
+                                      ? 'Reunião'
+                                      : 'Diligência'}
+                              </Badge>
+                            )}
+                            <span className="text-xs font-bold text-muted-foreground flex items-center gap-1">
+                              {t.usuario ? (
+                                <>
+                                  <UserIcon className="w-2.5 h-2.5" />{' '}
+                                  {t.usuario.nome.split(' ')[0]}
+                                </>
+                              ) : (
+                                <>
+                                  <Users className="w-2.5 h-2.5 text-primary" />{' '}
+                                  <span className="text-primary font-bold">Toda a Equipe</span>
+                                </>
+                              )}
+                            </span>
+                            {t.link && (
+                              <Video className="w-3.5 h-3.5 text-primary shrink-0 opacity-80" />
+                            )}
+                          </div>
+                          {t.clienteId && (
+                            <p className="text-xs font-bold text-muted-foreground mt-1 truncate">
+                              Cliente: {t.cliente?.nome}
+                            </p>
+                          )}
+                          {t.processoJudicial && (
+                            <p className="text-xs font-bold text-muted-foreground flex items-center gap-1 truncate">
+                              <Scale className="w-2.5 h-2.5 shrink-0" />
+                              Processo: {t.processoJudicial.numero}
+                            </p>
+                          )}
                         </div>
+                        <div
+                          className={cn(
+                            'w-1 h-10 rounded-full shrink-0',
+                            getPriorityColor(t.prioridade),
+                          )}
+                        />
                       </div>
-                    ))
-                  )}
-               </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -344,7 +503,7 @@ function AgendaPage() {
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
         <DialogContent className="w-full sm:max-w-2xl rounded-3xl p-8 overflow-hidden border-none shadow-2xl">
           {viewingTarefa && (
-            <TarefaDetails 
+            <TarefaDetails
               tarefa={viewingTarefa}
               onEdit={handleEdit}
               onDelete={handleDelete}
@@ -365,23 +524,32 @@ function AgendaPage() {
               {editingTarefa ? 'Editar Compromisso' : 'Novo Agendamento'}
             </DialogTitle>
             <DialogDescription className="font-bold text-muted-foreground mt-2 text-sm md:text-base">
-              {editingTarefa 
-                ? 'Atualize os detalhes deste compromisso ou prazo.' 
+              {editingTarefa
+                ? 'Atualize os detalhes deste compromisso ou prazo.'
                 : `Agendando para ${format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`}
             </DialogDescription>
           </div>
-          
+
           <div className="p-6 md:p-8 max-h-[70vh] overflow-y-auto">
-            <TarefaForm 
-              initialData={editingTarefa ? {
-                ...editingTarefa,
-                dataLimite: editingTarefa.dataLimite ? new Date(editingTarefa.dataLimite).toISOString() : null
-              } as any : {
-                dataLimite: setHours(startOfDay(selectedDate), 9).toISOString(),
-                usuarioId: user?.id,
-                prioridade: 'MEDIA',
-                status: 'PENDENTE',
-              } as any}
+            <TarefaForm
+              initialData={
+                editingTarefa
+                  ? ({
+                      ...editingTarefa,
+                      dataLimite: editingTarefa.dataLimite
+                        ? new Date(editingTarefa.dataLimite).toISOString()
+                        : null,
+                    } as any)
+                  : ({
+                      dataLimite: setHours(startOfDay(selectedDate), 9).toISOString(),
+                      usuarioId:
+                        selectedUser === 'all' || selectedUser === 'team'
+                          ? null
+                          : selectedUser || user?.id,
+                      prioridade: 'MEDIA',
+                      status: 'PENDENTE',
+                    } as any)
+              }
               onSubmit={onSubmit}
               isSubmitting={createTarefa.isPending || updateTarefa.isPending}
               onCancel={() => setIsFormOpen(false)}
@@ -389,24 +557,29 @@ function AgendaPage() {
           </div>
 
           {editingTarefa && (
-             <div className="px-6 pb-6 flex justify-center">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-destructive hover:bg-destructive/10 font-bold uppercase text-[10px] tracking-widest rounded-xl px-6"
-                  onClick={async () => {
-                    if (await confirm({ description: 'Excluir este compromisso permanentemente?', destructive: true, confirmText: 'Excluir' })) {
-                      deleteTarefa.mutate(editingTarefa.id);
-                    }
-                  }}
-                >
-                   Apagar permanentemente
-                </Button>
-             </div>
+            <div className="px-6 pb-6 flex justify-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:bg-destructive/10 font-bold uppercase text-[10px] tracking-widest rounded-xl px-6"
+                onClick={async () => {
+                  if (
+                    await confirm({
+                      description: 'Excluir este compromisso permanentemente?',
+                      destructive: true,
+                      confirmText: 'Excluir',
+                    })
+                  ) {
+                    deleteTarefa.mutate(editingTarefa.id);
+                  }
+                }}
+              >
+                Apagar permanentemente
+              </Button>
+            </div>
           )}
         </DialogContent>
       </Dialog>
     </div>
   );
 }
-
