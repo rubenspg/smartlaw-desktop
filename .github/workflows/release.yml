@@ -24,6 +24,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: verify tag matches app version
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          APP=$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').version")
+          if [ "$TAG" != "$APP" ]; then
+            echo "::error::Tag v$TAG does not match tauri.conf.json version $APP. Bump the version and re-tag."
+            exit 1
+          fi
+          echo "Tag and app version agree: $APP"
+
       - name: setup node
         uses: actions/setup-node@v4
         with:
@@ -42,9 +53,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: v__VERSION__ # tauri-action replaces this with the app version
-          releaseName: "SmartLaw v__VERSION__"
-          releaseBody: "See the assets below to download the latest version."
+          tagName: ${{ github.ref_name }}
+          releaseName: "SmartLaw ${{ github.ref_name }}"
+          releaseBody: |
+            **Windows:** baixe `SmartLaw_*_x64-setup.exe` (instalador) ou `SmartLaw_*_x64_en-US.msi` (instalacao gerenciada).
+            O instalador nao e assinado — o Windows mostra "app nao reconhecido"; clique em *Mais informacoes* -> *Executar assim mesmo*.
+
+            **macOS:** `SmartLaw_*_aarch64.dmg` (Apple Silicon) ou `SmartLaw_*_x64.dmg` (Intel).
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
