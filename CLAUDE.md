@@ -100,6 +100,19 @@ names replaced; keep them that way. Research and roadmap:
 and `reset_token_expires` columns are dropped with `IF EXISTS` in 0007 because
 existing databases disagreed on whether they existed; do not redeclare them.
 
+**The app updates itself from GitHub Releases.** `tauri-plugin-updater` reads
+`releases/latest/download/latest.json`, which `release.yml` generates and signs
+with `TAURI_SIGNING_PRIVATE_KEY` (repo secret; the only other copy is in
+Rubens's password manager). **Losing that key means installed apps can never
+update again** — a new key requires every user to reinstall by hand. Releases are
+created as drafts and users see nothing until one is published.
+`components/update-banner.tsx` shows the "Atualizar e reiniciar" card.
+The client sends `X-App-Version`; when a server change breaks older apps, raise
+`VERSAO_MINIMA_APP` (`apps/server/src/middleware/versao-app.ts`) in the same PR
+and those apps get a blocking "Atualização obrigatória" screen instead of
+crashing. Apps before 0.3.0 send no header and never auto-update — the
+Processos crash of Sep 2026 was an office machine still on 0.1.0.
+
 ## Conventions
 
 - Route handlers validate input with `zValidator('json', schemaFromShared)`.

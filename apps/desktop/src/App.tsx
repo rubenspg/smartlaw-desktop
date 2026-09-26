@@ -6,6 +6,7 @@ import { ThemeProvider } from './components/theme-provider';
 import { RegionalProvider } from './components/regional-provider';
 import { ToastProvider } from './components/ui/toast';
 import { ConfirmDialogProvider } from './components/ui/confirm-dialog';
+import { UpdateBanner } from './components/update-banner';
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen';
@@ -50,6 +51,7 @@ export default function App() {
               <AuthProvider>
                 <InnerApp />
               </AuthProvider>
+              <UpdateBanner />
             </ConfirmDialogProvider>
           </ToastProvider>
         </RegionalProvider>

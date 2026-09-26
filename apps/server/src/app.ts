@@ -3,6 +3,7 @@ import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
 import routes from './routes';
 import { verificarBanco } from './db/health';
+import { CABECALHO_VERSAO_APP, exigirVersaoMinima } from './middleware/versao-app';
 
 /**
  * Monta a aplicação sem subir servidor, para que os testes possam dirigi-la
@@ -17,12 +18,14 @@ export function criarApp() {
     cors({
       origin: '*',
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowHeaders: ['Content-Type', 'Authorization'],
+      allowHeaders: ['Content-Type', 'Authorization', CABECALHO_VERSAO_APP],
       exposeHeaders: ['Content-Length'],
       maxAge: 600,
       credentials: true,
     }),
   );
+
+  app.use('*', exigirVersaoMinima());
 
   app.route('/', routes);
 
