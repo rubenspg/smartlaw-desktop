@@ -52,6 +52,11 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Assina os pacotes de atualização (.app.tar.gz, setup.exe) que o app
+          # instalado baixa sozinho. Sem esta chave o build falha, e é bom que
+          # falhe: um pacote sem assinatura é recusado pelo app de qualquer forma.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "SmartLaw ${{ github.ref_name }}"
@@ -60,7 +65,10 @@ jobs:
             O instalador nao e assinado — o Windows mostra "app nao reconhecido"; clique em *Mais informacoes* -> *Executar assim mesmo*.
 
             **macOS:** `SmartLaw_*_aarch64.dmg` (Apple Silicon) ou `SmartLaw_*_x64.dmg` (Intel).
+          # O app instalado só enxerga a release depois de publicada: o rascunho
+          # é a etapa de aprovação antes de a atualização chegar aos usuários.
           releaseDraft: true
+          includeUpdaterJson: true
           prerelease: false
           args: ${{ matrix.args }}
           projectPath: "apps/desktop"

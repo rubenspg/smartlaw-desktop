@@ -16,9 +16,25 @@ const getServerUrl = () => {
     : 'https://smartlaw-api.rubenspg.com';
 };
 
+/**
+ * Disparado quando a API recusa esta versão do app (426). O UpdateBanner
+ * escuta e troca o aviso discreto pela tela de atualização obrigatória.
+ */
+export const EVENTO_APP_DESATUALIZADO = 'smartlaw:app-desatualizado';
+
 export const api = hc<AppType>(getServerUrl(), {
   headers: async () => {
     const token = localStorage.getItem('smartlaw_token');
-    return (token ? { Authorization: `Bearer ${token}` } : {}) as Record<string, string>;
+    return {
+      'X-App-Version': __APP_VERSION__,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    } as Record<string, string>;
+  },
+  fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
+    const res = await fetch(input, init);
+    if (res.status === 426) {
+      window.dispatchEvent(new Event(EVENTO_APP_DESATUALIZADO));
+    }
+    return res;
   },
 });

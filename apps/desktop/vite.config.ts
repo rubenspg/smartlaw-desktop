@@ -3,12 +3,17 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import path from "path";
+import tauriConf from "./src-tauri/tauri.conf.json";
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
+  // Versão do app no bundle, para o cabeçalho X-App-Version (ver lib/api.ts).
+  define: {
+    __APP_VERSION__: JSON.stringify(tauriConf.version),
+  },
   plugins: [
     TanStackRouterVite(),
     react(),
