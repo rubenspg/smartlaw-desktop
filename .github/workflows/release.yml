@@ -61,6 +61,9 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: "SmartLaw ${{ github.ref_name }}"
           releaseBody: |
+            **Já tem o SmartLaw 0.3.0 ou mais novo?** Não precisa baixar nada: o app avisa e se atualiza sozinho em "Atualizar e reiniciar".
+            Versões anteriores ao 0.3.0 não têm o atualizador e precisam desta instalação manual uma única vez.
+
             **Windows:** baixe `SmartLaw_*_x64-setup.exe` (instalador) ou `SmartLaw_*_x64_en-US.msi` (instalacao gerenciada).
             O instalador nao e assinado — o Windows mostra "app nao reconhecido"; clique em *Mais informacoes* -> *Executar assim mesmo*.
 
