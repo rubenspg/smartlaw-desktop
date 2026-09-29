@@ -38,6 +38,7 @@ import { useRegional } from '@/components/regional-provider';
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
+import { SituacaoBadge } from '@/components/shared/situacao-badge';
 import { openUrl } from '@tauri-apps/plugin-opener';
 
 export const Route = createFileRoute('/_dashboard/clientes/$id')({
@@ -126,15 +127,10 @@ function ClienteDetailPage() {
               </h1>
             </div>
             <div className="flex items-center gap-2 ml-1">
-              <Badge 
-                variant={cliente.situacao === 'A' ? 'outline' : 'destructive'}
-                className={cn(
-                  "font-bold px-2.5 py-0.5 rounded-lg text-[10px] uppercase tracking-wider",
-                  cliente.situacao === 'A' ? "bg-emerald-500/5 text-emerald-600 border-emerald-500/20" : ""
-                )}
-              >
-                {cliente.situacao === 'A' ? 'Ativo' : 'Inativo'}
-              </Badge>
+              <SituacaoBadge
+                codigo={cliente.situacao}
+                className="font-bold px-2.5 py-0.5 rounded-lg text-[10px] uppercase tracking-wider"
+              />
               <div className="h-4 w-[1px] bg-border mx-1" />
               <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
                 ID do Sistema: {cliente.id}

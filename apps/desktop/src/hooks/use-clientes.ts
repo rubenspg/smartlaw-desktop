@@ -47,6 +47,8 @@ export function useCreateCliente() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientes'] });
+      // Um fluxo de trabalho pode ter criado tarefas no cadastro.
+      queryClient.invalidateQueries({ queryKey: ['tarefas'] });
       invalidateDashboard(queryClient);
     },
   });
@@ -66,6 +68,8 @@ export function useUpdateCliente(id: number) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientes'] });
       queryClient.invalidateQueries({ queryKey: ['cliente', id] });
+      // Trocar a situação pode disparar fluxos que criam tarefas.
+      queryClient.invalidateQueries({ queryKey: ['tarefas'] });
       invalidateDashboard(queryClient);
     },
   });
