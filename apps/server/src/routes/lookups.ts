@@ -67,6 +67,7 @@ const lookupsRoutes = new Hono<{ Variables: Variables }>()
         id: profiles.id,
         nome: profiles.nome,
         email: profiles.email,
+        perfil: profiles.perfil,
       })
       .from(profiles)
       .where(and(eq(profiles.firmId, user.firmId), eq(profiles.ativo, true)))

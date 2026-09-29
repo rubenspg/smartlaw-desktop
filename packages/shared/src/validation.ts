@@ -258,3 +258,86 @@ export const andamentoSchema = z.object({
 });
 
 export type AndamentoInput = z.infer<typeof andamentoSchema>;
+
+// ── Situações de cliente (configuráveis por escritório) ──────────────────────
+
+export const SITUACAO_CORES = ['success', 'warning', 'destructive', 'secondary', 'default'] as const;
+
+export const clienteSituacaoSchema = z.object({
+  nome: z.string().trim().min(1, 'Nome é obrigatório').max(60),
+  cor: z.enum(SITUACAO_CORES).default('secondary'),
+  contaComoAtivo: z.boolean().default(true),
+  ordem: z.number().int().min(0).max(999).default(50),
+});
+
+export type ClienteSituacaoInput = z.infer<typeof clienteSituacaoSchema>;
+
+// ── Fluxos de trabalho ───────────────────────────────────────────────────────
+//
+// "Quando <gatilho>, se <condições>, então <ações>". O servidor valida com
+// estes schemas ao gravar e o motor (apps/server/src/services/workflows/)
+// confia no formato ao executar.
+
+export const WORKFLOW_GATILHOS = ['CLIENTE_CRIADO', 'CLIENTE_SITUACAO_ALTERADA'] as const;
+
+export type WorkflowGatilho = (typeof WORKFLOW_GATILHOS)[number];
+
+export const workflowCondicoesSchema = z.object({
+  /** Só clientes deste tipo (F = física, J = jurídica). */
+  tipoCliente: z.enum(['F', 'J']).optional(),
+  /** CLIENTE_SITUACAO_ALTERADA: só quando a situação sai deste código. */
+  situacaoAnterior: z.string().min(1).optional(),
+  /** CLIENTE_SITUACAO_ALTERADA: só quando a situação passa a este código. */
+  situacaoNova: z.string().min(1).optional(),
+});
+
+export type WorkflowCondicoes = z.infer<typeof workflowCondicoesSchema>;
+
+export const workflowAcaoSchema = z.discriminatedUnion('tipo', [
+  z.object({
+    tipo: z.literal('ALTERAR_SITUACAO_CLIENTE'),
+    situacao: z.string().min(1, 'Escolha a situação'),
+  }),
+  z.object({
+    tipo: z.literal('CRIAR_TAREFA'),
+    /** Aceita {{cliente.nome}} e {{usuario.nome}} (quem disparou o fluxo). */
+    titulo: z.string().trim().min(1, 'Título é obrigatório').max(200),
+    descricao: z.string().max(2000).optional().nullable(),
+    usuarioId: z.string().uuid('Escolha o responsável'),
+    /** Prazo a partir do disparo; nulo = sem prazo. */
+    prazoDias: z.number().int().min(0).max(365).optional().nullable(),
+    /** Dias úteis pula fins de semana e feriados (nacionais e da firma). */
+    prazoUteis: z.boolean().default(true),
+    prioridade: z.enum(['BAIXA', 'MEDIA', 'ALTA']).default('MEDIA'),
+    categoria: z.enum(['AUDIENCIA', 'PRAZO', 'REUNIAO', 'DILIGENCIA', 'GERAL']).default('GERAL'),
+  }),
+]);
+
+export type WorkflowAcao = z.infer<typeof workflowAcaoSchema>;
+
+export const workflowSchema = z
+  .object({
+    nome: z.string().trim().min(1, 'Nome é obrigatório').max(120),
+    descricao: z.string().max(1000).optional().nullable(),
+    ativo: z.boolean().default(true),
+    gatilho: z.enum(WORKFLOW_GATILHOS),
+    condicoes: workflowCondicoesSchema.default({}),
+    acoes: z.array(workflowAcaoSchema).min(1, 'Adicione ao menos uma ação').max(20),
+  })
+  .superRefine((data, ctx) => {
+    if (data.gatilho !== 'CLIENTE_SITUACAO_ALTERADA') {
+      for (const campo of ['situacaoAnterior', 'situacaoNova'] as const) {
+        if (data.condicoes[campo]) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['condicoes', campo],
+            message: 'Condição de situação só vale para o gatilho "situação alterada"',
+          });
+        }
+      }
+    }
+  });
+
+export type WorkflowInput = z.infer<typeof workflowSchema>;
+
+export const workflowAtivoSchema = z.object({ ativo: z.boolean() });

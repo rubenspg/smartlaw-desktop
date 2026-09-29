@@ -14,6 +14,8 @@ import usuarios from './usuarios';
 import auditLogs from './audit-logs';
 import firms from './firms';
 import intimacoes from './intimacoes';
+import clienteSituacoes from './cliente-situacoes';
+import workflows from './workflows';
 import { Variables } from '../middleware/auth';
 
 const routes = new Hono<{ Variables: Variables }>()
@@ -31,7 +33,9 @@ const routes = new Hono<{ Variables: Variables }>()
   .route('/usuarios', usuarios)
   .route('/audit-logs', auditLogs)
   .route('/firms', firms)
-  .route('/intimacoes', intimacoes);
+  .route('/intimacoes', intimacoes)
+  .route('/cliente-situacoes', clienteSituacoes)
+  .route('/workflows', workflows);
 
 export type AppType = typeof routes;
 export default routes;

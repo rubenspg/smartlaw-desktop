@@ -13,6 +13,7 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+import type { WorkflowAcao, WorkflowCondicoes, WorkflowGatilho } from '@smartlaw/shared';
 
 // Toda tabela de negócio é filtrada por firm_id em praticamente todas as
 // consultas. O Postgres indexa PRIMARY KEY e UNIQUE, mas não REFERENCES —
@@ -474,7 +475,11 @@ export const tarefas = pgTable(
       .references(() => firms.id)
       .notNull(),
     usuarioId: uuid('usuario_id').references(() => profiles.id, { onDelete: 'cascade' }),
-    clienteId: bigint('cliente_id', { mode: 'number' }).references(() => clientes.id),
+    // Cascade desde a 0011: com os fluxos, todo cliente novo pode nascer com
+    // tarefa, e sem isso excluir o cliente esbarrava na chave estrangeira.
+    clienteId: bigint('cliente_id', { mode: 'number' }).references(() => clientes.id, {
+      onDelete: 'cascade',
+    }),
     processoJudicialId: bigint('processo_judicial_id', { mode: 'number' }).references(
       () => processosJudiciais.id,
     ),
@@ -488,6 +493,11 @@ export const tarefas = pgTable(
     status: text('status').default('PENDENTE'),
     categoria: text('categoria').default('GERAL'),
     link: text('link'),
+    // Execução de fluxo de trabalho que criou a tarefa; nulo nas manuais.
+    workflowExecucaoId: bigint('workflow_execucao_id', { mode: 'number' }).references(
+      () => workflowExecucoes.id,
+      { onDelete: 'set null' },
+    ),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   },
@@ -540,6 +550,83 @@ export const auditLogs = pgTable(
     // A tela de auditoria lista por firma em ordem cronológica decrescente.
     index('audit_logs_firm_id_created_at_idx').on(t.firmId, t.createdAt),
   ],
+);
+
+/**
+ * Situações de cliente configuráveis por escritório. `clientes.situacao` guarda
+ * o `codigo`. `A` e `I` são de sistema (existem desde sempre) e não podem ser
+ * excluídas; `conta_como_ativo` decide quem aparece no filtro padrão "Ativos"
+ * da lista de clientes.
+ */
+export const clienteSituacoes = pgTable(
+  'cliente_situacoes',
+  {
+    id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+    firmId: uuid('firm_id')
+      .references(() => firms.id)
+      .notNull(),
+    codigo: text('codigo').notNull(),
+    nome: text('nome').notNull(),
+    cor: text('cor').$type<SituacaoCor>().default('secondary').notNull(),
+    contaComoAtivo: boolean('conta_como_ativo').default(true).notNull(),
+    sistema: boolean('sistema').default(false).notNull(),
+    ordem: integer('ordem').default(50).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (t) => [uniqueIndex('cliente_situacoes_firm_id_codigo_uidx').on(t.firmId, t.codigo)],
+);
+
+export type SituacaoCor = 'success' | 'warning' | 'destructive' | 'secondary' | 'default';
+
+/**
+ * Fluxo de trabalho: "quando <gatilho>, se <condições>, então <ações>".
+ * Condições e ações são JSON validado pelo Zod de @smartlaw/shared
+ * (`workflowSchema`) na gravação; o motor fica em services/workflows/.
+ */
+export const workflows = pgTable(
+  'workflows',
+  {
+    id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+    firmId: uuid('firm_id')
+      .references(() => firms.id)
+      .notNull(),
+    nome: text('nome').notNull(),
+    descricao: text('descricao'),
+    ativo: boolean('ativo').default(true).notNull(),
+    gatilho: text('gatilho').$type<WorkflowGatilho>().notNull(),
+    condicoes: jsonb('condicoes').$type<WorkflowCondicoes>().default({}).notNull(),
+    acoes: jsonb('acoes').$type<WorkflowAcao[]>().default([]).notNull(),
+    criadoPor: uuid('criado_por').references(() => profiles.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('workflows_firm_id_gatilho_idx').on(t.firmId, t.gatilho)],
+);
+
+/** Uma linha por vez que um fluxo rodou (ou tentou rodar). */
+export const workflowExecucoes = pgTable(
+  'workflow_execucoes',
+  {
+    id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+    firmId: uuid('firm_id')
+      .references(() => firms.id)
+      .notNull(),
+    workflowId: bigint('workflow_id', { mode: 'number' }).references(() => workflows.id, {
+      onDelete: 'set null',
+    }),
+    // Copiado do fluxo: o histórico continua legível depois que ele é excluído.
+    workflowNome: text('workflow_nome').notNull(),
+    gatilho: text('gatilho').$type<WorkflowGatilho>().notNull(),
+    clienteId: bigint('cliente_id', { mode: 'number' }).references(() => clientes.id, {
+      onDelete: 'set null',
+    }),
+    disparadoPor: uuid('disparado_por').references(() => profiles.id, { onDelete: 'set null' }),
+    status: text('status').$type<'SUCESSO' | 'ERRO' | 'IGNORADO'>().notNull(),
+    resultado: jsonb('resultado').$type<string[]>().default([]).notNull(),
+    erro: text('erro'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('workflow_execucoes_firm_id_created_at_idx').on(t.firmId, t.createdAt)],
 );
 
 // Relations
