@@ -96,6 +96,15 @@ fixtures under `apps/server/test/fixtures/djen/` are real responses with party
 names replaced; keep them that way. Research and roadmap:
 `docs/INTEGRACAO_TRIBUNAIS_INSS.md`.
 
+**Fluxos de trabalho** (`services/workflows/`, docs/FLUXOS_DE_TRABALHO.md):
+admin-defined "quando → se → então" rules. Routes call `dispararEvento` *after*
+their own write; it never throws, so a broken workflow can't block a cadastro —
+failures land in `workflow_execucoes` as `ERRO`. `clientes.situacao` holds a
+code from the firm's `cliente_situacoes` (`A`/`I` are system rows); never
+hardcode `'A'`/`'I'` in the UI — use `SituacaoBadge` / `useClienteSituacoes`,
+and filter the default list with `situacao=ativos`. Workflow task deadlines
+count office days (recess counts), unlike DJEN prazos.
+
 **Migration 0004 was reconstructed** (#31). Its unused `profiles.reset_token`
 and `reset_token_expires` columns are dropped with `IF EXISTS` in 0007 because
 existing databases disagreed on whether they existed; do not redeclare them.
