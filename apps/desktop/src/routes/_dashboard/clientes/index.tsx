@@ -17,7 +17,6 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { 
   Table, 
@@ -34,6 +33,8 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { useClientes } from '@/hooks/use-clientes';
+import { useClienteSituacoes } from '@/hooks/use-cliente-situacoes';
+import { SituacaoBadge } from '@/components/shared/situacao-badge';
 import { openUrl } from '@tauri-apps/plugin-opener';
 
 export const Route = createFileRoute('/_dashboard/clientes/')({
@@ -43,10 +44,12 @@ export const Route = createFileRoute('/_dashboard/clientes/')({
 function ClientesListPage() {
   const navigate = useNavigate();
   const [q, setQ] = useState('');
-  const [situacao, setSituacao] = useState('A');
+  // "ativos" = toda situação que conta como ativo (Ativo, Em revisão…).
+  const [situacao, setSituacao] = useState('ativos');
   const [page, setPage] = useState(1);
   const limit = 10;
 
+  const { data: situacoes } = useClienteSituacoes();
   const { data, isLoading, isError } = useClientes({ 
     q, 
     situacao: situacao === 'all' ? undefined : situacao, 
@@ -97,9 +100,11 @@ function ClientesListPage() {
               <SelectValue placeholder="Situação" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="ativos">Ativos</SelectItem>
               <SelectItem value="all">Todas Situações</SelectItem>
-              <SelectItem value="A">Ativo</SelectItem>
-              <SelectItem value="I">Inativo</SelectItem>
+              {situacoes?.map((s) => (
+                <SelectItem key={s.codigo} value={s.codigo}>{s.nome}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -186,9 +191,7 @@ function ClientesListPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={cliente.situacao === 'A' ? 'success' : 'destructive'}>
-                      {cliente.situacao === 'A' ? 'Ativo' : 'Inativo'}
-                    </Badge>
+                    <SituacaoBadge codigo={cliente.situacao} />
                   </TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>

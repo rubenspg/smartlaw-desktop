@@ -9,6 +9,7 @@ export const strings = {
   "nav.processes": "Processos",
   "nav.finance": "Financeiro",
   "nav.insights": "Insights",
+  "nav.workflows": "Fluxos de trabalho",
   "nav.admin": "Administrativo",
   "nav.settings": "Configurações",
   "nav.logout": "Sair",

@@ -49,5 +49,13 @@ export type AuditLog = InferResponseType<(typeof api)['audit-logs']['$get'], 200
 
 export type AndamentoRecente = InferResponseType<typeof api.dashboard.recentes.$get, 200>[number];
 
+export type ClienteSituacao = InferResponseType<(typeof api)['cliente-situacoes']['$get'], 200>[number];
+
+export type Workflow = InferResponseType<(typeof api.workflows)[':id']['$get'], 200>;
+
+export type WorkflowListItem = InferResponseType<typeof api.workflows.$get, 200>[number];
+
+export type WorkflowExecucao = InferResponseType<typeof api.workflows.execucoes.$get, 200>[number];
+
 // The authenticated profile, from /auth/me's `{ user }` envelope.
 export type User = InferResponseType<typeof api.auth.me.$get, 200>['user'];

@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { api } from '@/lib/api';
+import { useClienteSituacoes } from '@/hooks/use-cliente-situacoes';
 import { useRouter } from '@tanstack/react-router';
 
 // ── Formatters ────────────────────────────────────────────────────────────────
@@ -88,6 +89,7 @@ interface ClienteFormProps {
 export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteFormProps) {
   const router = useRouter();
   const [isSearchingCEP, setIsSearchingCEP] = useState(false);
+  const { data: situacoes } = useClienteSituacoes();
   const { register, handleSubmit, control, formState: { errors }, setValue, watch } = useForm<ClienteInput>({
     resolver: zodResolver(clienteSchema),
     defaultValues: initialData ? {
@@ -219,8 +221,14 @@ export function ClienteForm({ initialData, onSubmit, isSubmitting }: ClienteForm
                       <SelectValue placeholder="Selecione a situação" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="A">Ativo</SelectItem>
-                      <SelectItem value="I">Inativo</SelectItem>
+                      {situacoes?.map((s) => (
+                        <SelectItem key={s.codigo} value={s.codigo}>{s.nome}</SelectItem>
+                      )) ?? (
+                        <>
+                          <SelectItem value="A">Ativo</SelectItem>
+                          <SelectItem value="I">Inativo</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 )}

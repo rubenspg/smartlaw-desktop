@@ -23,6 +23,7 @@ import {
   DollarSign,
   ShieldCheck,
   CalendarDays,
+  Workflow,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -76,6 +77,7 @@ function DashboardLayout() {
     { name: t("nav.processes"), to: "/processos", icon: FileText },
     { name: t("nav.finance"), to: "/financeiro", icon: DollarSign },
     { name: t("nav.insights"), to: "/insights", icon: TrendingUp },
+    { name: t("nav.workflows"), to: "/fluxos", icon: Workflow },
     { name: t("nav.admin"), to: "/administrativo", icon: ShieldCheck },
     { name: t("nav.settings"), to: "/settings", icon: Settings },
   ];
@@ -83,9 +85,9 @@ function DashboardLayout() {
   // Rotas ocultas por perfil. O servidor é quem de fato barra o acesso —
   // isto apenas evita mostrar um link que resultaria em 403.
   const ROTAS_OCULTAS: Record<string, string[]> = {
-    usuario: ["/financeiro", "/insights", "/administrativo"],
-    secretaria: ["/financeiro", "/insights", "/administrativo"],
-    administrativo: ["/administrativo"],
+    usuario: ["/financeiro", "/insights", "/fluxos", "/administrativo"],
+    secretaria: ["/financeiro", "/insights", "/fluxos", "/administrativo"],
+    administrativo: ["/fluxos", "/administrativo"],
   };
 
   const ocultas = ROTAS_OCULTAS[user?.perfil ?? ""] ?? [];
