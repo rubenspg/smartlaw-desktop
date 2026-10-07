@@ -166,6 +166,13 @@ function DashboardLayout() {
               </span>
             )}
           </button>
+          {/* Versão em execução, para identificar a build em relatos de bug. */}
+          <p
+            className="mt-2 text-center text-[10px] text-muted-foreground/70 select-text tabular-nums"
+            title={`SmartLaw versão ${__APP_VERSION__}`}
+          >
+            v{__APP_VERSION__}
+          </p>
         </div>
       </aside>
 
