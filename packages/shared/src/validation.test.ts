@@ -6,6 +6,8 @@ import {
   usuarioUpdateSchema,
   tarefaSchema,
   processoJudicialSchema,
+  processoAdministrativoSchema,
+  honorarioSchema,
 } from './validation';
 
 describe('loginSchema', () => {
@@ -95,6 +97,49 @@ describe('clienteSchema', () => {
       false,
     );
   });
+
+  // Data de nascimento em branco chegava como '' e o Postgres respondia 500
+  // ("invalid input syntax for type date").
+  it('converte nascimento vazio em null', () => {
+    const r = clienteSchema.parse({ tipo: 'F', nome: 'Ana', nascimento: '' });
+    expect(r.nascimento).toBeNull();
+  });
+
+  it('preserva nascimento preenchido ou ausente', () => {
+    expect(
+      clienteSchema.parse({ tipo: 'F', nome: 'Ana', nascimento: '1990-05-01' }).nascimento,
+    ).toBe('1990-05-01');
+    expect(clienteSchema.parse({ tipo: 'F', nome: 'Ana' }).nascimento).toBeUndefined();
+  });
+});
+
+describe('datas opcionais vazias viram null', () => {
+  it('processo judicial: distribuicao', () => {
+    const r = processoJudicialSchema.parse({ clienteId: 1, numero: '1', distribuicao: '' });
+    expect(r.distribuicao).toBeNull();
+  });
+
+  it('processo administrativo: dataCadastro, abertura, inicioBeneficio', () => {
+    const r = processoAdministrativoSchema.parse({
+      clienteId: 1,
+      numero: '1',
+      dataCadastro: '',
+      abertura: '',
+      inicioBeneficio: '',
+    });
+    expect([r.dataCadastro, r.abertura, r.inicioBeneficio]).toEqual([null, null, null]);
+  });
+
+  it('honorário: dataPagto', () => {
+    const r = honorarioSchema.parse({
+      clienteId: 1,
+      descricao: 'X',
+      valor: '100',
+      dataVenc: '2026-10-20',
+      dataPagto: '',
+    });
+    expect(r.dataPagto).toBeNull();
+  });
 });
 
 describe('tarefaSchema', () => {
@@ -149,6 +194,9 @@ describe('tarefaSchema', () => {
     );
     expect(tarefaSchema.safeParse({ ...base, link: null }).success).toBe(true);
     expect(tarefaSchema.safeParse({ ...base, link: undefined }).success).toBe(true);
+  });
+  it('converte dataLimite vazia em null', () => {
+    expect(tarefaSchema.parse({ ...base, dataLimite: '' }).dataLimite).toBeNull();
   });
 });
 
