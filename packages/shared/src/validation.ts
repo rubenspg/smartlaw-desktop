@@ -28,6 +28,16 @@ function validateCNPJ(value: string): boolean {
   return (rem < 2 ? 0 : 11 - rem) === parseInt(d[13]);
 }
 
+// Um `<input type="date">` deixado em branco envia '', que o Postgres recusa
+// em colunas date/timestamp ("invalid input syntax for type date"). Vazio vira
+// null aqui para que nenhuma rota precise lembrar disso. `transform` em vez de
+// `preprocess` mantém o tipo de entrada como string no cliente RPC.
+const dataOpcional = z
+  .string()
+  .optional()
+  .nullable()
+  .transform((v) => (v === '' ? null : v));
+
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
@@ -42,7 +52,7 @@ export const clienteSchema = z
     fantasia: z.string().optional().nullable(),
     cpfCnpj: z.string().optional().nullable(),
     rg: z.string().optional().nullable(),
-    nascimento: z.string().optional().nullable(),
+    nascimento: dataOpcional,
     sexo: z.string().optional().nullable(),
     estCivil: z.string().optional().nullable(),
     profissao: z.string().optional().nullable(),
@@ -117,7 +127,7 @@ export type ClienteNotaInput = z.infer<typeof clienteNotaSchema>;
 export const processoJudicialSchema = z.object({
   clienteId: z.number().min(1, 'Cliente é obrigatório'),
   numero: z.string().min(1, 'Número do processo é obrigatório'),
-  distribuicao: z.string().optional().nullable(),
+  distribuicao: dataOpcional,
   juizo: z.string().optional().nullable(),
   justica: z.string().optional().nullable(),
   comarca: z.string().optional().nullable(),
@@ -135,9 +145,9 @@ export type ProcessoJudicialInput = z.infer<typeof processoJudicialSchema>;
 export const processoAdministrativoSchema = z.object({
   clienteId: z.number().min(1, 'Cliente é obrigatório'),
   numero: z.string().min(1, 'Número ou Identificação é obrigatório'),
-  dataCadastro: z.string().optional().nullable(),
-  abertura: z.string().optional().nullable(),
-  inicioBeneficio: z.string().optional().nullable(),
+  dataCadastro: dataOpcional,
+  abertura: dataOpcional,
+  inicioBeneficio: dataOpcional,
   decisao: z.string().optional().nullable(),
   pasta: z.string().optional().nullable(),
   especieId: z.string().optional().nullable(),
@@ -169,7 +179,7 @@ export const honorarioSchema = z.object({
       return !isNaN(num) && num >= 0;
     }, 'Valor pago inválido'),
   dataVenc: z.string().min(1, 'Vencimento é obrigatório'),
-  dataPagto: z.string().optional().nullable(),
+  dataPagto: dataOpcional,
   status: z.enum(['PENDENTE', 'PAGO', 'CANCELADO']).default('PENDENTE'),
   tipo: z.string().default('HONORARIO'),
   observacoes: z.string().optional().nullable(),
@@ -240,7 +250,7 @@ export const tarefaSchema = z.object({
   processoAdminId: z.number().optional().nullable(),
   titulo: z.string().min(1, 'Título é obrigatório'),
   descricao: z.string().optional().nullable(),
-  dataLimite: z.string().optional().nullable(),
+  dataLimite: dataOpcional,
   prioridade: z.enum(['BAIXA', 'MEDIA', 'ALTA']),
   status: z.enum(['PENDENTE', 'CONCLUIDA', 'CANCELADA']),
   categoria: z.enum(['AUDIENCIA', 'PRAZO', 'REUNIAO', 'DILIGENCIA', 'GERAL']).optional().nullable(),

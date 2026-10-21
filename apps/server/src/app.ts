@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
+import { HTTPException } from 'hono/http-exception';
 import routes from './routes';
 import { verificarBanco } from './db/health';
 import { CABECALHO_VERSAO_APP, exigirVersaoMinima } from './middleware/versao-app';
@@ -44,9 +45,12 @@ export function criarApp() {
     return c.json({ status: 'ok', database: 'ok' });
   });
 
+  // A mensagem original (erro do Postgres, stack de biblioteca) fica só no log:
+  // devolvê-la ao cliente vazava detalhes do banco direto no toast.
   app.onError((err, c) => {
+    if (err instanceof HTTPException) return err.getResponse();
     console.error(`[Error] ${err.message}`, err);
-    return c.json({ error: err.message || 'Internal Server Error' }, 500);
+    return c.json({ error: 'Erro interno do servidor' }, 500);
   });
 
   return app;
