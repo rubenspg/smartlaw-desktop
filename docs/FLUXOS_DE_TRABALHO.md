@@ -60,11 +60,21 @@ the engine does not reuse `ehDiaUtil` from `djen/prazos.ts`.
 |---|---|
 | `CLIENTE_CRIADO` (`POST /clientes`) | tipo de cliente |
 | `CLIENTE_SITUACAO_ALTERADA` (`PUT /clientes/:id`, or another workflow) | tipo de cliente, situação anterior, nova situação |
+| `TAREFA_CONCLUIDA` (`PUT /tarefas/:id`, on the change to `CONCLUIDA`) | tipo de cliente, "created by workflow X" (`workflowOrigemId`) |
 
 | Action | Fields |
 |---|---|
 | `ALTERAR_SITUACAO_CLIENTE` | situação |
-| `CRIAR_TAREFA` | título/descrição with `{{cliente.nome}}` and `{{usuario.nome}}`, responsável, prazo (dias úteis/corridos or none), prioridade, categoria |
+| `CRIAR_TAREFA` | título/descrição with `{{cliente.nome}}`, `{{usuario.nome}}` and, on `TAREFA_CONCLUIDA`, `{{tarefa.titulo}}`; responsável, prazo (dias úteis/corridos or none), prioridade, categoria |
+
+`TAREFA_CONCLUIDA` only fires for a task linked to a client (workflows act on
+a client), only when the status *changes* to `CONCLUIDA` (saving an
+already-completed task does nothing), and at most once per task per workflow:
+`workflow_execucoes.tarefa_id` (migration 0012) records the task, so reopening
+and completing it again is logged as `IGNORADO` instead of creating duplicate
+tasks. The origin is resolved through `tarefas.workflow_execucao_id →
+workflow_execucoes.workflow_id`. A workflow that other workflows wait on
+(`condicoes.workflowOrigemId`) can't be deleted until those are edited.
 
 **API**: `/workflows` (CRUD, `PATCH /:id/ativo`, `GET /execucoes`) and
 `/cliente-situacoes` (read for everyone, write for admins). References are
@@ -88,11 +98,9 @@ before that).
 
 ## Next phases
 
-1. **Task-completion chaining** — `TAREFA_CONCLUIDA` trigger ("when the
-   documents task is done, move the client to Ativo and give the lawyer a
-   task"), filtered by the workflow that created the task
-   (`tarefas.workflow_execucao_id` is already there for this). Detect the
-   transition to `CONCLUIDA` in `PUT /tarefas/:id`.
+1. ~~**Task-completion chaining**~~ — done: `TAREFA_CONCLUIDA`. Possible
+   follow-up: "when *all* tasks from workflow X for this client are done",
+   for workflows that create several tasks.
 2. **Processo triggers** — `PROCESSO_JUDICIAL_CRIADO` /
    `PROCESSO_ADMINISTRATIVO_CRIADO`, with actions scoped to the processo.
 3. **Court events** — intimação received (DJEN), processo archived (Datajud

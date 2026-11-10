@@ -27,6 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useClienteSituacoes } from '@/hooks/use-cliente-situacoes';
 import { useUsuarios } from '@/hooks/use-lookups';
+import { useWorkflows } from '@/hooks/use-workflows';
 import {
   CATEGORIA_LABEL,
   GATILHO_LABEL,
@@ -85,15 +86,23 @@ const MODELO_COLETA: WorkflowInput = {
 };
 
 interface WorkflowFormProps {
+  /** Ao editar: o próprio fluxo, que não aparece como origem de si mesmo. */
+  workflowId?: number;
   initialData?: WorkflowInput;
   onSubmit: (data: WorkflowInput) => Promise<void>;
   isSubmitting: boolean;
 }
 
-export function WorkflowForm({ initialData, onSubmit, isSubmitting }: WorkflowFormProps) {
+export function WorkflowForm({ workflowId, initialData, onSubmit, isSubmitting }: WorkflowFormProps) {
   const router = useRouter();
   const { data: situacoes } = useClienteSituacoes();
   const { data: usuarios } = useUsuarios();
+  const { data: outrosFluxos } = useWorkflows();
+  // Origem possível: fluxo que cria tarefa. Um que só muda situação nunca
+  // geraria a tarefa esperada.
+  const fluxosComTarefa = outrosFluxos?.filter(
+    (w) => w.id !== workflowId && w.acoes.some((a) => a.tipo === 'CRIAR_TAREFA'),
+  );
   const [fluxo, setFluxo] = useState<WorkflowInput>(initialData ?? VAZIO);
   const [erros, setErros] = useState<string[]>([]);
 
@@ -101,6 +110,7 @@ export function WorkflowForm({ initialData, onSubmit, isSubmitting }: WorkflowFo
     situacoes?.find((s) => s.codigo === codigo)?.nome ?? codigo ?? '…';
   const nomeUsuario = (id: string | null | undefined) =>
     usuarios?.find((u) => u.id === id)?.nome ?? '…';
+  const nomeFluxo = (id: number) => outrosFluxos?.find((w) => w.id === id)?.nome ?? '…';
 
   const alterar = (parcial: Partial<WorkflowInput>) => setFluxo((f) => ({ ...f, ...parcial }));
   const alterarCondicao = (campo: keyof WorkflowInput['condicoes'], valor: string) =>
@@ -121,13 +131,19 @@ export function WorkflowForm({ initialData, onSubmit, isSubmitting }: WorkflowFo
     setFluxo((f) => ({ ...f, acoes: f.acoes.filter((_, j) => j !== i) }));
 
   const trocarGatilho = (gatilho: WorkflowGatilho) =>
-    // As condições de situação só existem no gatilho de situação alterada.
-    setFluxo((f) => ({
-      ...f,
-      gatilho,
-      condicoes:
-        gatilho === 'CLIENTE_SITUACAO_ALTERADA' ? f.condicoes : { tipoCliente: f.condicoes.tipoCliente },
-    }));
+    // Cada gatilho tem as suas condições; só o tipo de cliente vale para todos.
+    setFluxo((f) => {
+      const { tipoCliente, situacaoAnterior, situacaoNova, workflowOrigemId } = f.condicoes;
+      return {
+        ...f,
+        gatilho,
+        condicoes: {
+          tipoCliente,
+          ...(gatilho === 'CLIENTE_SITUACAO_ALTERADA' ? { situacaoAnterior, situacaoNova } : {}),
+          ...(gatilho === 'TAREFA_CONCLUIDA' ? { workflowOrigemId } : {}),
+        },
+      };
+    });
 
   const salvar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,7 +161,9 @@ export function WorkflowForm({ initialData, onSubmit, isSubmitting }: WorkflowFo
       <Card className="bg-primary/5 border-primary/20">
         <CardContent className="pt-6 flex gap-3 items-start">
           <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-          <p className="text-sm leading-relaxed">{descreverFluxo(fluxo, nomeSituacao, nomeUsuario)}</p>
+          <p className="text-sm leading-relaxed">
+            {descreverFluxo(fluxo, nomeSituacao, nomeUsuario, nomeFluxo)}
+          </p>
         </CardContent>
       </Card>
 
@@ -244,6 +262,35 @@ export function WorkflowForm({ initialData, onSubmit, isSubmitting }: WorkflowFo
                 </Select>
               </div>
             ))}
+          {fluxo.gatilho === 'TAREFA_CONCLUIDA' && (
+            <div className="space-y-2 md:col-span-2">
+              <Label>Qual tarefa</Label>
+              <Select
+                value={fluxo.condicoes.workflowOrigemId?.toString() ?? QUALQUER}
+                onValueChange={(v) =>
+                  setFluxo((f) => ({
+                    ...f,
+                    condicoes: { ...f.condicoes, workflowOrigemId: v === QUALQUER ? undefined : Number(v) },
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={QUALQUER}>Qualquer tarefa vinculada ao cliente</SelectItem>
+                  {fluxosComTarefa?.map((w) => (
+                    <SelectItem key={w.id} value={w.id.toString()}>
+                      Tarefa criada pelo fluxo “{w.nome}”
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Só dispara para tarefas vinculadas a um cliente, na primeira vez que forem concluídas.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -298,7 +345,9 @@ export function WorkflowForm({ initialData, onSubmit, isSubmitting }: WorkflowFo
                       placeholder="Ex: Coletar documentos de {{cliente.nome}}"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Use {'{{cliente.nome}}'} para o nome do cliente e {'{{usuario.nome}}'} para quem fez o cadastro.
+                      Use {'{{cliente.nome}}'} para o nome do cliente e {'{{usuario.nome}}'} para quem
+                      {fluxo.gatilho === 'TAREFA_CONCLUIDA' ? ' concluiu a tarefa' : ' fez a alteração'}
+                      {fluxo.gatilho === 'TAREFA_CONCLUIDA' && <>; {'{{tarefa.titulo}}'} para a tarefa concluída</>}.
                     </p>
                   </div>
                   <div className="space-y-2 md:col-span-2">

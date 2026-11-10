@@ -60,6 +60,19 @@ describe('condicoesAtendidas', () => {
   });
 });
 
+describe('condicoesAtendidas — tarefa concluída', () => {
+  const pf = { tipo: 'F' };
+  it('com fluxo de origem, exige que a tarefa venha dele', () => {
+    const cond = { workflowOrigemId: 7 };
+    expect(condicoesAtendidas(cond, pf, { tarefa: { workflowOrigemId: 7 } })).toBe(true);
+    expect(condicoesAtendidas(cond, pf, { tarefa: { workflowOrigemId: 8 } })).toBe(false);
+    expect(condicoesAtendidas(cond, pf, { tarefa: { workflowOrigemId: null } })).toBe(false);
+  });
+  it('sem fluxo de origem, aceita tarefa manual', () => {
+    expect(condicoesAtendidas({}, pf, { tarefa: { workflowOrigemId: null } })).toBe(true);
+  });
+});
+
 describe('codigoDaSituacao', () => {
   it('gera código sem acento, em maiúsculas', () => {
     expect(codigoDaSituacao('Aguardando documentação')).toBe('AGUARDANDO_DOCUMENTACAO');

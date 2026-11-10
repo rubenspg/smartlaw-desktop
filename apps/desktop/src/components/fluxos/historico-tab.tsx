@@ -64,6 +64,9 @@ export function HistoricoTab({ workflowId }: { workflowId?: number }) {
                   ) : (
                     <span className="text-muted-foreground">—</span>
                   )}
+                  {e.tarefaTitulo && (
+                    <div className="text-xs text-muted-foreground">Tarefa: {e.tarefaTitulo}</div>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Badge variant={STATUS[e.status]?.variant ?? 'secondary'}>{STATUS[e.status]?.label ?? e.status}</Badge>

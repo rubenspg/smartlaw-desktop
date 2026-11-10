@@ -1,11 +1,12 @@
 import { Hono } from 'hono';
 import { db } from '../db';
-import { tarefas } from '../db/schema';
+import { tarefas, workflowExecucoes } from '../db/schema';
 import { eq, and, desc, or, ne, gte, isNull } from 'drizzle-orm';
 import { tarefaSchema } from '@smartlaw/shared';
 import { authMiddleware, Variables } from '../middleware/auth';
 import { zValidator } from '@hono/zod-validator';
 import { parseIdParam } from '../utils';
+import { dispararEvento } from '../services/workflows';
 
 const tarefasRoutes = new Hono<{ Variables: Variables }>()
   .use(authMiddleware)
@@ -124,6 +125,11 @@ const tarefasRoutes = new Hono<{ Variables: Variables }>()
       whereUpdate.push(or(eq(tarefas.usuarioId, user.id), isNull(tarefas.usuarioId))!);
     }
 
+    const [anterior] = await db
+      .select({ status: tarefas.status })
+      .from(tarefas)
+      .where(and(...whereUpdate));
+
     const [updatedTarefa] = await db
       .update(tarefas)
       .set({
@@ -137,6 +143,38 @@ const tarefasRoutes = new Hono<{ Variables: Variables }>()
 
     if (!updatedTarefa) {
       return c.json({ error: 'Tarefa não encontrada' }, 404);
+    }
+
+    // Fluxos de trabalho agem sobre um cliente: só a tarefa vinculada a um
+    // dispara, e só na passagem para CONCLUIDA (salvar de novo uma tarefa já
+    // concluída não conta).
+    if (
+      anterior?.status !== 'CONCLUIDA' &&
+      updatedTarefa.status === 'CONCLUIDA' &&
+      updatedTarefa.clienteId
+    ) {
+      const [origem] = updatedTarefa.workflowExecucaoId
+        ? await db
+            .select({ workflowId: workflowExecucoes.workflowId })
+            .from(workflowExecucoes)
+            .where(
+              and(
+                eq(workflowExecucoes.id, updatedTarefa.workflowExecucaoId),
+                eq(workflowExecucoes.firmId, user.firmId),
+              ),
+            )
+        : [];
+      await dispararEvento({
+        gatilho: 'TAREFA_CONCLUIDA',
+        firmId: user.firmId,
+        clienteId: updatedTarefa.clienteId,
+        usuarioId: user.id,
+        tarefa: {
+          id: updatedTarefa.id,
+          titulo: updatedTarefa.titulo,
+          workflowOrigemId: origem?.workflowId ?? null,
+        },
+      });
     }
 
     return c.json(updatedTarefa);

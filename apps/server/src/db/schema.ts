@@ -11,6 +11,7 @@ import {
   index,
   integer,
   uniqueIndex,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import type { WorkflowAcao, WorkflowCondicoes, WorkflowGatilho } from '@smartlaw/shared';
@@ -620,13 +621,22 @@ export const workflowExecucoes = pgTable(
     clienteId: bigint('cliente_id', { mode: 'number' }).references(() => clientes.id, {
       onDelete: 'set null',
     }),
+    // TAREFA_CONCLUIDA: a tarefa cuja conclusão disparou o fluxo. Serve ao
+    // histórico e a não rodar de novo quando a tarefa é reaberta e concluída.
+    // O tipo explícito quebra a referência circular com tarefas.workflowExecucaoId.
+    tarefaId: bigint('tarefa_id', { mode: 'number' }).references((): AnyPgColumn => tarefas.id, {
+      onDelete: 'set null',
+    }),
     disparadoPor: uuid('disparado_por').references(() => profiles.id, { onDelete: 'set null' }),
     status: text('status').$type<'SUCESSO' | 'ERRO' | 'IGNORADO'>().notNull(),
     resultado: jsonb('resultado').$type<string[]>().default([]).notNull(),
     erro: text('erro'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [index('workflow_execucoes_firm_id_created_at_idx').on(t.firmId, t.createdAt)],
+  (t) => [
+    index('workflow_execucoes_firm_id_created_at_idx').on(t.firmId, t.createdAt),
+    index('workflow_execucoes_workflow_id_tarefa_id_idx').on(t.workflowId, t.tarefaId),
+  ],
 );
 
 // Relations
