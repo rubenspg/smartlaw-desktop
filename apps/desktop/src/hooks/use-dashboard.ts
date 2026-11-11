@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import type { InferResponseType } from 'hono/client';
 import { api } from '../lib/api';
 import type { AndamentoRecente, DashboardStats } from '../lib/entities';
 
@@ -44,20 +45,18 @@ export function useResumoPendencias() {
   });
 }
 
-export type ResumoIAStatus = 'idle' | 'loading' | 'ready' | 'unavailable' | 'error';
+export type ResumoDia = InferResponseType<(typeof api.dashboard)['resumo-ia']['$get'], 200>;
 
-export function useResumoIA() {
+/** "Resumo do dia" da tela inicial (texto da IA ou o calculado, mais os destaques). */
+export function useResumoDia() {
   return useQuery({
     queryKey: ['dashboard', 'resumo-ia'],
     staleTime: 5 * 60_000,
     retry: false,
-    queryFn: async (): Promise<{ texto: string; status: ResumoIAStatus }> => {
+    queryFn: async (): Promise<ResumoDia> => {
       const res = await api.dashboard['resumo-ia'].$get();
-      if (!res.ok) {
-        return { texto: 'Falha ao gerar resumo.', status: 'error' };
-      }
-      const data = await res.json() as { texto: string; status: ResumoIAStatus };
-      return { texto: data.texto, status: data.status };
+      if (!res.ok) throw new Error('Falha ao montar o resumo do dia');
+      return await res.json();
     },
   });
 }
