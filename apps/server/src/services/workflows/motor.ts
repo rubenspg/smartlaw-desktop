@@ -8,7 +8,7 @@ import { condicoesAtendidas, preencher } from './regras';
 
 /**
  * Motor dos fluxos de trabalho. As rotas chamam `dispararEvento` depois de
- * gravar (cliente criado, situação alterada); ele roda os fluxos ativos da
+ * gravar (cliente criado, situação alterada, tarefa concluída); ele roda os fluxos ativos da
  * firma para aquele gatilho, cada um na sua transação, e registra o resultado
  * em `workflow_execucoes`.
  *
@@ -24,6 +24,8 @@ export interface EventoCliente {
   usuarioId: string | null;
   situacaoAnterior?: string | null;
   situacaoNova?: string | null;
+  /** TAREFA_CONCLUIDA: a tarefa concluída e o fluxo que a criou, se algum. */
+  tarefa?: { id: number; titulo: string; workflowOrigemId: number | null };
 }
 
 /**
@@ -84,6 +86,12 @@ async function processar(evento: EventoCliente, cadeia: Cadeia) {
     }
     executados.add(fluxo.id);
 
+    // Tarefa reaberta e concluída de novo: o fluxo já fez o trabalho dele.
+    if (evento.tarefa && (await jaRodouParaTarefa(fluxo.id, evento.tarefa.id))) {
+      await registrar(evento, fluxo, 'IGNORADO', [], 'O fluxo já rodou quando esta tarefa foi concluída antes.');
+      continue;
+    }
+
     try {
       seguintes.push(...(await executar(fluxo, cliente, evento, contexto)));
     } catch (err) {
@@ -127,6 +135,21 @@ async function carregarContexto(evento: EventoCliente): Promise<Contexto> {
   };
 }
 
+async function jaRodouParaTarefa(workflowId: number, tarefaId: number): Promise<boolean> {
+  const [anterior] = await db
+    .select({ id: workflowExecucoes.id })
+    .from(workflowExecucoes)
+    .where(
+      and(
+        eq(workflowExecucoes.workflowId, workflowId),
+        eq(workflowExecucoes.tarefaId, tarefaId),
+        eq(workflowExecucoes.status, 'SUCESSO'),
+      ),
+    )
+    .limit(1);
+  return Boolean(anterior);
+}
+
 async function buscarCliente(evento: EventoCliente): Promise<Cliente | undefined> {
   const [cliente] = await db
     .select()
@@ -141,7 +164,8 @@ async function executar(
   evento: EventoCliente,
   ctx: Contexto,
 ): Promise<EventoCliente[]> {
-  const valores = { 'cliente.nome': cliente.nome, 'usuario.nome': ctx.autor };
+  const valores: Record<string, string> = { 'cliente.nome': cliente.nome, 'usuario.nome': ctx.autor };
+  if (evento.tarefa) valores['tarefa.titulo'] = evento.tarefa.titulo;
   const nome = (codigo: string | null) => (codigo ? (ctx.nomeSituacao.get(codigo) ?? codigo) : '—');
 
   // Responsáveis de todas as ações de tarefa, validados de uma vez. Quem saiu
@@ -181,6 +205,7 @@ async function executar(
         workflowNome: fluxo.nome,
         gatilho: evento.gatilho,
         clienteId: cliente.id,
+        tarefaId: evento.tarefa?.id ?? null,
         disparadoPor: evento.usuarioId,
         status: 'SUCESSO',
       })
@@ -260,6 +285,7 @@ async function registrar(
     workflowNome: fluxo.nome,
     gatilho: evento.gatilho,
     clienteId: evento.clienteId,
+    tarefaId: evento.tarefa?.id ?? null,
     disparadoPor: evento.usuarioId,
     status,
     resultado,

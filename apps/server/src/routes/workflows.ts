@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, ne, sql } from 'drizzle-orm';
 import { workflowAtivoSchema, workflowSchema, type WorkflowInput } from '@smartlaw/shared';
 import { db } from '../db';
-import { clientes, profiles, workflowExecucoes, workflows } from '../db/schema';
+import { clientes, profiles, tarefas, workflowExecucoes, workflows } from '../db/schema';
 import { authMiddleware, Variables } from '../middleware/auth';
 import { PERFIS_FLUXOS, requirePerfil } from '../middleware/perfil';
 import { listarSituacoes } from '../services/workflows';
@@ -23,6 +23,14 @@ async function validarReferencias(firmId: string, data: WorkflowInput): Promise<
   ].filter((s): s is string => Boolean(s));
   const desconhecida = situacoes.find((s) => !codigos.has(s));
   if (desconhecida) return `Situação desconhecida: ${desconhecida}`;
+
+  if (data.condicoes.workflowOrigemId) {
+    const [origem] = await db
+      .select({ id: workflows.id })
+      .from(workflows)
+      .where(and(eq(workflows.id, data.condicoes.workflowOrigemId), eq(workflows.firmId, firmId)));
+    if (!origem) return 'Fluxo de origem da tarefa não encontrado';
+  }
 
   const usuarios = [
     ...new Set(data.acoes.flatMap((a) => (a.tipo === 'CRIAR_TAREFA' ? [a.usuarioId] : []))),
@@ -92,12 +100,17 @@ const workflowsRoutes = new Hono<{ Variables: Variables }>()
         createdAt: workflowExecucoes.createdAt,
         clienteId: workflowExecucoes.clienteId,
         clienteNome: clientes.nome,
+        tarefaTitulo: tarefas.titulo,
         disparadoPorNome: profiles.nome,
       })
       .from(workflowExecucoes)
       .leftJoin(
         clientes,
         and(eq(clientes.id, workflowExecucoes.clienteId), eq(clientes.firmId, user.firmId)),
+      )
+      .leftJoin(
+        tarefas,
+        and(eq(tarefas.id, workflowExecucoes.tarefaId), eq(tarefas.firmId, user.firmId)),
       )
       .leftJoin(
         profiles,
@@ -171,6 +184,26 @@ const workflowsRoutes = new Hono<{ Variables: Variables }>()
     const user = c.get('user');
     const id = parseIdParam(c.req.param('id'));
     if (id === null) return c.json({ error: 'ID inválido' }, 400);
+
+    // Outro fluxo que espera as tarefas deste nunca mais dispararia, sem aviso.
+    const dependentes = await db
+      .select({ nome: workflows.nome })
+      .from(workflows)
+      .where(
+        and(
+          eq(workflows.firmId, user.firmId),
+          ne(workflows.id, id),
+          sql`(${workflows.condicoes} ->> 'workflowOrigemId')::bigint = ${id}`,
+        ),
+      );
+    if (dependentes.length > 0) {
+      return c.json(
+        {
+          error: `O(s) fluxo(s) ${dependentes.map((d) => d.nome).join(', ')} esperam as tarefas deste. Edite-os antes de excluir.`,
+        },
+        400,
+      );
+    }
 
     const [excluido] = await db
       .delete(workflows)

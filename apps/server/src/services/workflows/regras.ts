@@ -5,11 +5,18 @@ import type { WorkflowCondicoes } from '@smartlaw/shared';
 export function condicoesAtendidas(
   condicoes: WorkflowCondicoes,
   cliente: { tipo: string },
-  evento: { situacaoAnterior?: string | null; situacaoNova?: string | null },
+  evento: {
+    situacaoAnterior?: string | null;
+    situacaoNova?: string | null;
+    tarefa?: { workflowOrigemId: number | null };
+  },
 ): boolean {
   if (condicoes.tipoCliente && cliente.tipo !== condicoes.tipoCliente) return false;
   if (condicoes.situacaoAnterior && evento.situacaoAnterior !== condicoes.situacaoAnterior) return false;
   if (condicoes.situacaoNova && evento.situacaoNova !== condicoes.situacaoNova) return false;
+  if (condicoes.workflowOrigemId && evento.tarefa?.workflowOrigemId !== condicoes.workflowOrigemId) {
+    return false;
+  }
   return true;
 }
 

@@ -273,3 +273,165 @@ describe('excluir cliente', () => {
     expect(restante).toBeUndefined();
   });
 });
+
+describe('TAREFA_CONCLUIDA', () => {
+  // A tarefa como o PUT da tela a envia: o mesmo corpo, só trocando o status.
+  const mudarStatus = (t: typeof tarefas.$inferSelect, u: typeof admin, status: string) =>
+    req('PUT', `/tarefas/${t.id}`, u, {
+      usuarioId: t.usuarioId,
+      titulo: t.titulo,
+      prioridade: t.prioridade,
+      status,
+    });
+
+  const documentosColetados = (workflowOrigemId: number | undefined, extra: Record<string, unknown> = {}) => ({
+    nome: 'Documentos coletados → advogado',
+    gatilho: 'TAREFA_CONCLUIDA',
+    condicoes: workflowOrigemId ? { workflowOrigemId } : {},
+    acoes: [
+      { tipo: 'ALTERAR_SITUACAO_CLIENTE', situacao: 'A' },
+      {
+        tipo: 'CRIAR_TAREFA',
+        titulo: 'Analisar o caso de {{cliente.nome}}',
+        descricao: 'Concluída por {{usuario.nome}}: {{tarefa.titulo}}',
+        usuarioId: advogado.id,
+      },
+    ],
+    ...extra,
+  });
+
+  const criarFluxo = async (corpo: Record<string, unknown>) => {
+    const res = await req('POST', '/workflows', admin, corpo);
+    expect(res.status).toBe(201);
+    return (await res.json()) as { id: number };
+  };
+
+  const tarefasDe = (usuarioId: string) =>
+    db.select().from(tarefas).where(eq(tarefas.usuarioId, usuarioId));
+
+  it('concluir a tarefa do fluxo de cadastro ativa o cliente e chama o advogado', async () => {
+    const coleta = await criarFluxo(coletaDocumentos(secretaria.id));
+    await criarFluxo(documentosColetados(coleta.id));
+
+    const cliente = await novoCliente(admin);
+    expect(cliente.situacao).toBe('EM_REVISAO');
+    const [daSecretaria] = await tarefasDe(secretaria.id);
+
+    expect((await mudarStatus(daSecretaria, secretaria, 'CONCLUIDA')).status).toBe(200);
+
+    const [atual] = await db.select().from(clientes).where(eq(clientes.id, cliente.id));
+    expect(atual.situacao).toBe('A');
+    const [doAdvogado] = await tarefasDe(advogado.id);
+    expect(doAdvogado.titulo).toBe('Analisar o caso de Maria Souza');
+    expect(doAdvogado.descricao).toBe('Concluída por Ana: Coletar documentos de Maria Souza');
+    expect(doAdvogado.clienteId).toBe(cliente.id);
+
+    const res = await req('GET', '/workflows/execucoes', admin);
+    const execs = (await res.json()) as { gatilho: string; tarefaTitulo: string | null; disparadoPorNome: string }[];
+    const daConclusao = execs.find((e) => e.gatilho === 'TAREFA_CONCLUIDA')!;
+    expect(daConclusao.tarefaTitulo).toBe('Coletar documentos de Maria Souza');
+    expect(daConclusao.disparadoPorNome).toBe('Ana');
+  });
+
+  it('reabrir e concluir de novo não repete o fluxo', async () => {
+    const coleta = await criarFluxo(coletaDocumentos(secretaria.id));
+    await criarFluxo(documentosColetados(coleta.id));
+    await novoCliente(admin);
+    const [t] = await tarefasDe(secretaria.id);
+
+    await mudarStatus(t, secretaria, 'CONCLUIDA');
+    await mudarStatus(t, secretaria, 'PENDENTE');
+    await mudarStatus(t, secretaria, 'CONCLUIDA');
+
+    expect(await tarefasDe(advogado.id)).toHaveLength(1);
+    const ignorados = await db
+      .select()
+      .from(workflowExecucoes)
+      .where(eq(workflowExecucoes.status, 'IGNORADO'));
+    expect(ignorados).toHaveLength(1);
+    expect(ignorados[0].erro).toMatch(/já rodou/);
+  });
+
+  it('salvar uma tarefa que já estava concluída não dispara', async () => {
+    await criarFluxo(documentosColetados(undefined));
+    const cliente = await novoCliente(admin);
+    const [t] = await db
+      .insert(tarefas)
+      .values({ firmId: firma.id, usuarioId: secretaria.id, clienteId: cliente.id, titulo: 'Já feita', status: 'CONCLUIDA' })
+      .returning();
+
+    await mudarStatus(t, secretaria, 'CONCLUIDA');
+    expect(await tarefasDe(advogado.id)).toHaveLength(0);
+  });
+
+  it('com fluxo de origem, só as tarefas daquele fluxo disparam', async () => {
+    const coleta = await criarFluxo(coletaDocumentos(secretaria.id));
+    await criarFluxo(documentosColetados(coleta.id));
+    const cliente = await novoCliente(admin);
+    const [manual] = await db
+      .insert(tarefas)
+      .values({ firmId: firma.id, usuarioId: secretaria.id, clienteId: cliente.id, titulo: 'Ligar para o cliente', status: 'PENDENTE' })
+      .returning();
+
+    await mudarStatus(manual, secretaria, 'CONCLUIDA');
+    expect(await tarefasDe(advogado.id)).toHaveLength(0);
+  });
+
+  it('sem fluxo de origem, qualquer tarefa do cliente dispara; sem cliente, nenhuma', async () => {
+    await criarFluxo(documentosColetados(undefined));
+    const cliente = await novoCliente(admin);
+    const [doCliente] = await db
+      .insert(tarefas)
+      .values({ firmId: firma.id, usuarioId: secretaria.id, clienteId: cliente.id, titulo: 'Ligar para o cliente', status: 'PENDENTE' })
+      .returning();
+    const [semCliente] = await db
+      .insert(tarefas)
+      .values({ firmId: firma.id, usuarioId: secretaria.id, titulo: 'Comprar café', status: 'PENDENTE' })
+      .returning();
+
+    await mudarStatus(semCliente, secretaria, 'CONCLUIDA');
+    expect(await tarefasDe(advogado.id)).toHaveLength(0);
+
+    await mudarStatus(doCliente, secretaria, 'CONCLUIDA');
+    expect(await tarefasDe(advogado.id)).toHaveLength(1);
+  });
+
+  it('fluxo de outra firma não dispara', async () => {
+    await req('POST', '/workflows', adminB, {
+      ...documentosColetados(undefined),
+      acoes: [{ tipo: 'ALTERAR_SITUACAO_CLIENTE', situacao: 'I' }],
+    });
+    const cliente = await novoCliente(admin, { situacao: 'EM_REVISAO' });
+    const [t] = await db
+      .insert(tarefas)
+      .values({ firmId: firma.id, usuarioId: secretaria.id, clienteId: cliente.id, titulo: 'X', status: 'PENDENTE' })
+      .returning();
+
+    await mudarStatus(t, secretaria, 'CONCLUIDA');
+    const [atual] = await db.select().from(clientes).where(eq(clientes.id, cliente.id));
+    expect(atual.situacao).toBe('EM_REVISAO');
+  });
+
+  it('recusa fluxo de origem de outra firma ou em outro gatilho', async () => {
+    const daB = (await (
+      await req('POST', '/workflows', adminB, { ...coletaDocumentos(adminB.id), acoes: [{ tipo: 'ALTERAR_SITUACAO_CLIENTE', situacao: 'A' }] })
+    ).json()) as { id: number };
+    expect((await req('POST', '/workflows', admin, documentosColetados(daB.id))).status).toBe(400);
+
+    const coleta = await criarFluxo(coletaDocumentos(secretaria.id));
+    const noGatilhoErrado = coletaDocumentos(secretaria.id, { condicoes: { workflowOrigemId: coleta.id } });
+    expect((await req('POST', '/workflows', admin, noGatilhoErrado)).status).toBe(400);
+  });
+
+  it('não exclui um fluxo de que outro depende', async () => {
+    const coleta = await criarFluxo(coletaDocumentos(secretaria.id));
+    const dependente = await criarFluxo(documentosColetados(coleta.id));
+
+    const res = await req('DELETE', `/workflows/${coleta.id}`, admin);
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toMatch(/Documentos coletados/);
+
+    expect((await req('DELETE', `/workflows/${dependente.id}`, admin)).status).toBe(200);
+    expect((await req('DELETE', `/workflows/${coleta.id}`, admin)).status).toBe(200);
+  });
+});

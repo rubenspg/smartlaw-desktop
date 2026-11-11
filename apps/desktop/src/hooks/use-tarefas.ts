@@ -2,6 +2,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { errorMessage, invalidateDashboard } from '../lib/api-helpers';
 import { TarefaInput } from '@smartlaw/shared';
+import type { QueryClient } from '@tanstack/react-query';
+
+/**
+ * Concluir uma tarefa pode disparar um fluxo de trabalho (TAREFA_CONCLUIDA)
+ * que muda a situação do cliente: sem isto a tela do cliente ficava velha.
+ */
+function invalidarEfeitosDeFluxo(queryClient: QueryClient) {
+  queryClient.invalidateQueries({ queryKey: ['clientes'] });
+  queryClient.invalidateQueries({ queryKey: ['cliente'] });
+  queryClient.invalidateQueries({ queryKey: ['workflow-execucoes'] });
+}
 
 export function useTarefas(filters: { status?: string; usuarioId?: string } = {}) {
   return useQuery({
@@ -64,6 +75,7 @@ export function useUpdateTarefa(id: number) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tarefas'] });
       queryClient.invalidateQueries({ queryKey: ['tarefa', id] });
+      invalidarEfeitosDeFluxo(queryClient);
       invalidateDashboard(queryClient);
     },
   });
@@ -83,6 +95,7 @@ export function useToggleTarefaStatus() {
     onSuccess: (_data, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['tarefas'] });
       queryClient.invalidateQueries({ queryKey: ['tarefa', id] });
+      invalidarEfeitosDeFluxo(queryClient);
       invalidateDashboard(queryClient);
     },
   });

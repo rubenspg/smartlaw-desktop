@@ -52,6 +52,7 @@ function EditarFluxoPage() {
       ) : (
         <div className="max-w-4xl space-y-8">
           <WorkflowForm
+            workflowId={fluxo.id}
             initialData={{
               nome: fluxo.nome,
               descricao: fluxo.descricao,

@@ -288,7 +288,7 @@ export type ClienteSituacaoInput = z.infer<typeof clienteSituacaoSchema>;
 // estes schemas ao gravar e o motor (apps/server/src/services/workflows/)
 // confia no formato ao executar.
 
-export const WORKFLOW_GATILHOS = ['CLIENTE_CRIADO', 'CLIENTE_SITUACAO_ALTERADA'] as const;
+export const WORKFLOW_GATILHOS = ['CLIENTE_CRIADO', 'CLIENTE_SITUACAO_ALTERADA', 'TAREFA_CONCLUIDA'] as const;
 
 export type WorkflowGatilho = (typeof WORKFLOW_GATILHOS)[number];
 
@@ -299,6 +299,11 @@ export const workflowCondicoesSchema = z.object({
   situacaoAnterior: z.string().min(1).optional(),
   /** CLIENTE_SITUACAO_ALTERADA: só quando a situação passa a este código. */
   situacaoNova: z.string().min(1).optional(),
+  /**
+   * TAREFA_CONCLUIDA: só tarefas criadas por este fluxo. Ausente = qualquer
+   * tarefa vinculada a cliente, inclusive as manuais.
+   */
+  workflowOrigemId: z.number().int().positive().optional(),
 });
 
 export type WorkflowCondicoes = z.infer<typeof workflowCondicoesSchema>;
@@ -310,7 +315,10 @@ export const workflowAcaoSchema = z.discriminatedUnion('tipo', [
   }),
   z.object({
     tipo: z.literal('CRIAR_TAREFA'),
-    /** Aceita {{cliente.nome}} e {{usuario.nome}} (quem disparou o fluxo). */
+    /**
+     * Aceita {{cliente.nome}}, {{usuario.nome}} (quem disparou o fluxo) e, no
+     * gatilho TAREFA_CONCLUIDA, {{tarefa.titulo}} (a tarefa concluída).
+     */
     titulo: z.string().trim().min(1, 'Título é obrigatório').max(200),
     descricao: z.string().max(2000).optional().nullable(),
     usuarioId: z.string().uuid('Escolha o responsável'),
@@ -345,6 +353,13 @@ export const workflowSchema = z
           });
         }
       }
+    }
+    if (data.gatilho !== 'TAREFA_CONCLUIDA' && data.condicoes.workflowOrigemId) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['condicoes', 'workflowOrigemId'],
+        message: 'Condição de fluxo de origem só vale para o gatilho "tarefa concluída"',
+      });
     }
   });
 

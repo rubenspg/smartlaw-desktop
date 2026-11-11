@@ -43,7 +43,7 @@ function FluxosPage() {
         <div>
           <h1 className="text-4xl font-bold text-foreground">Fluxos de trabalho</h1>
           <p className="text-muted-foreground mt-1 text-lg">
-            Automatize o que acontece quando um cliente é cadastrado ou muda de situação.
+            Automatize o que acontece quando um cliente é cadastrado, muda de situação ou tem uma tarefa concluída.
           </p>
         </div>
         {aba === 'fluxos' && (
@@ -134,7 +134,7 @@ function ListaFluxos() {
             <div className="flex-1 min-w-0 space-y-1">
               <p className="font-bold">{f.nome}</p>
               <p className="text-sm text-muted-foreground">
-                {descreverFluxo(f, nomeSituacao, nomeUsuario)}
+                {descreverFluxo(f, nomeSituacao, nomeUsuario, (id) => fluxos.find((o) => o.id === id)?.nome ?? '…')}
               </p>
               <p className="text-xs text-muted-foreground">
                 {f.execucoes === 0
