@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { errorMessage, invalidateDashboard } from '../lib/api-helpers';
 import { ClienteInput } from '@smartlaw/shared';
@@ -6,6 +6,9 @@ import { ClienteInput } from '@smartlaw/shared';
 export function useClientes(filters: { q?: string; situacao?: string; page?: number; limit?: number }) {
   return useQuery({
     queryKey: ['clientes', filters],
+    // Mantém a lista anterior na tela enquanto a nova busca carrega, para a
+    // linha não ser trocada por "Carregando..." no meio de um clique.
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const res = await api.clientes.$get({
         query: {
