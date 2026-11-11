@@ -16,11 +16,12 @@ import {
 
 
 import { useTarefas, useCreateTarefa, useUpdateTarefa, useDeleteTarefa, useToggleTarefaStatus } from '@/hooks/use-tarefas';
-import { useAndamentosRecentes, useResumoPendencias, useResumoIA } from '@/hooks/use-dashboard';
+import { useAndamentosRecentes, useResumoDia } from '@/hooks/use-dashboard';
 import { TarefaForm } from '@/components/shared/tarefa-form';
 import { TarefaDetails } from '@/components/shared/tarefa-details';
 import { AndamentosRecentesCard } from '@/components/dashboard/andamentos-recentes-card';
 import { TarefaListCard } from '@/components/dashboard/tarefa-list-card';
+import { ResumoDiaCard } from '@/components/dashboard/resumo-dia-card';
 import { TarefaInput } from '@smartlaw/shared';
 import { Tarefa } from '@/lib/entities';
 import { useRegional } from '@/components/regional-provider';
@@ -49,8 +50,7 @@ function HomeComponent() {
     status: 'PENDENTE',
   });
   const { data: andamentosRecentes, isLoading: isLoadingAndamentos, refetch: refetchAndamentos } = useAndamentosRecentes();
-  const { data: pendencias } = useResumoPendencias();
-  const { data: resumoIA, isFetching: isLoadingResumoIA } = useResumoIA();
+  const resumoDia = useResumoDia();
   const createTarefa = useCreateTarefa();
   const updateTarefa = useUpdateTarefa(editingTarefa?.id || 0);
   const toggleStatus = useToggleTarefaStatus();
@@ -141,6 +141,18 @@ function HomeComponent() {
           </Button>
         </div>
       </div>
+
+      <ResumoDiaCard
+        resumo={resumoDia.data}
+        isLoading={resumoDia.isLoading}
+        isFetching={resumoDia.isFetching}
+        isError={resumoDia.isError}
+        onRefresh={() => resumoDia.refetch()}
+        onAbrirTarefa={(id) => {
+          const tarefa = tarefas?.find((t) => t.id === id);
+          if (tarefa) handleView(tarefa);
+        }}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <AndamentosRecentesCard

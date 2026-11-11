@@ -20,6 +20,9 @@ interface Env {
   DJEN_TRANSPORT: DjenTransport;
   BR_RELAY_URL: string | null;
   BR_RELAY_TOKEN: string | null;
+  /** Gemini para os resumos de Insights. Sem a chave, os cards mostram o texto calculado. */
+  GOOGLE_API_KEY: string | null;
+  GOOGLE_AI_MODEL: string;
 }
 
 function requireEnv(): Env {
@@ -53,13 +56,26 @@ function requireEnv(): Env {
     errors.push('BR_RELAY_URL é obrigatória quando DJEN_TRANSPORT=relay.');
   }
 
+  // Opcionais da IA: a ausência da chave só desliga o texto do modelo.
+  const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY?.trim() || null;
+  const GOOGLE_AI_MODEL = process.env.GOOGLE_AI_MODEL?.trim() || 'gemini-3.5-flash-lite';
+
   if (errors.length > 0) {
     console.error('[Config] Configuração inválida:');
     for (const error of errors) console.error(`  - ${error}`);
     process.exit(1);
   }
 
-  return { DATABASE_URL: DATABASE_URL!, JWT_SECRET: JWT_SECRET!, PORT, DJEN_TRANSPORT, BR_RELAY_URL, BR_RELAY_TOKEN };
+  return {
+    DATABASE_URL: DATABASE_URL!,
+    JWT_SECRET: JWT_SECRET!,
+    PORT,
+    DJEN_TRANSPORT,
+    BR_RELAY_URL,
+    BR_RELAY_TOKEN,
+    GOOGLE_API_KEY,
+    GOOGLE_AI_MODEL,
+  };
 }
 
 export const env = requireEnv();

@@ -366,3 +366,9 @@ export const workflowSchema = z
 export type WorkflowInput = z.infer<typeof workflowSchema>;
 
 export const workflowAtivoSchema = z.object({ ativo: z.boolean() });
+
+/** Cards semanais de Insights (POST /insights/semana). */
+export const insightSemanaSchema = z.object({
+  area: z.enum(['processos', 'clientes']),
+  semanasAtras: z.number().int().min(0).max(52),
+});

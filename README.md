@@ -79,8 +79,8 @@ throwaway `node:20-alpine` containers with the repo bind-mounted. Note that
 | `DATAJUD_API_KEY` | Fallback CNJ Datajud API key, used when the firm has none configured. `.env.example` ships CNJ's published public key (not a secret; CNJ may rotate it) | CNJ public key |
 | `DJEN_TRANSPORT` | How the server reaches the DJEN (court intimações), which only answers Brazilian IPs: `direct` (production exits through the router VPN) or `relay` | `direct` |
 | `BR_RELAY_URL` / `BR_RELAY_TOKEN` | Brazilian proxy for DJEN, only with `DJEN_TRANSPORT=relay` | *(unset)* |
-| `LMSTUDIO_URL` | LM Studio endpoint backing `GET /dashboard/resumo-ia` | `http://localhost:1234` |
-| `LMSTUDIO_MODEL` | Model name requested from LM Studio | `google/gemma-4-e4b` |
+| `GOOGLE_API_KEY` | Google AI (Gemini) key for the home "Resumo do dia" (`GET /dashboard/resumo-ia`) and the weekly Insights summaries. Optional: without it the calculated text is shown. Only aggregates are sent, never names or case numbers | *(unset)* |
+| `GOOGLE_AI_MODEL` | Gemini model used for those summaries | `gemini-3.5-flash-lite` |
 | `NODE_ENV` | `development` or `production` | `development` |
 | `CSV_DATA_DIR` | Absolute path to the legacy CSV lookup data for `db:seed`. Optional — without it the seed falls back to built-in defaults (see [Seed lookup data](#seed-lookup-data)) | Resolved from relative path |
 | `SEED_ADMIN_PASSWORD` | Password for the seeded admin user. Without it, one is generated and printed once | *(generated)* |
