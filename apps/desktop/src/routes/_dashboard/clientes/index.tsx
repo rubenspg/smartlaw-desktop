@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   Plus, 
   Search, 
@@ -47,11 +47,18 @@ function ClientesListPage() {
   // "ativos" = toda situação que conta como ativo (Ativo, Em revisão…).
   const [situacao, setSituacao] = useState('ativos');
   const [page, setPage] = useState(1);
+  const [qDebounced, setQDebounced] = useState('');
   const limit = 10;
 
+  // Uma busca por tecla trocava a lista sob o cursor; espera o usuário parar de digitar.
+  useEffect(() => {
+    const t = setTimeout(() => setQDebounced(q), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
   const { data: situacoes } = useClienteSituacoes();
-  const { data, isLoading, isError } = useClientes({ 
-    q, 
+  const { data, isLoading, isError } = useClientes({
+    q: qDebounced,
     situacao: situacao === 'all' ? undefined : situacao, 
     page, 
     limit 

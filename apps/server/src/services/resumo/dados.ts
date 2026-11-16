@@ -41,16 +41,20 @@ export async function carregarDia(firmId: string, usuarioId: string, hoje: strin
     or(isNull(intimacoes.tarefaId), eq(tarefas.status, 'PENDENTE')),
   );
 
+  // Dentro de sql`` cru o Drizzle não sabe o tipo da coluna e repassa o Date ao
+  // postgres-js, que só aceita string ali; por isso vai em ISO com cast.
+  const ts = (d: Date) => sql`${d.toISOString()}::timestamptz`;
+
   const [[contagem], porCategoria, itens, [usouDjen], [rodada], [naoLidas], novasPorTipo, [prazos], [doTribunal], [triagem]] =
     await Promise.all([
       db
         .select({
-          atrasadas: sql<number>`count(*) filter (where ${tarefas.dataLimite} < ${inicioHoje})::int`,
-          hoje: sql<number>`count(*) filter (where ${tarefas.dataLimite} >= ${inicioHoje} and ${tarefas.dataLimite} < ${fimHoje})::int`,
-          proximosDias: sql<number>`count(*) filter (where ${tarefas.dataLimite} >= ${fimHoje} and ${tarefas.dataLimite} < ${fimHorizonte})::int`,
+          atrasadas: sql<number>`count(*) filter (where ${tarefas.dataLimite} < ${ts(inicioHoje)})::int`,
+          hoje: sql<number>`count(*) filter (where ${tarefas.dataLimite} >= ${ts(inicioHoje)} and ${tarefas.dataLimite} < ${ts(fimHoje)})::int`,
+          proximosDias: sql<number>`count(*) filter (where ${tarefas.dataLimite} >= ${ts(fimHoje)} and ${tarefas.dataLimite} < ${ts(fimHorizonte)})::int`,
           semPrazo: sql<number>`count(*) filter (where ${tarefas.dataLimite} is null)::int`,
-          prioridadeAlta: sql<number>`count(*) filter (where ${tarefas.prioridade} = 'ALTA' and ${tarefas.dataLimite} < ${fimHorizonte})::int`,
-          maisAntiga: sql<string | null>`min(${tarefas.dataLimite}) filter (where ${tarefas.dataLimite} < ${inicioHoje})`,
+          prioridadeAlta: sql<number>`count(*) filter (where ${tarefas.prioridade} = 'ALTA' and ${tarefas.dataLimite} < ${ts(fimHorizonte)})::int`,
+          maisAntiga: sql<string | null>`min(${tarefas.dataLimite}) filter (where ${tarefas.dataLimite} < ${ts(inicioHoje)})`,
         })
         .from(tarefas)
         .where(minhasPendentes),
