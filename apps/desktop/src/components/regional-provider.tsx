@@ -1,5 +1,6 @@
 import { createContext, useContext, ReactNode } from "react";
 import { strings, type TranslationKey } from "../lib/translations";
+import { formatarData } from '@/lib/datas';
 
 // Fixed to pt-BR / BRL. The language/currency switching UI was removed (#29)
 // because it was never actually wired up. Formatting still goes through this
@@ -20,13 +21,7 @@ function formatCurrency(value: number | string): string {
 }
 
 function formatDate(date: Date | string | number, options?: Intl.DateTimeFormatOptions): string {
-  try {
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return String(date);
-    return new Intl.DateTimeFormat(LOCALE, options).format(d);
-  } catch {
-    return String(date);
-  }
+  return formatarData(date, options, '');
 }
 
 function t(key: TranslationKey): string {

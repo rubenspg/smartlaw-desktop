@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
-import { useClientes } from '@/hooks/use-clientes';
+import { ClienteCombobox } from '@/components/shared/cliente-combobox';
 import { useEspeciesProcesso } from '@/hooks/use-lookups';
 import { useRouter } from '@tanstack/react-router';
 
@@ -33,7 +33,6 @@ export function ProcessoAdminForm({ initialData, onSubmit, isSubmitting }: Proce
     } : {},
   });
 
-  const { data: clientesData } = useClientes({ limit: 100 });
   const { data: especies } = useEspeciesProcesso();
 
   return (
@@ -50,21 +49,11 @@ export function ProcessoAdminForm({ initialData, onSubmit, isSubmitting }: Proce
                 name="clienteId"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    value={field.value?.toString()}
-                    onValueChange={(val) => field.onChange(parseInt(val))}
-                  >
-                    <SelectTrigger id="cliente">
-                      <SelectValue placeholder="Selecione um cliente..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clientesData?.data.map((c: any) => (
-                        <SelectItem key={c.id} value={c.id.toString()}>
-                          {c.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <ClienteCombobox
+                    id="cliente"
+                    value={field.value}
+                    onChange={(c) => field.onChange(c?.id)}
+                  />
                 )}
               />
               {errors.clienteId && <p className="text-xs text-destructive">Selecione um cliente</p>}

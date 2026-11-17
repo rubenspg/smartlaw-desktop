@@ -86,7 +86,7 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
       .where(and(...where))
       .limit(limit)
       .offset(offset)
-      .orderBy(desc(processosJudiciais.createdAt));
+      .orderBy(desc(processosJudiciais.createdAt), desc(processosJudiciais.id));
 
     return c.json(paginated(data, Number(totalRow?.count ?? 0), page, limit));
   })
@@ -286,7 +286,8 @@ const processosJudiciaisRoutes = new Hono<{ Variables: Variables }>()
 async function clientDaFirma(firmId: string): Promise<DatajudClient> {
   const [firm] = await db.select({ key: firms.datajudApiKey }).from(firms).where(eq(firms.id, firmId)).limit(1);
   const { chave } = resolverChave(firm?.key);
-  return new DatajudClient({ apiKey: chave });
+  // Sempre há alguém esperando na tela (Sincronizar / Buscar no Datajud).
+  return new DatajudClient({ apiKey: chave, prazoTotalMs: 20_000 });
 }
 
 /**
@@ -299,6 +300,7 @@ function erroDatajud(err: unknown): { mensagem: string; status: 400 | 502 } {
   if (err instanceof DatajudError) {
     if (err.tipo === 'sem_chave' || err.tipo === 'chave_invalida') return { mensagem: err.message, status: 400 };
     console.error('[Datajud]', err.tipo, err.status, err.message);
+    if (err.tipo === 'sobrecarregado') return { mensagem: err.message, status: 502 };
     return { mensagem: 'Datajud indisponível no momento. Tente novamente em instantes.', status: 502 };
   }
   console.error('[Datajud] erro inesperado:', err);

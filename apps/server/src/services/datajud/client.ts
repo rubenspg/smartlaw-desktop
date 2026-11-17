@@ -21,7 +21,7 @@ export function resolverChave(chaveFirma?: string | null): { chave: string | nul
   return { chave: null, origem: 'nenhuma' };
 }
 
-export type TipoErroDatajud = 'sem_chave' | 'chave_invalida' | 'http' | 'rede';
+export type TipoErroDatajud = 'sem_chave' | 'chave_invalida' | 'sobrecarregado' | 'http' | 'rede';
 
 export class DatajudError extends Error {
   constructor(
@@ -56,6 +56,12 @@ export interface DatajudClientOptions {
   minIntervalMs?: number;
   timeoutMs?: number;
   maxTentativas?: number;
+  /**
+   * Tempo máximo somando todas as tentativas. Para chamadas em que alguém
+   * espera na tela (botão "Sincronizar"): sem ele, 3 tentativas de 15 s mais
+   * o recuo chegavam a ~48 s de spinner. Sem valor = sem limite (lotes).
+   */
+  prazoTotalMs?: number;
 }
 
 // Limitador global: a API pública não documenta limite, mas é um serviço
@@ -91,6 +97,7 @@ export class DatajudClient {
   private readonly minIntervalMs: number;
   private readonly timeoutMs: number;
   private readonly maxTentativas: number;
+  private readonly prazoTotalMs: number | undefined;
 
   constructor(opts: DatajudClientOptions) {
     this.apiKey = opts.apiKey;
@@ -98,6 +105,7 @@ export class DatajudClient {
     this.minIntervalMs = opts.minIntervalMs ?? 500;
     this.timeoutMs = opts.timeoutMs ?? 15_000;
     this.maxTentativas = opts.maxTentativas ?? 3;
+    this.prazoTotalMs = opts.prazoTotalMs;
   }
 
   /** `_search` cru no índice, com limitador, timeout e retentativa em 429/5xx/rede. */
@@ -107,11 +115,13 @@ export class DatajudClient {
     }
     const auth = this.apiKey.startsWith('APIKey ') ? this.apiKey : `APIKey ${this.apiKey}`;
 
+    const limite = this.prazoTotalMs ? Date.now() + this.prazoTotalMs : Infinity;
     let ultimoErro: unknown;
     for (let tentativa = 1; tentativa <= this.maxTentativas; tentativa++) {
+      if (tentativa > 1 && limite - Date.now() < 1000) break;
       await aguardarVez(this.minIntervalMs);
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+      const timer = setTimeout(() => controller.abort(), Math.max(1, Math.min(this.timeoutMs, limite - Date.now())));
       try {
         const res = await this.fetchFn(`${BASE_URL}/${alias}/_search`, {
           method: 'POST',
@@ -126,9 +136,21 @@ export class DatajudClient {
         if (res.status === 404) {
           throw new DatajudError('http', `Índice ${alias} não existe no Datajud.`, 404);
         }
-        if (res.status === 429 || res.status >= 500) {
+        if (res.status === 429) {
+          // Na prática o 429 do Datajud não é limite por chave: é o Elasticsearch
+          // do CNJ recusando buscas por falta de capacidade
+          // (es_rejected_execution_exception), para qualquer chave e qualquer IP.
+          ultimoErro = new DatajudError(
+            'sobrecarregado',
+            'O Datajud (CNJ) está sobrecarregado e recusou a consulta. Tente novamente em alguns minutos.',
+            429,
+          );
+          await this.recuar(tentativa, limite);
+          continue;
+        }
+        if (res.status >= 500) {
           ultimoErro = new DatajudError('http', `Datajud respondeu ${res.status}.`, res.status);
-          await this.recuar(tentativa);
+          await this.recuar(tentativa, limite);
           continue;
         }
         if (!res.ok) {
@@ -143,9 +165,17 @@ export class DatajudClient {
         return { hits: json.hits.hits, total: json.hits.total.value, took: json.took };
       } catch (err) {
         if (err instanceof DatajudError) throw err;
+        if (controller.signal.aborted && Date.now() >= limite - 50) {
+          // Estourou o prazo total: o CNJ está lento demais para quem espera na tela.
+          ultimoErro = new DatajudError(
+            'sobrecarregado',
+            'O Datajud (CNJ) não respondeu a tempo; o serviço está lento ou sobrecarregado. Tente novamente em alguns minutos.',
+          );
+          break;
+        }
         // AbortError, DNS, reset: vale retentar.
         ultimoErro = new DatajudError('rede', `Falha de rede ao consultar o Datajud: ${(err as Error).message}`);
-        await this.recuar(tentativa);
+        await this.recuar(tentativa, limite);
       } finally {
         clearTimeout(timer);
       }
@@ -153,9 +183,10 @@ export class DatajudClient {
     throw ultimoErro instanceof Error ? ultimoErro : new DatajudError('rede', 'Datajud indisponível.');
   }
 
-  private async recuar(tentativa: number) {
+  private async recuar(tentativa: number, limite = Infinity) {
     if (tentativa >= this.maxTentativas) return;
-    await new Promise((r) => setTimeout(r, 1000 * 2 ** (tentativa - 1)));
+    const espera = Math.min(1000 * 2 ** (tentativa - 1), Math.max(0, limite - Date.now()));
+    await new Promise((r) => setTimeout(r, espera));
   }
 
   /**

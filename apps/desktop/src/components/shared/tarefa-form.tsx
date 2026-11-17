@@ -22,7 +22,7 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 import { useUsuarios } from '@/hooks/use-lookups';
-import { useClientes } from '@/hooks/use-clientes';
+import { ClienteCombobox } from '@/components/shared/cliente-combobox';
 import { useProcessosJudiciais, useProcessosJudiciaisByCliente } from '@/hooks/use-processos';
 import { useAuth } from '@/lib/auth';
 import { useState, useEffect } from 'react';
@@ -46,7 +46,6 @@ const CATEGORIAS = [
 export function TarefaForm({ initialData, onSubmit, isSubmitting, onCancel }: TarefaFormProps) {
   const { user } = useAuth();
   const { data: usuarios, isLoading: isLoadingUsuarios } = useUsuarios();
-  const { data: clientesData, isLoading: isLoadingClientes } = useClientes({ limit: 100 });
 
   // Internal states to split Date and Time
   const [selectedDate, setSelectedDate] = useState('');
@@ -103,12 +102,11 @@ export function TarefaForm({ initialData, onSubmit, isSubmitting, onCancel }: Ta
     ? (processosClienteData?.data ?? [])
     : (todosProcessosData?.data ?? []);
 
-  const handleClienteChange = (val: string) => {
-    if (val === 'none') {
+  const handleClienteChange = (cliente: { id: number } | null) => {
+    if (!cliente) {
       setValue('clienteId', null);
     } else {
-      const id = Number(val);
-      setValue('clienteId', id);
+      setValue('clienteId', cliente.id);
       // Se já houver um processo selecionado que não pertence ao novo cliente, limpa-o
       if (selectedProcessoId) {
         setValue('processoJudicialId', null);
@@ -260,29 +258,12 @@ export function TarefaForm({ initialData, onSubmit, isSubmitting, onCancel }: Ta
             <UserIcon className="w-3.5 h-3.5 text-primary" />
             Cliente Associado (Opcional)
           </Label>
-          <Select
-            disabled={isLoadingClientes}
-            value={selectedClienteId ? String(selectedClienteId) : 'none'}
-            onValueChange={handleClienteChange}
-          >
-            <SelectTrigger className="rounded-xl h-12 border-border/60 bg-background shadow-sm font-medium px-4">
-              <SelectValue
-                placeholder={
-                  isLoadingClientes ? 'Carregando clientes...' : 'Nenhum cliente selecionado'
-                }
-              />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl shadow-premium-lg max-h-60">
-              <SelectItem value="none" className="font-bold text-muted-foreground py-2">
-                Nenhum cliente (Geral)
-              </SelectItem>
-              {clientesData?.data?.map((c: any) => (
-                <SelectItem key={c.id} value={String(c.id)} className="font-medium py-2">
-                  {c.nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <ClienteCombobox
+            value={selectedClienteId ? Number(selectedClienteId) : null}
+            onChange={handleClienteChange}
+            noneLabel="Nenhum cliente (Geral)"
+            className="rounded-xl h-12 border-border/60 shadow-sm font-medium px-4"
+          />
         </div>
 
         <div className="space-y-2.5">

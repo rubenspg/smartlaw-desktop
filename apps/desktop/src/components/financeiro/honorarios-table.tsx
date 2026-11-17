@@ -130,7 +130,7 @@ export function HonorariosTable({
                         h.status === 'PENDENTE' && h.dataVenc < today ? 'text-destructive' : 'text-muted-foreground',
                       )}
                     >
-                      {formatDate(h.dataVenc + 'T00:00:00')}
+                      {formatDate(h.dataVenc)}
                     </div>
                   </TableCell>
                   <TableCell className="text-center">

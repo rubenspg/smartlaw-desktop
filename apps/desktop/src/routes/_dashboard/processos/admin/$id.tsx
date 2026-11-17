@@ -25,6 +25,7 @@ import { useProcessoAdministrativo, useDeleteProcessoAdministrativo, useCreateAn
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
+import { formatarData } from '@/lib/datas';
 
 export const Route = createFileRoute('/_dashboard/processos/admin/$id')({
   component: ProcessoAdminDetailPage,
@@ -148,8 +149,8 @@ function ProcessoAdminDetailPage() {
                 <DataField icon={Hash} label="Número / Referência" value={processo.numero} />
                 <DataField icon={Building2} label="Pasta" value={processo.pasta} />
                 <Separator className="bg-border/40" />
-                <DataField icon={CalendarIcon} label="Data de Abertura" value={processo.abertura ? new Date(processo.abertura).toLocaleDateString('pt-BR') : '-'} />
-                <DataField icon={Briefcase} label="Início do Benefício" value={processo.inicioBeneficio ? new Date(processo.inicioBeneficio).toLocaleDateString('pt-BR') : '-'} />
+                <DataField icon={CalendarIcon} label="Data de Abertura" value={processo.abertura ? formatarData(processo.abertura) : '-'} />
+                <DataField icon={Briefcase} label="Início do Benefício" value={processo.inicioBeneficio ? formatarData(processo.inicioBeneficio) : '-'} />
                 <Separator className="bg-border/40" />
                 <div className="space-y-2 group">
                   <div className="flex items-center gap-2 text-muted-foreground transition-colors group-hover:text-primary">
@@ -228,7 +229,7 @@ function ProcessoAdminDetailPage() {
                         <div className="flex items-center gap-2 text-primary font-bold">
                           <CalendarIcon className="w-3.5 h-3.5" />
                           <span className="text-[11px] uppercase tracking-wider">
-                            {new Date(andamento.data).toLocaleDateString('pt-BR')}
+                            {formatarData(andamento.data)}
                           </span>
                         </div>
                         <Button 

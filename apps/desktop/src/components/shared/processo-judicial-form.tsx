@@ -6,10 +6,9 @@ import { useRouter } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
-import { useClientes } from '@/hooks/use-clientes';
+import { ClienteCombobox } from '@/components/shared/cliente-combobox';
 import {
   useTiposAcao,
   useRitosProcessuais,
@@ -49,7 +48,6 @@ export function ProcessoJudicialForm({ initialData, onSubmit, isSubmitting }: Pr
     },
   });
 
-  const { data: clientesData } = useClientes({ limit: 100 });
   const { data: tiposAcao } = useTiposAcao();
   const { data: ritos } = useRitosProcessuais();
   const { data: localizacoes } = useLocalizacoesProcesso();
@@ -72,21 +70,11 @@ export function ProcessoJudicialForm({ initialData, onSubmit, isSubmitting }: Pr
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="cliente">Cliente Responsável</Label>
-              <Select 
-                defaultValue={initialData?.clienteId?.toString()} 
-                onValueChange={(val) => setValue('clienteId', parseInt(val))}
-              >
-                <SelectTrigger id="cliente">
-                  <SelectValue placeholder="Selecione um cliente..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientesData?.data.map((c: any) => (
-                    <SelectItem key={c.id} value={c.id.toString()}>
-                      {c.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ClienteCombobox
+                id="cliente"
+                value={watch('clienteId') || null}
+                onChange={(c) => setValue('clienteId', c?.id ?? 0, { shouldValidate: true })}
+              />
               {errors.clienteId && <p className="text-xs text-destructive">Selecione um cliente</p>}
             </div>
 

@@ -49,7 +49,7 @@ const firmsRoutes = new Hono<{ Variables: Variables }>()
       .where(eq(firms.id, user.firmId))
       .limit(1);
     const { chave, origem } = resolverChave(firm?.key);
-    const status = await new DatajudClient({ apiKey: chave }).verificarChave();
+    const status = await new DatajudClient({ apiKey: chave, prazoTotalMs: 10_000 }).verificarChave();
     return c.json({ origem, status });
   })
 

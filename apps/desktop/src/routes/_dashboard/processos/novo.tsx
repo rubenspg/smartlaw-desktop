@@ -14,13 +14,13 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useDatajudSearch, useCreateProcessoJudicial, useSyncProcesso } from '@/hooks/use-processos';
-import { useClientes } from '@/hooks/use-clientes';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ClienteCombobox } from '@/components/shared/cliente-combobox';
 import { ProcessoJudicialInput } from '@smartlaw/shared';
 import type { DatajudBusca } from '@/lib/entities';
 import { ProcessoJudicialForm } from '@/components/shared/processo-judicial-form';
 import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
+import { formatarData } from '@/lib/datas';
 
 export const Route = createFileRoute('/_dashboard/processos/novo')({
   component: NewProcessoPage,
@@ -48,7 +48,6 @@ function NewProcessoPage() {
   const searchMutation = useDatajudSearch();
   const createMutation = useCreateProcessoJudicial();
   const syncMutation = useSyncProcesso();
-  const { data: clientesData } = useClientes({ limit: 100 }); // Simple list for now
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -201,7 +200,7 @@ function NewProcessoPage() {
                   </div>
                   <div>
                     <p className="text-xs font-bold uppercase text-muted-foreground">Data de ajuizamento</p>
-                    <p>{origem?.dataAjuizamento ? new Date(origem.dataAjuizamento).toLocaleDateString('pt-BR') : '-'}</p>
+                    <p>{origem?.dataAjuizamento ? formatarData(origem.dataAjuizamento) : '-'}</p>
                   </div>
                   <div>
                     <p className="text-xs font-bold uppercase text-muted-foreground">Sistema</p>
@@ -227,7 +226,7 @@ function NewProcessoPage() {
                         <div className="shrink-0 text-right text-xs text-muted-foreground">
                           <span className="font-semibold text-foreground">{i.totalMovimentos}</span> movimentos
                           {i.ultimoMovimento && (
-                            <span> · último em {new Date(i.ultimoMovimento.dataHora).toLocaleDateString('pt-BR')}</span>
+                            <span> · último em {formatarData(i.ultimoMovimento.dataHora)}</span>
                           )}
                         </div>
                       </div>
@@ -245,18 +244,11 @@ function NewProcessoPage() {
               <CardContent className="space-y-4">
                 <div className="grid gap-2">
                   <Label htmlFor="cliente">Cliente</Label>
-                  <Select value={clienteId} onValueChange={setClienteId}>
-                    <SelectTrigger id="cliente">
-                      <SelectValue placeholder="Selecione um cliente..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clientesData?.data.map((c: any) => (
-                        <SelectItem key={c.id} value={c.id.toString()}>
-                          {c.nome} {c.cpfCnpj ? `(${c.cpfCnpj})` : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <ClienteCombobox
+                    id="cliente"
+                    value={clienteId ? Number(clienteId) : null}
+                    onChange={(c) => setClienteId(c ? String(c.id) : '')}
+                  />
                 </div>
               </CardContent>
               <CardFooter className="flex justify-end border-t pt-6">

@@ -33,6 +33,7 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import type { ProcessoInstancia } from '@/lib/entities';
+import { formatarData } from '@/lib/datas';
 
 const GRAU_LABEL: Record<string, string> = {
   G1: '1º grau',
@@ -190,7 +191,7 @@ function ProcessoDetailPage() {
               disabled={syncProcesso.isPending}
             >
               <RefreshCw className={cn("w-4 h-4 mr-2", syncProcesso.isPending && "animate-spin")} />
-              Sincronizar
+              {syncProcesso.isPending ? 'Consultando o CNJ…' : 'Sincronizar'}
             </Button>
           </div>
         </div>
@@ -218,7 +219,7 @@ function ProcessoDetailPage() {
                 <DataField 
                   icon={CalendarIcon} 
                   label="Data de Cadastro" 
-                  value={processo.dataCadastro ? new Date(processo.dataCadastro).toLocaleDateString('pt-BR') : '-'} 
+                  value={processo.dataCadastro ? formatarData(processo.dataCadastro) : '-'} 
                 />
                 <DataField 
                   icon={MapPin} 
@@ -247,7 +248,7 @@ function ProcessoDetailPage() {
                 <DataField 
                   icon={History} 
                   label="Distribuição" 
-                  value={processo.distribuicao ? new Date(processo.distribuicao).toLocaleDateString('pt-BR') : '-'} 
+                  value={processo.distribuicao ? formatarData(processo.distribuicao) : '-'} 
                 />
                 <DataField 
                   icon={Hash} 
@@ -295,7 +296,7 @@ function ProcessoDetailPage() {
                         <span>{inst.totalMovimentos} movimentos</span>
                         <span>
                           {inst.dataHoraUltimaAtualizacao
-                            ? `Atualizado ${new Date(inst.dataHoraUltimaAtualizacao).toLocaleDateString('pt-BR')}`
+                            ? `Atualizado ${formatarData(inst.dataHoraUltimaAtualizacao)}`
                             : ''}
                         </span>
                       </div>
@@ -370,7 +371,7 @@ function ProcessoDetailPage() {
                           <div className="flex items-center gap-2 text-primary font-bold">
                             <CalendarIcon className="w-3.5 h-3.5" />
                             <span className="text-[11px] uppercase tracking-wider">
-                              {new Date(andamento.data).toLocaleDateString('pt-BR')}
+                              {formatarData(andamento.data)}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
