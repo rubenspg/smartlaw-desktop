@@ -2,10 +2,9 @@
  * Cálculo puro do "Resumo do dia" da tela inicial: janela, payload do modelo,
  * destaques, avisos, texto calculado e instrução.
  *
- * Mesma regra dos cards de Insights (services/insights/semana.ts): o código
- * calcula todo número e o modelo só narra um payload de agregados (LGPD). O
- * título das tarefas vai para a tela em `itens`, nunca para o modelo. A leitura
- * do banco fica em dados.ts. Testado em dia.test.ts.
+ * O código calcula todo número e o modelo só narra um payload de agregados
+ * (LGPD). O título das tarefas vai para a tela em `itens`, nunca para o
+ * modelo. A leitura do banco fica em dados.ts. Testado em dia.test.ts.
  */
 
 import { formatarNumero, REGRAS_NUMEROS, type Narracao } from '../ia/narracao';
