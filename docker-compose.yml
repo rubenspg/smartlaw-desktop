@@ -32,6 +32,10 @@ services:
       # isso quebraria `docker compose up postgres`, que nem lê esta variável.
       JWT_SECRET: ${JWT_SECRET}
       DATAJUD_API_KEY: ${DATAJUD_API_KEY}
+      # Resumo do dia e insights com IA (Gemini). Opcional: sem chave, o app
+      # mostra o resumo calculado. A chave fica só no servidor (.env).
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      GOOGLE_AI_MODEL: ${GOOGLE_AI_MODEL:-}
     depends_on:
       postgres:
         condition: service_healthy
