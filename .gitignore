@@ -50,3 +50,6 @@ npm-debug.log*
 
 # Playwright MCP scratch output
 .playwright-mcp/
+
+# Agent test reports (may describe unfixed vulnerabilities)
+tests/reports/
