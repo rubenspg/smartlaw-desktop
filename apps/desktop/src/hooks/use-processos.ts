@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { errorMessage, invalidateDashboard } from '../lib/api-helpers';
 import { ProcessoJudicialInput, ProcessoAdministrativoInput, AndamentoInput } from '@smartlaw/shared';
@@ -47,6 +47,7 @@ export function useDeleteAndamento(processoId: number, tipo: 'judicial' | 'admin
 export function useProcessosJudiciais(filters: { q?: string; page?: number; limit?: number }) {
   return useQuery({
     queryKey: ['processos-judiciais', filters],
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const res = await api.processos.judiciais.$get({
         query: {
@@ -78,6 +79,7 @@ export function useProcessoJudicial(id: number) {
 export function useProcessosAdministrativos(filters: { q?: string; page?: number; limit?: number }) {
   return useQuery({
     queryKey: ['processos-administrativos', filters],
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const res = await api.processos.administrativos.$get({
         query: {

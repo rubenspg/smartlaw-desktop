@@ -35,6 +35,7 @@ import { useProcessosJudiciais, useProcessosAdministrativos, useSyncProcesso } f
 import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import { formatarData } from '@/lib/datas';
 
 export const Route = createFileRoute('/_dashboard/processos/')({
   component: ProcessosListPage,
@@ -51,6 +52,7 @@ function ProcessosListPage() {
   const { data: administrativosResult, isLoading: loadingAdm, isError: errorAdm } = useProcessosAdministrativos({ q, page, limit });
   const judiciais = judiciaisResult?.data;
   const administrativos = administrativosResult?.data;
+  const resultadoAtual = activeTab === 'judiciais' ? judiciaisResult : administrativosResult;
   const syncProcesso = useSyncProcesso();
   const toast = useToast();
 
@@ -98,7 +100,7 @@ function ProcessosListPage() {
           />
         </div>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-fit">
+        <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as any); setPage(1); }} className="w-fit">
           <TabsList>
             <TabsTrigger value="judiciais" className="flex items-center gap-2">
               <Gavel className="w-4 h-4" />
@@ -266,7 +268,7 @@ function ProcessosListPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-xs font-bold text-foreground">
-                      {proc.dataCadastro ? new Date(proc.dataCadastro).toLocaleDateString('pt-BR') : '-'}
+                      {proc.dataCadastro ? formatarData(proc.dataCadastro) : '-'}
                     </TableCell>
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
@@ -284,6 +286,27 @@ function ProcessosListPage() {
               )}
             </TableBody>
           </Table>
+        )}
+
+        {resultadoAtual && resultadoAtual.totalPages > 1 && (
+          <div className="p-4 border-t flex items-center justify-between gap-4">
+            <div className="text-xs text-muted-foreground">
+              Página {resultadoAtual.page} de {resultadoAtual.totalPages} · {resultadoAtual.total} processos
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= resultadoAtual.totalPages}
+                onClick={() => setPage(page + 1)}
+              >
+                Próximo
+              </Button>
+            </div>
+          </div>
         )}
       </Card>
     </div>

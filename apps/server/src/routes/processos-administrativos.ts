@@ -68,7 +68,7 @@ const processosAdministrativosRoutes = new Hono<{ Variables: Variables }>()
       .where(and(...where))
       .limit(limit)
       .offset(offset)
-      .orderBy(desc(processosAdministrativos.createdAt));
+      .orderBy(desc(processosAdministrativos.createdAt), desc(processosAdministrativos.id));
 
     return c.json(paginated(data, Number(totalRow?.count ?? 0), page, limit));
   })

@@ -62,7 +62,7 @@ const clientesRoutes = new Hono<{ Variables: Variables }>()
       .where(and(...where))
       .limit(limitNum)
       .offset(offset)
-      .orderBy(asc(clientes.nome));
+      .orderBy(asc(clientes.nome), asc(clientes.id));
 
     return c.json({
       data,

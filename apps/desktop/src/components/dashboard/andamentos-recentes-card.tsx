@@ -13,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useRegional } from '@/components/regional-provider';
 import type { AndamentoRecente } from '@/lib/entities';
 import { cn } from '@/lib/utils';
+import { formatarHora } from '@/lib/datas';
 
 interface AndamentosRecentesCardProps {
   andamentos: AndamentoRecente[] | undefined;
@@ -119,10 +120,12 @@ export function AndamentosRecentesCard({ andamentos, isLoading, onRefresh }: And
                             <Calendar className="w-3 h-3" />
                             {formatDate(a.inclusao)}
                           </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {new Date(a.inclusao).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
+                          {formatarHora(a.inclusao) && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {formatarHora(a.inclusao)}
+                            </span>
+                          )}
                         </div>
                       </div>
                       {processo && (
